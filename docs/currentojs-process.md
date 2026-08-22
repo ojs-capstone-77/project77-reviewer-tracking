@@ -1,9 +1,8 @@
-# Current Reviewer Tracking Process – ASRHE Journal
+# Current Reviewer Tracking Process ASRHE Journal
 
-**Prepared by:** Jahan Haidari (BA)  
-**Date:** 23 August 2026  
-**Team:** Group 77  
-**Task:** 1.7 - Document current manual reviewer tracking processes
+**Prepared by:** Jahan Haidari (BA)   
+**Team:** 77  
+**Task:** 1.7 Document current manual reviewer tracking processes week1 sprint1
 
 ---
 
