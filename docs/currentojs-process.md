@@ -71,12 +71,24 @@ The admin dashboard is the starting point for managing the journal:
 
 ## 6. Reviewer Assignment
 
-![Reviewer Assignment](images/review-process/reviewer-assignment.png)
+![Reviewer Assignment](images/review-process/reviewer-process-1.png)
+![Reviewer Assignment](images/review-process/reviewer-process-2.png)
+![Reviewer Assignment](images/review-process/reviewer-process-3.png)
+![Reviewer Assignment](images/review-process/reviewer-process-4.png)
+![Reviewer Assignment](images/review-process/reviewer-process-5.png)
+![Reviewer Assignment](images/review-process/reviewer-process-6.png)
+![Reviewer Assignment](images/review-process/reviewer-process-7.png)
+![Reviewer Assignment](images/review-process/reviewer-process-8.png)
+![Reviewer Assignment](images/review-process/reviewer-process-9.png)
+![Reviewer Assignment](images/review-process/reviewer-process-10.png)
 
 **How reviewers are currently assigned:**
-- Editor selects reviewers from OJS user database
-- Reviewers are invited via email
-- Responses are tracked manually or through OJS notifications
+- General editor moves manuescript to review stage, adds chosen Review group leader
+- RGL creates poll with date/time options
+- RGl invites RGMs to poll
+- RGMs express availability
+- RGL selects time plus subset of RGMs
+- Plagin adds RGM as participants, creates feedback discussion
 
 ---
 
