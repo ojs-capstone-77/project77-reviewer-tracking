@@ -70,16 +70,25 @@ The admin dashboard is the starting point for managing the journal:
 ---
 
 ## 6. Reviewer Assignment
-
+## Step 1 ##
 ![Reviewer Assignment](images/review-process/review-process-1.png)
+## Step 2 ##
 ![Reviewer Assignment](images/review-process/review-process-2.png)
+## Step 3 ##
 ![Reviewer Assignment](images/review-process/review-process-3.png)
+## Step 4 ##
 ![Reviewer Assignment](images/review-process/review-process-4.png)
+## Step 5 ##
 ![Reviewer Assignment](images/review-process/review-process-5.png)
+## Step 6 ##
 ![Reviewer Assignment](images/review-process/review-process-6.png)
+## Step 7 ##
 ![Reviewer Assignment](images/review-process/review-process-7.png)
+## Step 8 ##
 ![Reviewer Assignment](images/review-process/review-process-8.png)
+## Step 9 ##
 ![Reviewer Assignment](images/review-process/review-process-9.png)
+## Step 10 ##
 ![Reviewer Assignment](images/review-process/review-process-10.png)
 
 **How reviewers are currently assigned:**
