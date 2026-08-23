@@ -69,7 +69,7 @@ The admin dashboard is the starting point for managing the journal:
 
 ---
 
-## 6. Reviewer Assignment
+## 6. Reviewer Assignment Process
 ## Step 1 ##
 ![Reviewer Assignment](images/review-process/review-process-1.png)
 ## Step 2 ##
