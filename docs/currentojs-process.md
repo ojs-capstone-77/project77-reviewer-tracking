@@ -80,20 +80,26 @@ The admin dashboard is the starting point for managing the journal:
 
 ---
 
-## 7. Existing Group Review Plugin
+## 7. Group Review Plugin Status
 
-![Group Review Plugin](images/review-process/group-review-plugin.png)
+**Open Journal Systems (OJS) does not currently have a built-in or official plugin for group-based or collaborative peer review.**
 
-**What the plugin currently does:**
-- Provides group review interface
-- Records basic participation data
-- Tracks attendance and contributions
+The ASRHE journal uses a **group review process** that is not natively supported by OJS. Currently, this process is managed manually outside of the system.
 
-**Limitations:**
-- Limited data fields
-- No dashboard for editors
-- No reporting or analytics
-- No end-of-year reference generation
+### What Currently Happens
+
+- Editors manually coordinate group reviews (via email)
+- Reviewer participation is tracked in spreadsheets
+- Data is not integrated with OJS
+- Reporting and reference generation are manual
+
+### Planned Solution
+
+The ASRHE team is currently developing a custom plugin to support their group review process. This will include:
+
+- **Tool 1:** Participation recording for group leaders
+- **Tool 2:** Editor dashboard for monitoring reviewer contributions
+- **Tool 3:** Automated reference generator
 
 ---
 
@@ -139,11 +145,3 @@ The admin dashboard is the starting point for managing the journal:
 | What would make the process 10x better? | All stakeholders |
 
 ---
-
-## 11. Next Steps
-
-- [ ] Review this document with the team
-- [ ] Send questions to the client
-- [ ] Use findings to refine Tool 1, 2, 3 requirements
-- [ ] Update Master Document with findings
-- [ ] Commit this document to the team repo
