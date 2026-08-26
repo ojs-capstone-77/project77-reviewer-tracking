@@ -86,10 +86,10 @@ Currently, Review Group Leaders (RGLs) can only see a list of RGM names who resp
 
 | Problem | Solution |
 |---------|----------|
-| RGMs who are always available but never selected | Dashboard shows response rate vs. selection rate — editors can see the gap and correct it |
-| Overburdened reviewers | Selection history and review load are visible — editors can balance workload |
+| RGMs who are always available but never selected | Dashboard shows response rate vs. selection rate editors can see the gap and correct it |
+| Overburdened reviewers | Selection history and review load are visible editors can balance workload |
 | Engagement is invisible | Poll response rate and participation frequency are displayed |
-| Bias in reviewer selection | Data reveals patterns — editors can make informed decisions |
+| Bias in reviewer selection | Data reveals patterns editors can make informed decisions |
 | No visibility into who actually contributes | Attendance, contribution types, and shaping feedback are recorded |
 | External Microsoft Form is disconnected from OJS | Feature 2 integrates the form directly into OJS |
 | Manual data entry and coordination | Feature 1 automates poll/selection process |
@@ -101,9 +101,9 @@ Currently, Review Group Leaders (RGLs) can only see a list of RGM names who resp
 
 | Context | When/Where |
 |---------|------------|
-| **When selecting reviewers** | Feature 1 (poll/selection tool) — appears during review setup |
-| **When recording participation** | Feature 2 — appears after the group review meeting |
-| **When viewing reviewer data** | Dashboard — accessible from the journal dashboard |
+| **When selecting reviewers** | Feature 1 (poll/selection tool) appears during review setup |
+| **When recording participation** | Feature 2 appears after the group review meeting |
+| **When viewing reviewer data** | Dashboard accessible from the journal dashboard |
 | **When generating references** | Data feeds into Tool 3 |
 
 ---
