@@ -41,7 +41,7 @@ Currently, Review Group Leaders (RGLs) can only see a list of RGM names who resp
 | Data Field | Description | Source |
 |------------|-------------|--------|
 | Article number and first author | Submission identification | OJS submission |
-| Review phase | Which review round (first, second, etc.) | OJS submission |
+| Review phase | Which review round (first, second, or other rounds.) | OJS submission |
 | RGL name | Name of the Review Group Leader (auto-filled) | OJS user |
 | Reviewer name | Name of the reviewer being evaluated | OJS user |
 | Attendance | Attended / Did not attend (apology) / Did not attend (no apology) / N.A. / Other | Feature 2 (plugin) |
