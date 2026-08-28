@@ -1,4 +1,4 @@
-# Reviewer Participation Visibility Requirements
+# Reviewer Poll And Selection Monitoring Requirements
 
 **Prepared by:** Jahan Haidari (BA)
 **Team:** 77
@@ -11,9 +11,9 @@ This document defines what poll and selection data needs to be visible to differ
 
 ### The Core Problem
 
-Currently, Review Group Leaders can only see a list of Review Group Member names who responded to a poll. They have no context about that persons participation history. They cannot see how often someone responds to polls, how often they are selected, or whether they actually participate when selected.
+Currently, Review Group Leaders can only see a list of Review Group Member names who responded to a poll. They have no context about that persons contribution history. They cannot see how often someone responds to polls, how often they are selected, or whether they are being overlooked.
 
-This feature solves that by revealing patterns in reviewer participation that are currently invisible.
+This feature solves that by revealing patterns in reviewer poll responses and selection history that are currently invisible.
 
 ---
 ## Feature 1 Requirements
@@ -92,7 +92,7 @@ As a Review Group Leader, I want to see who responds to polls but is never selec
 
 As a Managing Editor, I want to view poll responses and selection history so that I can oversee the review process.
 
-As a Managing Editor, I want to see participation patterns across all Review Group Members so that I can identify bias or unfair workload distribution.
+As a Managing Editor, I want to see patterns across all Review Group Members so that I can identify bias or unfair workload distribution.
 
 As a Managing Editor, I want to see who is overburdened so that I can balance the workload.
 
