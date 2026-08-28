@@ -21,7 +21,7 @@ This feature solves that by integrating the form directly into OJS as part of th
 ![Manual Tracking Example](images/review-process/manual-tracking-example.png)
 
 ### After!
-![Tool 2 feature 2 requirement](images/review-process/Planned inplugin form.png)
+![Tool 2 feature 2 requirement](images/review-process/planned-inplugin-form.png)
 
 ## Feature 2 Requirements
 ## 2. Data Fields to Record
