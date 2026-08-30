@@ -1,0 +1,15 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Listen for PHP Xdebug",
+      "type": "php",
+      "request": "launch",
+      "port": 9003,
+      "pathMappings": {
+        "/var/www/html": "${workspaceFolder}/ojs",
+        "/var/www/html/plugins/generic/plugin-dev": "${workspaceFolder}/plugin"
+      }
+    }
+  ]
+}

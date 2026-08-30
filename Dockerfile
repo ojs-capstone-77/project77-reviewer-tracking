@@ -197,13 +197,15 @@ COPY "volumes/config/apache.pkp.conf" "${PKP_WEB_CONF}"
 # - Set certificates
 # - Create container.version file
 RUN a2enmod rewrite ssl && \
-    mkdir -p /etc/ssl/apache2 "${WWW_PATH_ROOT}/files" /run/apache2 && \
+    mkdir -p /etc/ssl/apache2 "${WWW_PATH_ROOT}/files" /run/apache2 /var/log/apache2 && \
     \
     echo "log_errors = On" >> /usr/local/etc/php/conf.d/log-errors.ini && \
     echo "error_log = /dev/stderr" >> /usr/local/etc/php/conf.d/log-errors.ini && \
     \
     cp -a config.TEMPLATE.inc.php "${PKP_CONF}" && \
-    chown -R ${WEB_USER:-33}:${WEB_USER:-33} "${WWW_PATH_ROOT}" && \
+    sed -i 's#CustomLog .*#CustomLog /dev/stdout combined#g; s#ErrorLog .*#ErrorLog /dev/stderr#g' /etc/apache2/sites-available/000-default.conf && \
+    chown -R ${WEB_USER:-33}:${WEB_USER:-33} "${WWW_PATH_ROOT}" /etc/apache2 /etc/ssl/apache2 /run/apache2 && \
+    chmod -R u+rwX,g+rwX /etc/apache2 /etc/ssl/apache2 /run/apache2 && \
     \
     echo "0 * * * *   pkp-run-scheduled" | crontab - && \
     \

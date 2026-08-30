@@ -26,10 +26,10 @@
 
 ; Set this to On once the system has been installed
 ; (This is generally done automatically by the installer)
-installed = Off
+installed = On
 
 ; The canonical URL to the OJS installation (excluding the trailing slash)
-base_url = "https://pkp.sfu.ca/ojs"
+base_url = "http://localhost:8080"
 
 ; Enable strict mode. This will more aggressively cause errors/warnings when
 ; deprecated behaviour exists in the codebase.
@@ -66,7 +66,7 @@ scheduled_tasks_report_error_only = On
 ; time zones.
 ; I.e.: "Europe/Amsterdam"
 ; time_zone="Europe/Amsterdam"
-time_zone = "UTC"
+time_zone = UTC
 
 ; Short and long date formats
 date_format_short = "Y-m-d"
@@ -103,7 +103,7 @@ restful_urls = Off
 ; An empty string indicates that all hosts should be trusted (not recommended!)
 ; Example:
 ; allowed_hosts = '["myjournal.tld", "anotherjournal.tld", "mylibrary.tld"]'
-allowed_hosts = ''
+allowed_hosts = "[\"localhost\"]"
 
 ; Allow the X_FORWARDED_FOR header to override the REMOTE_ADDR as the source IP
 ; Set this to "On" if you are behind a reverse proxy and you control the
@@ -146,10 +146,10 @@ sandbox = Off
 [database]
 
 driver = mysqli
-host = localhost
-username = ojs
-password = ojs
-name = ojs
+host = db
+username = pkp
+password = changeMePlease
+name = pkp
 
 ; Set the non-standard port and/or socket, if used
 ; port = 3306
@@ -219,7 +219,7 @@ connection_charset = utf8
 ; Complete path to directory to store uploaded files
 ; (This directory should not be directly web-accessible)
 ; Windows users should use forward slashes
-files_dir = files
+files_dir = /var/www/files
 
 ; Path to the directory to store public uploaded files
 ; (This directory should be web-accessible and the specified path
@@ -301,23 +301,23 @@ allowed_title_html = "b,i,u,sup,sub"
 
 ; Default method to send emails
 ; Available options: sendmail, smtp, log, phpmailer
-default = sendmail
+default = smtp
 
 ; Path to the sendmail, -bs argument is for using SMTP protocol
 sendmail_path = "/usr/sbin/sendmail -bs"
 
 ; Use SMTP for sending mail instead of mail()
-; smtp = On
+smtp = On
 
 ; SMTP server settings
-; smtp_server = mail.example.com
-; smtp_port = 25
+smtp_server = mailpit
+smtp_port = 1025
 
 ; Enable SMTP authentication
 ; Supported smtp_auth: ssl, tls (see PHPMailer SMTPSecure)
-; smtp_auth = ssl
-; smtp_username = username
-; smtp_password = password
+smtp_auth = ""
+smtp_username = ""
+smtp_password = ""
 
 ; Enable suppressing SSL/TLS peer verification by SMTP transports
 ; Note: this is not recommended for security reasons
@@ -404,7 +404,7 @@ oai = On
 
 ; OAI Repository identifier. This setting forms part of OAI-PMH record IDs.
 ; Changing this setting may affect existing clients and is not recommended.
-repository_id = ojs.pkp.sfu.ca
+repository_id = "ojs2.localhost:8080"
 
 ; Maximum number of records per request to serve via OAI
 oai_max_records = 100

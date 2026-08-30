@@ -1,61 +1,73 @@
-# File: docker-compose.yml
-# Author: Marc Bria UAB (marc.bria@uab.es)
-
 services:
   db:
     image: ${DB_VERSION:-mariadb:11.8}
+    container_name: pkp_db_ojs
     env_file:
       - .env
-    container_name: "pkp_db_${COMPOSE_PROJECT_NAME:-demo}"
     environment:
-      MYSQL_ROOT_PASSWORD: "${MYSQL_ROOT_PASSWORD:-changeMePlease}"
-      MYSQL_DATABASE: "${MYSQL_DATABASE:-pkp}"
-      MYSQL_USER: "${MYSQL_USER:-pkp}"
-      MYSQL_PASSWORD: "${MYSQL_PASSWORD:-changeMePlease}"
-      volumes:
-       - ./volumes/db:/var/lib/mysql
-#      - ./volumes/logs/db:/var/log/mysql
-#      - ./volumes/config/db.charset.conf:/etc/mysql/conf.d/charset.cnf
-#      - ./volumes/db-import:/docker-entrypoint-initdb.d
-    networks:
-      - inside
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-changeMePlease}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-pkp}
+      MYSQL_USER: ${MYSQL_USER:-pkp}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-changeMePlease}
+    ports:
+      - "${DB_PORT:-3306}:3306"
+    volumes:
+      - ./volumes/db:/var/lib/mysql
     restart: unless-stopped
 
   app:
-    image: ${IMAGE_SOURCE:-local}/${PKP_TOOL:-omp}:${PKP_VERSION:-3_3_0-20}
-    build: 
+    build:
       context: .
       dockerfile: Dockerfile
       args:
-        # Modify .env to change this arguments
-        PKP_TOOL: ${PKP_TOOL:-omp}
-        PKP_VERSION: ${PKP_VERSION}
-        WEB_SERVER: ${WEB_SERVER}
-        BUILD_PKP_APP_OS: ${BUILD_PKP_APP_OS}
+        PKP_TOOL: ${PKP_TOOL:-ojs}
+        PKP_VERSION: ${PKP_VERSION:-3_4_0-8}
+        WEB_SERVER: ${WEB_SERVER:-php:8.2-apache}
+        BUILD_PKP_APP_OS: ${BUILD_PKP_APP_OS:-alpine:3.22}
+    image: local/ojs:${PKP_VERSION:-3_4_0-8}
+    container_name: pkp_app_ojs
     env_file:
       - .env
-    container_name: "pkp_app_${COMPOSE_PROJECT_NAME:-demo}"
-    hostname: "${COMPOSE_PROJECT_NAME:-demo}"
+    environment:
+      SERVERNAME: ${SERVERNAME:-localhost}
+      PKP_DB_HOST: ${DB_HOST:-db}
+      PKP_DB_NAME: ${DB_NAME:-pkp}
+      PKP_DB_USER: ${DB_USER:-pkp}
+      PKP_DB_PASSWORD: ${DB_PASS:-changeMePlease}
+      PKP_CLI_INSTALL: ${PKP_CLI_INSTALL:-0}
+    user: "0:0"
+    command: >
+      bash -lc "mkdir -p /var/www/files/temp /var/www/files/usageStats/usageEventLogs && chown -R www-data:www-data /var/www/files && chmod -R ug+rwX /var/www/files && exec /usr/local/bin/pkp-start"
     ports:
-      - ${HTTP_PORT:-8081}:80
-      - ${HTTPS_PORT:-443}:443
+      - "${HTTP_PORT:-8080}:80"
+      - "${HTTPS_PORT:-8443}:443"
     volumes:
-      # Keep host and container sync:
-      - /etc/localtime:/etc/localtime
+      - /etc/localtime:/etc/localtime:ro
       - ./volumes/private:/var/www/files
       - ./volumes/public:/var/www/html/public
-      - ./volumes/logs/app:/var/log/apache2
-#      # WARNING: You can only enable file-volumes if file exists in the container.
       - ./volumes/config/pkp.config.inc.php:/var/www/html/config.inc.php
-#      - ./volumes/config/apache.htaccess:/var/www/html/.htaccess
-      - ./volumes/config/php.custom.ini:/usr/local/etc/php/conf.d/custom.ini
-
-    networks:
-      - inside
+      - ./volumes/config/php.custom.ini:/usr/local/etc/php/conf.d/custom.ini:ro
     depends_on:
       - db
     restart: unless-stopped
 
-networks:
-  inside:
-    external: false
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: pkp_db_ui_ojs
+    environment:
+      PMA_HOST: ${DB_HOST:-db}
+      PMA_PORT: 3306
+      PMA_ARBITRARY: 0
+    ports:
+      - "${PMA_PORT:-8081}:80"
+    depends_on:
+      - db
+    restart: unless-stopped
+
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: pkp_mailpit_ojs
+    ports:
+      - "${MAILPIT_SMTP_PORT:-1125}:1125"
+      - "${MAILPIT_WEB_PORT:-8026}:8026"
+    restart: unless-stopped

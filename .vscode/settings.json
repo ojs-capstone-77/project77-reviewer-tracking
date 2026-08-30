@@ -1,0 +1,13 @@
+{
+  "php.validate.executablePath": "/usr/local/bin/php",
+  "php.suggest.basic": false,
+  "editor.formatOnSave": true,
+  "files.eol": "\n",
+  "files.associations": {
+    "*.inc.php": "php",
+    "*.phtml": "php"
+  },
+  "[php]": {
+    "editor.defaultFormatter": "bmewburn.vscode-intelephense-client"
+  }
+}

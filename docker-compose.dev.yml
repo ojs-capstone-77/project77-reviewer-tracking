@@ -1,0 +1,22 @@
+services:
+  db:
+    ports:
+      - "3306:3306"
+
+  app:
+    ports:
+      - "${HTTP_PORT:-8090}:80"
+      - "${HTTPS_PORT:-8443}:443"
+    volumes:
+      - ./:/workspace/containers
+      # Data directories
+      - ./volumes/private:/var/www/files
+      - ./volumes/public:/var/www/html/public
+      # Xdebug config
+      - ./config/xdebug.ini:/usr/local/etc/php/conf.d/99-xdebug.ini
+
+  mailpit:
+    image: axllent/mailpit:latest
+    ports:
+      - "127.0.0.1:8025:8025"
+      - "127.0.0.1:1025:1025"

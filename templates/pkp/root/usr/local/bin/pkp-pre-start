@@ -22,6 +22,7 @@ echo "=================================================="
 
 echo "sed -i -e \"s/www.example.com/${SERVERNAME}/g\" $PKP_WEB_CONF"
 sed -i -e "s/www.example.com/${SERVERNAME}/g" $PKP_WEB_CONF
+chmod u+w "$PKP_WEB_CONF" /etc/apache2/apache2.conf
 
 echo "sed -i -e \"s/^#ServerName.*/ServerName ${SERVERNAME}/g\" /etc/apache2/apache2.conf"
 sed -i -e "s/^#ServerName.*/ServerName ${SERVERNAME}/g" /etc/apache2/apache2.conf
