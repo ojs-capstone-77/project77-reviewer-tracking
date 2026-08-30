@@ -16,6 +16,8 @@ Currently, Review Group Leaders fill out a separate Microsoft Form after each gr
 This feature solves that by integrating the form directly into OJS as part of the plugin.
 
 ---
+Keep in mind: This document focuses on the functional requirements. The visual design will be handled by UX.
+The mockup in this document is only a reference to show what the form could look like and can be changed by UX and the UX will produce the actual designs.
 ### Visual comparison of current process vs our integration idea
 ### Now!
 ![Manual Tracking Example](images/review-process/manual-tracking-example.png)
@@ -81,10 +83,11 @@ The following data fields will be captured during or after the group review meet
 
 | Role | What They Record | When |
 |------|------------------|------|
-| Review Group Leader | All data fields | During or immediately after the group review meeting |
+| Review Group Leader | All data fields for their group | During or immediately after the group review meeting |
 | Managing Editor | Can view all records | Any time |
 | Quality Review Editor | Can view all records | Any time |
-| Reviewer | Can view their own records | Any time |
+| Review Group Member | Can view their own records only | Any time |
+| Reviewer | Can view their own records only | Any time |
 
 ---
 
@@ -133,10 +136,11 @@ As a Reviewer, I want to view my own participation records so that I can track m
 
 | Role | Can View | Can Record | Can Edit |
 |------|----------|------------|----------|
-| Review Group Leader | All data for their group | All data for their group | All data for their group |
-| Managing Editor | All data | No | No |
-| Quality Review Editor | All data | No | No |
-| Reviewer | Their own records | No | No |
+| Review Group Leader | Records for reviewers they evaluated | All data for their group | Data they recorded before submission |
+| Managing Editor | All data | No | All records |
+| Quality Review Editor | All data | No | All records |
+| Review Group Member | Their own records only | No | No |
+| Reviewer | Their own records only | No | No |
 
 ---
 
@@ -193,3 +197,19 @@ As a Reviewer, I want to view my own participation records so that I can track m
 2. This data will feed into Tool 3, the Reference Generator.
 
 3. Future enhancements may include bulk entry for multiple reviewers at once.
+
+## 14. Configurable Fields
+Eva mentioned that details should be configurable. This means administrators should be able to control 
+- Which fields are required vs optional
+- Which contribution types are available
+- Which attendence options are available
+- Which shaping feedback options are available
+
+**Our current assumptions until Eva confirms**
+|Assumptions | Status |
+|------------|--------|
+|Contribution types are fixed (Discussion, writing, analysis and editing | To be confirmed with Eva |
+| Attendence options are fixed | To be confirmed with Eva |
+| Shaping feedback options are fixed | To be confirmed with Eva |
+| Admisnitrators can change field requirements (reuqired vs optionl) | To be confirmed with Eva |
+
