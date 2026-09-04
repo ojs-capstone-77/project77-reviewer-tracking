@@ -28,6 +28,9 @@ This feature solves that by revealing patterns in reviewer poll responses and se
 | Selection history | Which submissions the Review Group Member was selected for | Track workload distribution |
 | Response versus selection gap | Responded but never or rarely selected | Reveal potential bias or oversight |
 | Review load | Number of active reviews per Review Group Member | Identify overburdened reviewers |
+| Experience level | Reviewers experience level (from editor maintained records) | Help RGL select approperiate reviewers |
+| Methodology background | Reviewers methodology expertise | Help RGL match reviewers to submission |
+| Number of reviews done | Total reviews completed | Help RGL assess workload and experience |
 
 ---
 
@@ -35,9 +38,9 @@ This feature solves that by revealing patterns in reviewer poll responses and se
 
 | Role | What They See | Why |
 |------|---------------|-----|
-| Review Group Leader | All data | To make informed selections and distribute workload fairly |
-| Managing Editor | All data | To oversee the process and assess reviewer workloads |
-| Quality Review Editor | All data | To monitor reviewer performance and identify development needs |
+| Review Group Leader | For reviewers who responded with availability experience level, methodology background, number of reviews done | To select appropriate reviewers |
+| Managing Editor | Full overview of all reviewers and all details (availability, selection history, experience, methodology) | To oversee the process and assess reviewer workloads |
+| Quality Review Editor | Full overview of all reviewers and all details | To monitor reviewer performance and identify development needs |
 | Review Group Member | Their own data | To understand their own engagement patterns |
 | Reviewer | Their own data | To track personal contributions |
 
@@ -112,7 +115,7 @@ As a Review Group Member, I want to see my own response and selection history so
 
 | Role | Can View | Can Create |
 |------|----------|------------|
-| Review Group Leader | All data | Polls |
+| Review Group Leader | Experience methodology, review count for reviewers who responded with availabiligy | Polls |
 | Managing Editor | All data | No |
 | Quality Review Editor | All data | No |
 | Review Group Member | Their own data | Poll responses |
