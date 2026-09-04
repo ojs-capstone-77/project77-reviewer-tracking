@@ -25,6 +25,13 @@ The mockup in this document is only a reference to show what the form could look
 ### After!
 ![Tool 2 feature 2 requirement](images/review-process/planned-inplugin-form.png)
 
+## Form location
+The form will be accessible from the **Review stage** of a submission, attached to the **Group review tab**.
+The RGL will fill out **one form per review group** not per reviewer. The form will have?
+- Columns for each review group leader
+- Rows for each evaluation criteria
+- Temporary save option
+
 ## Feature 2 Requirements
 ## 2. Data Fields to Record
 
@@ -83,9 +90,9 @@ The following data fields will be captured during or after the group review meet
 
 | Role | What They Record | When |
 |------|------------------|------|
-| Review Group Leader | All data fields for their group | During or immediately after the group review meeting |
-| Managing Editor | Can view all records | Any time |
-| Quality Review Editor | Can view all records | Any time |
+| Review Group Leader | One form per review group (columns for each RGM, rows for criteria) | During or immediately after the group review meeting with option to save and return later |
+| Managing Editor | Can view all records | Any time (from submission review stage or dashboard) |
+| Quality Review Editor | Can view all records | Any time (from submission review stage or dashboard) |
 | Review Group Member | Can view their own records only | Any time |
 | Reviewer | Can view their own records only | Any time |
 
@@ -161,6 +168,8 @@ As a Reviewer, I want to view my own participation records so that I can track m
 | 11 | All data is stored in OJS and linked to the reviewer's profile                                                                                        |
 | 12 | All data is linked to the specific submission                                                                                                         |
 | 13 | The Microsoft Form is replaced by the inplugin form                                                                                                   |
+| 14 | RGL can temporarily save the form and return to it later |
+| 15 | All submitted forms have a data stamp showing when they were last edited |
 
 ---
 
@@ -177,6 +186,8 @@ As a Reviewer, I want to view my own participation records so that I can track m
 5. Reviewers have access to view their own records.
 
 6. Historical data from the Microsoft Form will not be migrated.
+7. Review group leaders can access and edit previously submitted forms (with data stamp).
+8. Only managing editors and quality review editors can edit records so RGL's cannot edit after submission.
 
 ---
 
@@ -184,9 +195,11 @@ As a Reviewer, I want to view my own participation records so that I can track m
 
 | Number | Question | Who to Ask   |
 |--------|----------|--------------|
-| 1 | Should Review Group Leaders be able to edit records after submission | Client Eva   |
-| 2 | Should Managing Editors be able to edit records | Client  Eva  |
+| 1 | Should Review Group Leaders be able to edit records after submission | Client Eva |
+| 2 | Should Managing Editors be able to edit records | Client Eva |
 | 3 | Should the form include any additional fields not covered here | Client   Eva |
+| 4 | Should RGLs be able to edit forms after submission? | Client Eva |
+| 5 | Should editing have a date stamp visible to editors? | Client Eva |
 
 ---
 
@@ -199,17 +212,22 @@ As a Reviewer, I want to view my own participation records so that I can track m
 3. Future enhancements may include bulk entry for multiple reviewers at once.
 
 ## 14. Configurable Fields
-Eva mentioned that details should be configurable. This means administrators should be able to control 
+Editors will manage which fields are configurable through journal settings.
+**Configurable options:**
 - Which fields are required vs optional
 - Which contribution types are available
 - Which attendence options are available
 - Which shaping feedback options are available
 
-**Our current assumptions until Eva confirms**
+**Additional fields:**
+- An **'other' field** per RGM (free text) for additional comments
+- A **general comments fields** for the RGL to communicate ideas and suggestions to editors
+
+**Our current assumptions**
 |Assumptions | Status |
 |------------|--------|
-|Contribution types are fixed (Discussion, writing, analysis and editing | To be confirmed with Eva |
+| Contribution types are fixed (Discussion, writing, analysis and editing | To be confirmed with Eva |
 | Attendence options are fixed | To be confirmed with Eva |
 | Shaping feedback options are fixed | To be confirmed with Eva |
-| Admisnitrators can change field requirements (reuqired vs optionl) | To be confirmed with Eva |
+| Editors can change field requirements (reuqired vs optionl) | To be confirmed with Eva |
 
