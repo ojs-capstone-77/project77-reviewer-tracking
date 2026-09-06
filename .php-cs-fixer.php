@@ -8,7 +8,7 @@ $finder = PhpCsFixer\Finder::create()
     ->exclude(['vendor', 'node_modules']);
 
 $config = new PhpCsFixer\Config();
-$config->setRules([
+->setRules([
         '@PSR12' => true,
         'array_indentation' => true,
         'array_syntax' => ['syntax' => 'short'],
@@ -22,11 +22,13 @@ $config->setRules([
         'no_superfluous_phpdoc_tags' => true,
         'no_whitespace_before_comma_in_array' => true,
         'ordered_imports' => ['sort_algorithm' => 'alpha'],
+        'phpdoc_add_missing_param_annotation' => true,
         'phpdoc_no_empty_return' => true,
         'phpdoc_order' => true,
         'phpdoc_separation' => true,
         'phpdoc_var_annotation_correct_order' => true,
         'single_quote' => true,
+        'standardize_increment' => true,
         'standardize_not_equals' => true,
         'ternary_to_null_coalescing' => true,
     ])
