@@ -1,5 +1,6 @@
 <?php
 
-function test($foo,$bar) {
-    echo $foo.$bar
+function test($foo, $bar)
+{
+    echo $foo . $bar;
 }
