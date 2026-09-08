@@ -28,6 +28,6 @@ The UX wireframes for Tool 1 reviewer participation recording has been revieweed
 ## Recommendation
 Based on reviewing the wireframe designs I can see that certain fields are missing and some fields need adjustment carefully look at the review table above to guide you on areas that need change.
 
-**Sign off**
+**Approval/Disapporval**
 
 
