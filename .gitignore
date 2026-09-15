@@ -1,0 +1,4 @@
+volumes/logs
+vendor/
+ojs-src/
+.php-cs-fixer.cache

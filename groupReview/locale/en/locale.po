@@ -1,0 +1,370 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: Group Review 2.4.0.1\n"
+"PO-Revision-Date: 2026-07-19 00:00+1000\n"
+"Last-Translator: Group Review Plugin Maintainers\n"
+"Language-Team: English\n"
+"Language: en\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+msgid "plugins.generic.groupReview.displayName"
+msgstr "Group Review"
+
+msgid "plugins.generic.groupReview.description"
+msgstr "Coordinates journal-scoped group-review meeting polls in OJS 3.4 without core file or template modifications."
+
+msgid "plugins.generic.groupReview.workflowTab"
+msgstr "Group Review"
+
+msgid "plugins.generic.groupReview.workflow.existing"
+msgstr "A group review poll exists for the current external review round."
+
+msgid "plugins.generic.groupReview.workflow.none"
+msgstr "No group review poll has been created for the current external review round."
+
+msgid "plugins.generic.groupReview.workflow.open"
+msgstr "View Group Review Poll"
+
+msgid "plugins.generic.groupReview.workflow.create"
+msgstr "Create Group Review Poll"
+
+msgid "plugins.generic.groupReview.dashboard.title"
+msgstr "My Group Review Polls"
+
+msgid "plugins.generic.groupReview.dashboard.description"
+msgstr "Polls you lead or have been invited to in this journal."
+
+msgid "plugins.generic.groupReview.dashboard.empty"
+msgstr "You do not currently lead or participate in any group review polls in this journal."
+
+msgid "plugins.generic.groupReview.role.leader"
+msgstr "Leader"
+
+msgid "plugins.generic.groupReview.role.member"
+msgstr "Review Group Member"
+
+msgid "plugins.generic.groupReview.status.open"
+msgstr "Open"
+
+msgid "plugins.generic.groupReview.status.finalized"
+msgstr "Finalized"
+
+msgid "plugins.generic.groupReview.status.cancelled"
+msgstr "Cancelled"
+
+msgid "plugins.generic.groupReview.status.expired"
+msgstr "Expired"
+
+msgid "plugins.generic.groupReview.status.draft"
+msgstr "Awaiting invitations"
+
+msgid "plugins.generic.groupReview.settings.enabled.label"
+msgstr "Group Review Approach"
+
+msgid "plugins.generic.groupReview.settings.enabled.description"
+msgstr "Allow assigned Review Group Leaders to coordinate group review meeting polls during External Review."
+
+msgid "plugins.generic.groupReview.settings.duration.label"
+msgstr "Default Review Group Meeting Duration"
+
+msgid "plugins.generic.groupReview.settings.duration.description"
+msgstr "Default duration in minutes (5–480)."
+
+msgid "plugins.generic.groupReview.settings.slots.label"
+msgstr "Default Review Group Meeting Time Slots"
+
+msgid "plugins.generic.groupReview.settings.slots.description"
+msgstr "Number of proposed meeting times shown when a new poll is created (1–20)."
+
+msgid "plugins.generic.groupReview.settings.reminder.label"
+msgstr "Default Group Review Poll Reminder Duration"
+
+msgid "plugins.generic.groupReview.settings.reminder.description"
+msgstr "Hours before the poll deadline when non-respondents should receive one reminder (1–720)."
+
+msgid "plugins.generic.groupReview.settings.leadDays.label"
+msgstr "Default Review Group Meeting Day Offset"
+
+msgid "plugins.generic.groupReview.settings.leadDays.description"
+msgstr "Minimum number of days from poll creation to any proposed meeting slot (0–365)."
+
+msgid "plugins.generic.groupReview.authorization.leader"
+msgstr "Only a current Review Group Leader (RGL) assigned to this submission in External Review may manage its poll."
+
+msgid "plugins.generic.groupReview.authorization.invitee"
+msgstr "Only a Review Group Member invited to this journal's poll may access it."
+
+msgid "plugins.generic.groupReview.create.title"
+msgstr "Create Group Review Poll"
+
+msgid "plugins.generic.groupReview.edit.title"
+msgstr "Edit Group Review Poll"
+
+msgid "plugins.generic.groupReview.edit.clearsResponses"
+msgstr "Saving changes replaces the time slots and clears all existing availability responses. Use Resend below after saving if invitees need an updated message."
+
+msgid "plugins.generic.groupReview.create.submit"
+msgstr "Create poll"
+
+msgid "plugins.generic.groupReview.invite.title"
+msgstr "Invite Review Group Members"
+
+msgid "plugins.generic.groupReview.invite.description"
+msgstr "Select the Review Group Members who should receive this availability poll. Invitations are not sent until you continue."
+
+msgid "plugins.generic.groupReview.invite.submit"
+msgstr "Invite"
+
+msgid "plugins.generic.groupReview.created.title"
+msgstr "Group Review Poll Created"
+
+msgid "plugins.generic.groupReview.view.title"
+msgstr "Group Review Poll"
+
+msgid "plugins.generic.groupReview.deadline"
+msgstr "Poll deadline"
+
+msgid "plugins.generic.groupReview.timezone"
+msgstr "Time zone"
+
+msgid "plugins.generic.groupReview.timezone.help"
+msgstr "Use an IANA time zone such as Australia/Hobart or UTC. All dates on this poll are interpreted and displayed in this zone."
+
+msgid "plugins.generic.groupReview.duration"
+msgstr "Meeting duration (minutes)"
+
+msgid "plugins.generic.groupReview.reminderHours"
+msgstr "Reminder lead time (hours)"
+
+msgid "plugins.generic.groupReview.sendReminder"
+msgstr "Send one reminder to invited Review Group Members who have not responded"
+
+msgid "plugins.generic.groupReview.meetingUrl"
+msgstr "Meeting URL"
+
+msgid "plugins.generic.groupReview.meetingUrl.help"
+msgstr "Optional. Add now or when the poll is finalized. Only HTTP and HTTPS URLs are accepted."
+
+msgid "plugins.generic.groupReview.meetingLink"
+msgstr "Open meeting link"
+
+msgid "plugins.generic.groupReview.inviteeLink"
+msgstr "Invitee poll link"
+
+msgid "plugins.generic.groupReview.slots"
+msgstr "Proposed meeting times"
+
+msgid "plugins.generic.groupReview.slots.help"
+msgstr "Each time must be after the poll deadline and satisfy the journal's minimum lead time."
+
+msgid "plugins.generic.groupReview.addSlot"
+msgstr "Add time slot"
+
+msgid "plugins.generic.groupReview.members"
+msgstr "Invited Review Group Members"
+
+msgid "plugins.generic.groupReview.members.help"
+msgstr "Only active users enrolled in this journal's Review Group Member (RGM) group are listed."
+
+msgid "plugins.generic.groupReview.members.none"
+msgstr "No eligible users were found in this journal's Review Group Member (RGM) group."
+
+msgid "plugins.generic.groupReview.minutes"
+msgstr "minutes"
+
+msgid "plugins.generic.groupReview.until"
+msgstr "until"
+
+msgid "plugins.generic.groupReview.availability.title"
+msgstr "Group Review Availability"
+
+msgid "plugins.generic.groupReview.availability.select"
+msgstr "Select every time when you are available"
+
+msgid "plugins.generic.groupReview.availability.emptyAllowed"
+msgstr "You may submit with no times selected to record that none of the proposed times work."
+
+msgid "plugins.generic.groupReview.availability.saved"
+msgstr "Your availability has been saved."
+
+msgid "plugins.generic.groupReview.availability.closed"
+msgstr "This poll is no longer accepting availability responses."
+
+msgid "plugins.generic.groupReview.selectedSlot"
+msgstr "Selected meeting time"
+
+msgid "plugins.generic.groupReview.selectedMembers"
+msgstr "Selected Review Group Members"
+
+msgid "plugins.generic.groupReview.selected"
+msgstr "Selected"
+
+msgid "plugins.generic.groupReview.available"
+msgstr "available"
+
+msgid "plugins.generic.groupReview.noResponse"
+msgstr "No response"
+
+msgid "plugins.generic.groupReview.notes"
+msgstr "Meeting notes"
+
+msgid "plugins.generic.groupReview.finalize.title"
+msgstr "Finalize meeting"
+
+msgid "plugins.generic.groupReview.finalize.availabilityRule"
+msgstr "Every selected Review Group Member must have marked themselves available for the selected meeting time."
+
+msgid "plugins.generic.groupReview.finalize.submit"
+msgstr "Finalize and add participants"
+
+msgid "plugins.generic.groupReview.selectSlot.submit"
+msgstr "Select Review Group Meeting Time Slot"
+
+msgid "plugins.generic.groupReview.selectMembers.title"
+msgstr "Select Review Group Members"
+
+msgid "plugins.generic.groupReview.selectMembers.description"
+msgstr "Only invited members who marked themselves available for this meeting time are listed."
+
+msgid "plugins.generic.groupReview.selectMembers.none"
+msgstr "No invited Review Group Members are available for this meeting time."
+
+msgid "plugins.generic.groupReview.selectMembers.submit"
+msgstr "Invite selected members"
+
+msgid "plugins.generic.groupReview.reviewMessages.title"
+msgstr "Review Group Review Messages"
+
+msgid "plugins.generic.groupReview.reviewMessages.variables"
+msgstr "Review and edit the message bodies before sending. Keep the template variables in braces so OJS can personalize each message."
+
+msgid "plugins.generic.groupReview.reviewMessages.selected"
+msgstr "Message to selected Review Group Members"
+
+msgid "plugins.generic.groupReview.reviewMessages.unselected"
+msgstr "Message to invited members who were not selected"
+
+msgid "plugins.generic.groupReview.reviewMessages.send"
+msgstr "Send messages and finalize group review"
+
+msgid "plugins.generic.groupReview.finalizedDetails"
+msgstr "Final meeting details"
+
+msgid "plugins.generic.groupReview.resend"
+msgstr "Resend to non-respondents"
+
+msgid "plugins.generic.groupReview.cancel.confirm"
+msgstr "Cancel this poll? Existing responses will be retained as an audit record, but no more responses will be accepted."
+
+msgid "plugins.generic.groupReview.created"
+msgstr "The poll was created and invitations were sent."
+
+msgid "plugins.generic.groupReview.updated"
+msgstr "The poll was updated. Existing availability responses were cleared."
+
+msgid "plugins.generic.groupReview.finalized"
+msgstr "The meeting was finalized and the selected Review Group Members were added as participants."
+
+msgid "plugins.generic.groupReview.resent"
+msgstr "Invitation messages were resent to {$count} non-respondent(s)."
+
+msgid "plugins.generic.groupReview.mailFailures"
+msgstr "{$count} email message(s) could not be sent. Poll data was saved; check the OJS mail configuration and resend if needed."
+
+msgid "plugins.generic.groupReview.discussion.title"
+msgstr "Feedback Draft"
+
+msgid "plugins.generic.groupReview.discussion.scheduled"
+msgstr "The group review meeting is scheduled for {$meetingTime}."
+
+msgid "plugins.generic.groupReview.tasks.pollCreated.label"
+msgstr "You have been invited to a group review availability poll."
+
+msgid "plugins.generic.groupReview.tasks.pollClosing.label"
+msgstr "A group review availability poll is closing soon."
+
+msgid "plugins.generic.groupReview.error.correct"
+msgstr "Please correct the following:"
+
+msgid "plugins.generic.groupReview.error.notEnabled"
+msgstr "Group review meetings are not enabled in this journal's Workflow > Review settings."
+
+msgid "plugins.generic.groupReview.error.invalidSubmissionRound"
+msgstr "The submission and current External Review round could not be verified for this journal."
+
+msgid "plugins.generic.groupReview.error.activePollExists"
+msgstr "An open poll already exists for this submission and review round."
+
+msgid "plugins.generic.groupReview.error.pollNotFound"
+msgstr "The requested poll was not found in this journal."
+
+msgid "plugins.generic.groupReview.error.pollNotOpen"
+msgstr "This poll is no longer open."
+
+msgid "plugins.generic.groupReview.error.pollNotDraft"
+msgstr "This poll is no longer awaiting invitations."
+
+msgid "plugins.generic.groupReview.error.timezone"
+msgstr "Enter a valid IANA time zone."
+
+msgid "plugins.generic.groupReview.error.deadline"
+msgstr "The poll deadline must be a valid time at least five minutes in the future."
+
+msgid "plugins.generic.groupReview.error.duration"
+msgstr "Meeting duration must be between 5 and 480 minutes."
+
+msgid "plugins.generic.groupReview.error.reminder"
+msgstr "Reminder lead time must be between 1 and 720 hours."
+
+msgid "plugins.generic.groupReview.error.slotsCount"
+msgstr "Provide between 1 and 20 meeting times."
+
+msgid "plugins.generic.groupReview.error.slot"
+msgstr "One or more meeting times are invalid."
+
+msgid "plugins.generic.groupReview.error.duplicateSlots"
+msgstr "Meeting times must be unique."
+
+msgid "plugins.generic.groupReview.error.slotTiming"
+msgstr "Every meeting time must be after the deadline and at least {$days} day(s) from now."
+
+msgid "plugins.generic.groupReview.error.members"
+msgstr "Select between 1 and 100 Review Group Members."
+
+msgid "plugins.generic.groupReview.error.memberJournal"
+msgstr "Every selected person must currently belong to this journal's Review Group Member (RGM) group."
+
+msgid "plugins.generic.groupReview.error.meetingUrl"
+msgstr "The meeting URL must be empty or a valid HTTP/HTTPS URL."
+
+msgid "plugins.generic.groupReview.error.invalidFinalization"
+msgstr "Choose a valid meeting time and at least one Review Group Member who marked themselves available for it."
+
+msgid "plugins.generic.groupReview.error.provisioningFailed"
+msgstr "OJS could not add the Review Group Members as participants and create the discussion. The poll was restored to Open; review the server log before trying again."
+
+msgid "plugins.generic.groupReview.error.invalidRequest"
+msgstr "The request method or security token was invalid."
+
+msgid "plugins.generic.groupReview.emailVariable.recipientName"
+msgstr "Recipient name"
+
+msgid "plugins.generic.groupReview.emailVariable.pollUrl"
+msgstr "Group review poll URL"
+
+msgid "plugins.generic.groupReview.emailVariable.submissionTitle"
+msgstr "Submission title"
+
+msgid "plugins.generic.groupReview.emailVariable.deadline"
+msgstr "Poll deadline with time zone"
+
+msgid "plugins.generic.groupReview.emailVariable.leaderName"
+msgstr "Group review leader name"
+
+msgid "plugins.generic.groupReview.emailVariable.meetingTime"
+msgstr "Selected meeting time with time zone"
+
+msgid "plugins.generic.groupReview.emailVariable.meetingUrl"
+msgstr "Meeting URL"

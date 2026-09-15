@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<catalog xmlns="urn:oasis:names:tc:entity:xmlns:xml:catalog">
+    <systemSuffix systemIdSuffix="pluginVersion.dtd" uri="../ojs-src/lib/pkp/dtd/pluginVersion.dtd"/>
+    <systemSuffix systemIdSuffix="emailTemplates.dtd" uri="../ojs-src/lib/pkp/dtd/emailTemplates.dtd"/>
+    <systemSuffix systemIdSuffix="install.dtd" uri="../ojs-src/lib/pkp/dtd/install.dtd"/>
+    <systemSuffix systemIdSuffix="scheduledTasks.dtd" uri="../ojs-src/lib/pkp/dtd/scheduledTasks.dtd"/>
+</catalog>

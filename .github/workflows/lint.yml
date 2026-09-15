@@ -20,7 +20,7 @@ jobs:
       - name: Set up PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.1'
+          php-version: '8.2'
 
       - name: Run PHP syntax check
         run: |
@@ -40,7 +40,7 @@ jobs:
       - name: Set up PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.1'
+          php-version: '8.2'
           tools: php-cs-fixer:3.95.24
 
       - name: Run PHP-CS-Fixer
@@ -49,3 +49,38 @@ jobs:
             --dry-run \
             --diff \
             --config=.php-cs-fixer.php
+
+  static-analysis:
+    name: Static Analysis
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          coverage: none
+
+      - name: Cache Composer dependencies
+        uses: actions/cache@v5
+        with:
+          path: ~/.composer/cache
+          key: ${{ runner.os }}-composer-${{ hashFiles('composer.lock') }}
+          restore-keys: ${{ runner.os }}-composer-
+
+      - name: Install Composer dependencies
+        run: composer install --no-progress --prefer-dist
+
+      - name: Checkout OJS core (for PHPStan stubs)
+        run: |
+          git clone --branch 3_4_0-10 --depth 1 --recurse-submodules --shallow-submodules \
+            https://github.com/pkp/ojs.git ojs-src
+
+      - name: Install OJS core dependencies
+        run: composer install -d ojs-src/lib/pkp --ignore-platform-reqs
+
+      - name: Run PHPStan
+        run: vendor/bin/phpstan analyse --no-progress

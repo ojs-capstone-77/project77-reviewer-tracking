@@ -1,0 +1,14 @@
+{
+  "recommendations": [
+    "bmewburn.vscode-intelephense-client",
+    "xdebug.php-debug",
+    "editorconfig.editorconfig",
+    "aswinkumar863.smarty-template-support",
+    "junstyle.php-cs-fixer",
+    "ms-azuretools.vscode-containers",
+    "mrorz.language-gettext",
+    "redhat.vscode-xml",
+    "github.vscode-github-actions",
+    "sanderronde.phpstan-vscode",
+  ]
+}

@@ -1,0 +1,62 @@
+services:
+  db:
+    image: mariadb:11.8
+    container_name: ojsdev_db
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${DB_NAME}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      TZ: Australia/Melbourne
+    volumes:
+      - ojs_db_data:/var/lib/mysql
+    networks: [ ojsdev ]
+
+  app:
+    build:
+      dockerfile: Dockerfile
+    container_name: ojsdev_app
+    environment:
+      TZ: Australia/Melbourne
+    ports:
+      - "${OJS_WEB_PORT}:80"
+    volumes:
+      - ojs_files:/var/www/files
+      - ojs_public:/var/www/html/public
+      - /etc/localtime:/etc/localtime
+      - ./volumes/logs:/var/log/apache2
+      - ./groupReview:/var/www/html/plugins/generic/groupReview
+    networks: [ ojsdev ]
+    depends_on:
+      - db
+
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: ojsdev_pma
+    environment:
+      PMA_HOST: db
+      PMA_USER: ${DB_USER}
+      PMA_PASSWORD: ${DB_PASSWORD}
+      TZ: Australia/Melbourne
+    ports:
+      - "${PMA_WEB_PORT}:80"
+    depends_on:
+      - db
+    networks: [ ojsdev ]
+
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: ojsdev_mail
+    environment:
+      TZ: Australia/Melbourne
+    ports:
+      - "${MAILPIT_WEB_PORT}:8025"
+    networks: [ ojsdev ]
+
+networks:
+  ojsdev:
+
+volumes:
+  ojs_db_data:
+  ojs_files:
+  ojs_public:

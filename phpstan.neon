@@ -1,0 +1,9 @@
+parameters:
+    level: 5
+    paths:
+        - groupReview
+    scanDirectories:
+        - ojs-src
+    stubFiles:
+        - phpstan-stubs/Mailable.stub.php
+        - phpstan-stubs/ReviewRoundDAO.stub.php

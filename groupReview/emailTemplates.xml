@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE emails SYSTEM "../../../lib/pkp/dtd/emailTemplates.dtd">
+<emails>
+	<email key="GROUP_REVIEW_POLL_CREATED" name="plugins.generic.groupReview.pollCreated.name"
+		subject="emails.groupReview.pollCreated.subject" body="emails.groupReview.pollCreated.body" />
+	<email key="GROUP_REVIEW_POLL_CLOSING" name="plugins.generic.groupReview.pollClosing.name"
+		subject="emails.groupReview.pollClosing.subject" body="emails.groupReview.pollClosing.body" />
+	<email key="GROUP_REVIEW_THANKS_INVITED_RGMS"
+		name="plugins.generic.groupReview.thanksInvitedRgms.name"
+		subject="emails.groupReview.thanksInvitedRgms.subject"
+		body="emails.groupReview.thanksInvitedRgms.body" />
+	<email key="GROUP_REVIEW_THANKS_RGMS" name="plugins.generic.groupReview.thanksRgms.name"
+		subject="emails.groupReview.thanksRgms.subject" body="emails.groupReview.thanksRgms.body" />
+</emails>
