@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE scheduled_tasks SYSTEM "../../../lib/pkp/dtd/scheduledTasks.dtd">
+<scheduled_tasks>
+	<task class="APP\plugins\generic\groupReview\classes\tasks\SendPollClosingReminder">
+		<descr>Close expired group review polls and send one reminder to non-respondents.</descr>
+		<frequency minute="0"/>
+	</task>
+</scheduled_tasks>
+

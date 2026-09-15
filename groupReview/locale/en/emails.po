@@ -1,0 +1,58 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: Group Review 2.4.0.1\n"
+"PO-Revision-Date: 2026-07-19 00:00+1000\n"
+"Last-Translator: Group Review Plugin Maintainers\n"
+"Language-Team: English\n"
+"Language: en\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+msgid "plugins.generic.groupReview.pollCreated.name"
+msgstr "Group Review Poll Invitation"
+
+msgid "emails.groupReview.pollCreated.description"
+msgstr "Sent to Review Group Members invited to a group review meeting poll."
+
+msgid "emails.groupReview.pollCreated.subject"
+msgstr "[{$journalName}] Group review availability requested: {$submissionTitle}"
+
+msgid "emails.groupReview.pollCreated.body"
+msgstr "<p>Dear {$recipientName},</p><p>{$leaderName} has invited you to a group review meeting poll for “{$submissionTitle}”. Please record your availability by {$deadline}.</p><p><a href=\"{$pollUrl}\">Open the group review poll</a></p><p>Regards,<br>{$journalName}</p>"
+
+msgid "plugins.generic.groupReview.pollClosing.name"
+msgstr "Group Review Poll Reminder"
+
+msgid "emails.groupReview.pollClosing.description"
+msgstr "Sent once to invited Review Group Members who have not responded before the poll deadline."
+
+msgid "emails.groupReview.pollClosing.subject"
+msgstr "[{$journalName}] Reminder: group review availability due {$deadline}"
+
+msgid "emails.groupReview.pollClosing.body"
+msgstr "<p>Dear {$recipientName},</p><p>This is a reminder to record your availability for the group review meeting for “{$submissionTitle}”. The poll closes {$deadline}.</p><p><a href=\"{$pollUrl}\">Open the group review poll</a></p><p>Regards,<br>{$journalName}</p>"
+
+msgid "plugins.generic.groupReview.thanksRgms.name"
+msgstr "Review Group Member Selected"
+
+msgid "emails.groupReview.thanksRgms.description"
+msgstr "Sent to Review Group Members selected when a group review meeting poll is finalized."
+
+msgid "emails.groupReview.thanksRgms.subject"
+msgstr "[{$journalName}] Selected for group review: {$submissionTitle}"
+
+msgid "emails.groupReview.thanksRgms.body"
+msgstr "<p>Dear {$recipientName},</p><p>You have been selected for the group review of “{$submissionTitle}”. The meeting is scheduled for {$meetingTime}.</p><p>Meeting link (if supplied): {$meetingUrl}</p><p><a href=\"{$groupReviewUrl}\">Open the submission in External Review</a></p><p>You have been added to the submission as a Review Group Member and included in the Review-stage discussion.</p><p>Regards,<br>{$journalName}</p>"
+
+msgid "plugins.generic.groupReview.thanksInvitedRgms.name"
+msgstr "Group Review Participation Thanks"
+
+msgid "emails.groupReview.thanksInvitedRgms.description"
+msgstr "Sent to invited Review Group Members who were not selected when the poll is finalized."
+
+msgid "emails.groupReview.thanksInvitedRgms.subject"
+msgstr "[{$journalName}] Group review poll completed: {$submissionTitle}"
+
+msgid "emails.groupReview.thanksInvitedRgms.body"
+msgstr "<p>Dear {$recipientName},</p><p>Thank you for your interest in the group review meeting for “{$submissionTitle}”. The meeting has now been scheduled and you were not selected for this group; no further action is required from you.</p><p>Regards,<br>{$journalName}</p>"

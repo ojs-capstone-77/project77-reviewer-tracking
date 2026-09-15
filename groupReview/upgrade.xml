@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE install SYSTEM "../../../lib/pkp/dtd/install.dtd">
+<install>
+	<!-- PluginHelper does not supply the installed plugin version to Upgrade.
+	     Keep this action unconditional; the migration itself is idempotent. -->
+	<migration class="APP\plugins\generic\groupReview\GroupReviewUpgradeMigration"/>
+</install>

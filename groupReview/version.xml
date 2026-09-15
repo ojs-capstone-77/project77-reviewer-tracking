@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE version SYSTEM "../../../lib/pkp/dtd/pluginVersion.dtd">
+<version>
+	<application>groupReview</application>
+	<type>plugins.generic</type>
+	<release>2.4.0.1</release>
+	<date>2026-09-13</date>
+	<lazy-load>0</lazy-load>
+	<sitewide>0</sitewide>
+</version>

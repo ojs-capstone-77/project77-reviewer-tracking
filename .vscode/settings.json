@@ -1,0 +1,25 @@
+{
+  "php.validate.enable": false,
+  "intelephense.environment.phpVersion": "8.2",
+  "php-cs-fixer.executablePath": "${workspaceFolder}/vendor/bin/php-cs-fixer",
+  "php-cs-fixer.config": "${workspaceFolder}/.php-cs-fixer.php",
+  "[php]": {
+    "editor.defaultFormatter": "junstyle.php-cs-fixer",
+    "editor.formatOnSave": true
+  },
+  "files.readonlyInclude": {
+    "**/ojs-src/**": true
+  },
+  "intelephense.diagnostics.exclude": {
+    "**/ojs-src/**": ["*"]
+  },
+  "git.ignoredRepositories": [
+    "ojs-src"
+  ],
+  "git.detectSubmodules": false,
+  "git.autoRepositoryDetection": "openEditors",
+  "xml.catalogs": [
+    ".vscode/xml-catalog.xml"
+  ],
+  "xml.downloadExternalResources.enabled": false
+}
