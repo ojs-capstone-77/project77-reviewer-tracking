@@ -8,15 +8,17 @@ namespace APP\plugins\generic\groupReview\classes\tasks;
 
 use APP\core\Application;
 use APP\facades\Repo;
+use APP\journal\JournalDAO;
+use APP\notification\NotificationManager;
 use APP\plugins\generic\groupReview\classes\GroupReviewService;
 use APP\plugins\generic\groupReview\classes\mail\GroupReviewPollClosing;
 use APP\plugins\generic\groupReview\classes\notification\Notification as GroupReviewNotification;
 use APP\plugins\generic\groupReview\GroupReviewPlugin;
-use APP\notification\NotificationManager;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use PKP\db\DAORegistry;
+use PKP\plugins\PluginSettingsDAO;
 use PKP\scheduledTask\ScheduledTask;
 use Throwable;
 
@@ -25,8 +27,8 @@ class SendPollClosingReminder extends ScheduledTask
     protected function executeActions()
     {
         $service = new GroupReviewService();
-        $pluginSettingsDao = DAORegistry::getDAO('PluginSettingsDAO');
-        $journalDao = DAORegistry::getDAO('JournalDAO');
+        $pluginSettingsDao = DAORegistry::getDAO('PluginSettingsDAO');  /** @var PluginSettingsDAO $pluginSettingsDao */
+        $journalDao = DAORegistry::getDAO('JournalDAO');  /** @var JournalDAO $journalDao */
         $request = Application::get()->getRequest();
         $now = Carbon::now('UTC');
         $notificationManager = new NotificationManager();

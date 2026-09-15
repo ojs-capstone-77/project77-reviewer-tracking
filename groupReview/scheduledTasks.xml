@@ -3,7 +3,6 @@
 <scheduled_tasks>
 	<task class="APP\plugins\generic\groupReview\classes\tasks\SendPollClosingReminder">
 		<descr>Close expired group review polls and send one reminder to non-respondents.</descr>
-		<frequency minute="0"/>
+		<frequency minute="0" />
 	</task>
 </scheduled_tasks>
-

@@ -7,4 +7,5 @@
 	<date>2026-09-13</date>
 	<lazy-load>0</lazy-load>
 	<sitewide>0</sitewide>
+	<class>GroupReviewPlugin</class>
 </version>

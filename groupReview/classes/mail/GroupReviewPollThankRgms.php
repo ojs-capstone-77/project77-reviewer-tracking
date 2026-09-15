@@ -14,6 +14,7 @@ class GroupReviewPollThankRgms extends Mailable
     protected static ?string $name = 'plugins.generic.groupReview.thanksRgms.name';
     protected static ?string $description = 'emails.groupReview.thanksRgms.description';
     protected static ?string $emailTemplateKey = 'GROUP_REVIEW_THANKS_RGMS';
+    /** @var string[] */
     protected static array $groupIds = [self::GROUP_REVIEW];
 
     public function __construct(

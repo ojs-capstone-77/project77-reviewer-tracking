@@ -21,6 +21,7 @@ use PKP\components\forms\FieldText;
 use PKP\decision\Decision;
 use PKP\plugins\GenericPlugin;
 use PKP\plugins\Hook;
+use PKP\submission\reviewRound\ReviewRoundDAO;
 use stdClass;
 
 class GroupReviewPlugin extends GenericPlugin
@@ -64,7 +65,7 @@ class GroupReviewPlugin extends GenericPlugin
             return false;
         }
 
-        $version = Application::get()->getCurrentVersion();
+        $version = \PKP\site\VersionCheck::getCurrentCodeVersion();
         return $version && (int) $version->getMajor() === 3 && (int) $version->getMinor() === 4;
     }
 
@@ -219,7 +220,7 @@ class GroupReviewPlugin extends GenericPlugin
             return false;
         }
 
-        $reviewRoundDao = \PKP\db\DAORegistry::getDAO('ReviewRoundDAO');
+        $reviewRoundDao = \PKP\db\DAORegistry::getDAO('ReviewRoundDAO');  /** @var ReviewRoundDAO $reviewRoundDao */
         $reviewRound = $reviewRoundDao->getLastReviewRoundBySubmissionId(
             $submission->getId(),
             WORKFLOW_STAGE_ID_EXTERNAL_REVIEW

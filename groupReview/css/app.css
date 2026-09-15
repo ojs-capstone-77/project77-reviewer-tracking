@@ -58,7 +58,7 @@
 	gap: 0.35rem;
 }
 
-.grp__field > span,
+.grp__field>span,
 .grp__fieldset legend {
 	font-weight: 700;
 }

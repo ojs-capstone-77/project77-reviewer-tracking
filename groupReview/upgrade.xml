@@ -3,5 +3,5 @@
 <install>
 	<!-- PluginHelper does not supply the installed plugin version to Upgrade.
 	     Keep this action unconditional; the migration itself is idempotent. -->
-	<migration class="APP\plugins\generic\groupReview\GroupReviewUpgradeMigration"/>
+	<migration class="APP\plugins\generic\groupReview\GroupReviewUpgradeMigration" />
 </install>

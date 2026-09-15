@@ -17,10 +17,12 @@ use PKP\core\Core;
 use PKP\core\PKPApplication;
 use PKP\db\DAORegistry;
 use PKP\facades\Locale;
+use PKP\note\NoteDAO;
+use PKP\query\QueryDAO;
+use PKP\stageAssignment\StageAssignmentDAO;
 use PKP\submission\PKPSubmission;
 use PKP\submission\reviewRound\ReviewRoundDAO;
 use PKP\user\User;
-use PKP\userGroup\UserGroup;
 
 class GroupReviewService
 {
@@ -66,7 +68,7 @@ class GroupReviewService
             return false;
         }
 
-        $stageAssignmentDao = DAORegistry::getDAO('StageAssignmentDAO');
+        $stageAssignmentDao = DAORegistry::getDAO('StageAssignmentDAO');  /** @var StageAssignmentDAO $stageAssignmentDao */
         $assignments = $stageAssignmentDao->getBySubmissionAndStageId(
             $submissionId,
             WORKFLOW_STAGE_ID_EXTERNAL_REVIEW,
@@ -81,11 +83,11 @@ class GroupReviewService
     {
         return $this->rgmIsEligible($contextId, $userId)
             && DB::table('group_review_members as gm')
-            ->join('group_review_sessions as gs', 'gs.session_id', '=', 'gm.session_id')
-            ->where('gm.session_id', $sessionId)
-            ->where('gm.user_id', $userId)
-            ->where('gs.context_id', $contextId)
-            ->exists();
+                ->join('group_review_sessions as gs', 'gs.session_id', '=', 'gm.session_id')
+                ->where('gm.session_id', $sessionId)
+                ->where('gm.user_id', $userId)
+                ->where('gs.context_id', $contextId)
+                ->exists();
     }
 
     public function get(int $contextId, int $sessionId): ?array
@@ -159,8 +161,7 @@ class GroupReviewService
         int $submissionId,
         int $status,
         bool $removeRgmParticipants = false
-    ): void
-    {
+    ): void {
         DB::transaction(function () use ($contextId, $submissionId, $status, $removeRgmParticipants) {
             DB::table('group_review_sessions')
                 ->where('context_id', $contextId)
@@ -205,7 +206,7 @@ class GroupReviewService
             return null;
         }
 
-        $reviewRoundDao = DAORegistry::getDAO('ReviewRoundDAO');
+        $reviewRoundDao = DAORegistry::getDAO('ReviewRoundDAO');  /** @var ReviewRoundDAO $reviewRoundDao */
         $round = $reviewRoundDao->getById($reviewRoundId);
         $latest = $reviewRoundDao->getLastReviewRoundBySubmissionId(
             $submissionId,
@@ -235,9 +236,6 @@ class GroupReviewService
         ])));
 
         foreach ($groups as $group) {
-            if (!$group instanceof UserGroup) {
-                continue;
-            }
             foreach ($locales as $locale) {
                 if (strcasecmp(trim((string) $group->getAbbrev($locale)), $abbreviation) === 0) {
                     return (int) $group->getId();
@@ -279,7 +277,7 @@ class GroupReviewService
             ];
         }
 
-        usort($members, fn(array $a, array $b): int => strcasecmp($a['name'], $b['name']));
+        usort($members, fn (array $a, array $b): int => strcasecmp($a['name'], $b['name']));
         return $members;
     }
 
@@ -492,7 +490,7 @@ class GroupReviewService
             $validSlotIds = DB::table('group_review_slots')
                 ->where('session_id', $sessionId)
                 ->pluck('slot_id')
-                ->map(fn($id) => (int) $id)
+                ->map(fn ($id) => (int) $id)
                 ->all();
             if (!$isInvited || array_diff($selectedSlotIds, $validSlotIds)) {
                 return false;
@@ -558,14 +556,14 @@ class GroupReviewService
                 ->where('session_id', $sessionId)
                 ->whereIn('user_id', $selected)
                 ->pluck('user_id')
-                ->map(fn($id) => (int) $id)
+                ->map(fn ($id) => (int) $id)
                 ->all();
             $available = DB::table('group_review_availability')
                 ->where('session_id', $sessionId)
                 ->where('slot_id', $slotId)
                 ->whereIn('user_id', $selected)
                 ->pluck('user_id')
-                ->map(fn($id) => (int) $id)
+                ->map(fn ($id) => (int) $id)
                 ->all();
             sort($members);
             sort($available);
@@ -699,7 +697,7 @@ class GroupReviewService
             ->where('session_id', $sessionId)
             ->orderBy('start_time_utc')
             ->get()
-            ->map(fn($row) => (array) $row)
+            ->map(fn ($row) => (array) $row)
             ->all();
 
         $memberRows = DB::table('group_review_members')
@@ -717,7 +715,7 @@ class GroupReviewService
                 'email' => $user->getEmail(),
             ]);
         }
-        usort($members, fn(array $a, array $b): int => strcasecmp($a['name'], $b['name']));
+        usort($members, fn (array $a, array $b): int => strcasecmp($a['name'], $b['name']));
 
         $availability = [];
         foreach (DB::table('group_review_availability')->where('session_id', $sessionId)->get() as $row) {
@@ -840,7 +838,7 @@ class GroupReviewService
             throw new \RuntimeException('The Review Group Member (RGM) user group is not configured for this journal.');
         }
 
-        $stageAssignmentDao = DAORegistry::getDAO('StageAssignmentDAO');
+        $stageAssignmentDao = DAORegistry::getDAO('StageAssignmentDAO');  /** @var StageAssignmentDAO $stageAssignmentDao */
         $notificationMgr = new NotificationManager();
         $addedUserIds = [];
 
@@ -912,7 +910,7 @@ class GroupReviewService
         array $poll,
         string $meetingStartUtc
     ): int {
-        $queryDao = DAORegistry::getDAO('QueryDAO');
+        $queryDao = DAORegistry::getDAO('QueryDAO');  /** @var QueryDAO $queryDao */
         $query = $queryDao->newDataObject();
         $query->setAssocType(PKPApplication::ASSOC_TYPE_SUBMISSION);
         $query->setAssocId($submissionId);
@@ -940,7 +938,7 @@ class GroupReviewService
             $contents .= '<p>' . $safeNotes . '</p>';
         }
 
-        $noteDao = DAORegistry::getDAO('NoteDAO');
+        $noteDao = DAORegistry::getDAO('NoteDAO');  /** @var NoteDAO $noteDao */
         $note = $noteDao->newDataObject();
         $note->setUserId($request->getUser()->getId());
         $note->setAssocType(PKPApplication::ASSOC_TYPE_QUERY);

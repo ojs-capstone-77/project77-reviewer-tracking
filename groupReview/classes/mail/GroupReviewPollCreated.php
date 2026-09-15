@@ -14,6 +14,7 @@ class GroupReviewPollCreated extends Mailable
     protected static ?string $name = 'plugins.generic.groupReview.pollCreated.name';
     protected static ?string $description = 'emails.groupReview.pollCreated.description';
     protected static ?string $emailTemplateKey = 'GROUP_REVIEW_POLL_CREATED';
+    /** @var string[] */
     protected static array $groupIds = [self::GROUP_REVIEW];
 
     public function __construct(

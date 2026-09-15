@@ -8,11 +8,12 @@
 
 namespace APP\plugins\generic\groupReview;
 
+use APP\plugins\generic\groupReview\classes\GroupReviewService;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
-use APP\plugins\generic\groupReview\classes\GroupReviewService;
+use PKP\stageAssignment\StageAssignmentDAO;
 
 class GroupReviewMigration extends Migration
 {
@@ -298,7 +299,7 @@ class GroupReviewMigration extends Migration
             );
             $leaderAssignment = null;
             if ($rglGroupId) {
-                $stageAssignmentDao = \PKP\db\DAORegistry::getDAO('StageAssignmentDAO');
+                $stageAssignmentDao = \PKP\db\DAORegistry::getDAO('StageAssignmentDAO');  /** @var StageAssignmentDAO $stageAssignmentDao */
                 $assignments = $stageAssignmentDao->getBySubmissionAndStageId(
                     (int) $legacy->submission_id,
                     WORKFLOW_STAGE_ID_EXTERNAL_REVIEW,

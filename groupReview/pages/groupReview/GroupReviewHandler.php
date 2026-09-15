@@ -9,6 +9,7 @@ namespace APP\plugins\generic\groupReview\pages\groupReview;
 use APP\core\Application;
 use APP\facades\Repo;
 use APP\handler\Handler;
+use APP\notification\NotificationManager;
 use APP\plugins\generic\groupReview\classes\GroupReviewService;
 use APP\plugins\generic\groupReview\classes\mail\GroupReviewPollCreated;
 use APP\plugins\generic\groupReview\classes\mail\GroupReviewPollThankInvitees;
@@ -18,7 +19,6 @@ use APP\plugins\generic\groupReview\classes\security\authorization\InviteeRequir
 use APP\plugins\generic\groupReview\classes\security\authorization\LeaderRequiredPolicy;
 use APP\plugins\generic\groupReview\GroupReviewPlugin;
 use APP\template\TemplateManager;
-use APP\notification\NotificationManager;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Mail;
 use PKP\security\authorization\ContextAccessPolicy;
@@ -274,10 +274,10 @@ class GroupReviewHandler extends Handler
             'reminder_hours' => (int) $poll['reminder_before_hours'],
             'meeting_url' => (string) ($poll['meeting_url'] ?? ''),
             'slots' => array_map(
-                fn(array $slot): string => Carbon::parse($slot['start_time_utc'], 'UTC')->setTimezone($timezone)->format('Y-m-d\TH:i'),
+                fn (array $slot): string => Carbon::parse($slot['start_time_utc'], 'UTC')->setTimezone($timezone)->format('Y-m-d\TH:i'),
                 $bundle['slots']
             ),
-            'member_ids' => array_map(fn(array $member): int => (int) $member['user_id'], $bundle['members']),
+            'member_ids' => array_map(fn (array $member): int => (int) $member['user_id'], $bundle['members']),
         ];
 
         $this->displayPollForm($request, $bundle['submission'], $form, [], true, $pollId);
@@ -883,8 +883,8 @@ class GroupReviewHandler extends Handler
     {
         $values = is_array($value) ? $value : ($value === null || $value === '' ? [] : [$value]);
         $values = array_slice($values, 0, 101);
-        $values = array_filter($values, fn($item): bool => is_scalar($item));
-        $values = array_values(array_unique(array_filter(array_map('intval', $values), fn(int $id): bool => $id > 0)));
+        $values = array_filter($values, fn ($item): bool => is_scalar($item));
+        $values = array_values(array_unique(array_filter(array_map('intval', $values), fn (int $id): bool => $id > 0)));
         sort($values);
         return $values;
     }

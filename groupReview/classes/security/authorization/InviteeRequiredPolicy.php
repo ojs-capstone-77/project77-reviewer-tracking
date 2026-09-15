@@ -34,4 +34,3 @@ class InviteeRequiredPolicy extends AuthorizationPolicy
             : self::AUTHORIZATION_DENY;
     }
 }
-

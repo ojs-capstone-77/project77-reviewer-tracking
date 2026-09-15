@@ -14,6 +14,7 @@ class GroupReviewPollClosing extends Mailable
     protected static ?string $name = 'plugins.generic.groupReview.pollClosing.name';
     protected static ?string $description = 'emails.groupReview.pollClosing.description';
     protected static ?string $emailTemplateKey = 'GROUP_REVIEW_POLL_CLOSING';
+    /** @var string[] */
     protected static array $groupIds = [self::GROUP_REVIEW];
 
     public function __construct(

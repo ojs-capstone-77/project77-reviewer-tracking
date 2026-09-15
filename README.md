@@ -179,7 +179,7 @@ vendor/bin/php-cs-fixer fix --dry-run --diff --config=.php-cs-fixer.php
 
 **Static analysis** (PHPStan)
 ```
-vendor/bin/phpstan analyse --no-progress
+vendor/bin/phpstan analyse
 ```
 
 ## 5. Common commands
