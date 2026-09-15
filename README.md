@@ -135,16 +135,20 @@ Extension: `xdebug.php-debug`
 
 Relevant files: `.vscode/launch.json`, `Dockerfile` (installs Xdebug into the app container), `config/xdebug.ini`
 
-<a href="docs/images/readme/xdebug.png"><img src="docs/images/readme/xdebug.png" width="200"></a>
+<a href="docs/images/readme/xdebug.png"><img src="docs/images/readme/xdebug.png" width="500"></a>
 
 ### Container features
 
-| Feature | Purpose | Relevant files | Preview |
-| --- | --- | --- | --- |
-| Plugin live reload | `groupReview/` on the host is mounted into the app container at `/var/www/html/plugins/generic/groupReview`. Edits to PHP, `.tpl` and `.css` files are picked up by refreshing the browser | `docker-compose.yml`, `groupReview/` | |
-| Error logs | Apache error logs from the app container are written to `volumes/logs` on the host | `docker-compose.yml`, `volumes/logs` | |
-| PhpMyAdmin | DB browser for the OJS database, at http://localhost:8081 by default | `docker-compose.yml`, `.env` | <a href="docs/images/readme/phpmyadmin.png"><img src="docs/images/readme/phpmyadmin.png" width="120"></a> |
-| Mailpit | Captures emails sent by OJS, at http://localhost:8082 by default | `docker-compose.yml`, `.env`, `config/override.config.inc.ini` (SMTP config appended to `config.inc.php`), `Dockerfile` | <a href="docs/images/readme/mailpit.png"><img src="docs/images/readme/mailpit.png" width="120"></a> |
+| Feature | Purpose | Relevant files |
+| --- | --- | --- |
+| Plugin live reload | `groupReview/` on the host is mounted into the app container at `/var/www/html/plugins/generic/groupReview`. Edits to PHP, `.tpl` and `.css` files are picked up by refreshing the browser | `docker-compose.yml`, `groupReview/` |
+| Error logs | Apache error logs from the app container are written to `volumes/logs` on the host | `docker-compose.yml`, `volumes/logs` |
+| PhpMyAdmin | DB browser for the OJS database, at http://localhost:8081 by default | `docker-compose.yml`, `.env` |
+| Mailpit | Captures emails sent by OJS, at http://localhost:8082 by default | `docker-compose.yml`, `.env`, `config/override.config.inc.ini` (SMTP config appended to `config.inc.php`), `Dockerfile` |
+
+<a href="docs/images/readme/phpmyadmin.png"><img src="docs/images/readme/phpmyadmin.png" width="500"></a>
+
+<a href="docs/images/readme/mailpit.png"><img src="docs/images/readme/mailpit.png" width="500"></a>
 
 ## 4. Workflows
 
