@@ -239,3 +239,292 @@
 		padding: 0.5rem;
 	}
 }
+
+.grpTool__card {
+	max-width: 720px;
+	border: 1px solid #d8dee3;
+	border-radius: 4px;
+	overflow: hidden;
+	background: #fff;
+}
+
+.grpTool__cardHeader {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 0.85rem 1.1rem;
+	background: #0a2540;
+	color: #fff;
+	font-weight: 700;
+}
+
+.grpTool__bell {
+	opacity: 0.85;
+}
+
+.grpTool__cardBody {
+	padding: 1.1rem;
+}
+
+.grpTool__sectionLabel {
+	font-size: 0.75rem;
+	font-weight: 700;
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+	color: #637381;
+	margin-bottom: 0.5rem;
+}
+
+.grpTool__list {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	border: 1px solid #e5eaee;
+	border-radius: 3px;
+}
+
+.grpTool__listItem {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 1rem;
+	padding: 0.85rem 1rem;
+	border-bottom: 1px solid #e5eaee;
+}
+
+.grpTool__listItem:last-child {
+	border-bottom: 0;
+}
+
+.grpTool__listItem:hover {
+	background: #f5f8fa;
+}
+
+.grpTool__listTitle {
+	font-weight: 700;
+}
+
+.grpTool__openLink {
+	color: #006798;
+	font-weight: 700;
+	text-decoration: none;
+}
+
+.grpTool__openLink:hover {
+	text-decoration: underline;
+}
+
+.grpTool__table {
+	margin: 0 0 1rem;
+}
+
+.grpTool__toggle {
+	position: relative;
+	display: inline-block;
+	width: 2.5rem;
+	height: 1.4rem;
+	cursor: pointer;
+}
+
+.grpTool__toggle input {
+	position: absolute;
+	opacity: 0;
+	width: 100%;
+	height: 100%;
+	margin: 0;
+	cursor: pointer;
+}
+
+.grpTool__toggleTrack {
+	display: block;
+	width: 2.5rem;
+	height: 1.4rem;
+	border-radius: 999px;
+	background: #c4ccd3;
+	transition: background 0.15s ease;
+}
+
+.grpTool__toggleThumb {
+	display: block;
+	width: 1.1rem;
+	height: 1.1rem;
+	margin: 0.15rem;
+	border-radius: 50%;
+	background: #fff;
+	transition: transform 0.15s ease;
+}
+
+.grpTool__toggle input:checked + .grpTool__toggleTrack {
+	background: #00b24e;
+}
+
+.grpTool__toggle input:checked + .grpTool__toggleTrack .grpTool__toggleThumb {
+	transform: translateX(1.1rem);
+}
+
+.grpTool__checks {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.75rem 1.25rem;
+	margin-top: 0.5rem;
+}
+
+.grpTool__check {
+	display: flex;
+	align-items: center;
+	gap: 0.4rem;
+	font-weight: 400;
+	cursor: pointer;
+}
+
+.grpTool__error {
+	color: #d00a6c;
+	margin-top: 0.5rem;
+	font-size: 0.875rem;
+}
+
+.grpTool__confirm {
+	text-align: center;
+	padding: 2rem 1rem;
+}
+
+.grpTool__checkIcon {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 3rem;
+	height: 3rem;
+	margin: 0 auto 0.75rem;
+	border-radius: 50%;
+	background: #d9f7e5;
+	color: #00913f;
+	font-size: 1.5rem;
+}
+
+.grpTool__card--wide {
+	max-width: 960px;
+}
+
+.grpTool__monitorBody {
+	display: grid;
+	grid-template-columns: 200px 1fr;
+}
+
+.grpTool__monitorNav {
+	display: flex;
+	flex-direction: column;
+	padding: 1rem 0;
+	border-right: 1px solid #e5eaee;
+}
+
+.grpTool__monitorNavItem {
+	padding: 0.6rem 1.1rem;
+	color: #222;
+	text-decoration: none;
+}
+
+.grpTool__monitorNavItem:hover {
+	background: #f5f8fa;
+}
+
+.grpTool__monitorNavItem--active {
+	color: #006798;
+	font-weight: 700;
+	background: #eef6fb;
+	border-right: 3px solid #006798;
+}
+
+.grpTool__monitorContent {
+	padding: 1.1rem;
+	min-width: 0;
+}
+
+.grpTool__monitorToolbar {
+	display: flex;
+	gap: 0.75rem;
+	margin-bottom: 1rem;
+}
+
+.grpTool__monitorToolbar .grp__search {
+	flex: 1;
+}
+
+.grpTool__filterBar {
+	display: flex;
+	align-items: center;
+	gap: 0.75rem;
+	margin-bottom: 1rem;
+}
+
+.grpTool__filterChip {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.4rem;
+	padding: 0.3rem 0.65rem;
+	border-radius: 999px;
+	background: #fde7ef;
+	color: #b30057;
+	font-size: 0.875rem;
+	font-weight: 700;
+}
+
+.grpTool__filterChip a {
+	color: inherit;
+	text-decoration: none;
+	font-weight: 700;
+}
+
+.grpTool__loadHigh {
+	color: #d00a6c;
+	font-weight: 700;
+}
+
+.grpTool__profile {
+	margin: 0 0 1.25rem;
+}
+
+.grpTool__profileRow {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: 1rem;
+	padding: 0.6rem 0;
+	border-bottom: 1px solid #e5eaee;
+}
+
+.grpTool__profileRow dt {
+	color: #637381;
+}
+
+.grpTool__profileRow dd {
+	margin: 0;
+	text-align: right;
+}
+
+.grpTool__history {
+	list-style: none;
+	margin: 0 0 1.25rem;
+	padding: 0;
+	border: 1px solid #e5eaee;
+	border-radius: 3px;
+}
+
+.grpTool__historyItem {
+	padding: 0.75rem 1rem;
+	border-bottom: 1px solid #e5eaee;
+}
+
+.grpTool__historyItem:last-child {
+	border-bottom: 0;
+}
+
+.grpTool__historyHead {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: 1rem;
+}
+
+.grpTool__historyLabel {
+	font-weight: 700;
+}

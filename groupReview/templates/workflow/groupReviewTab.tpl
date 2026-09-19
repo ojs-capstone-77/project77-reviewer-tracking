@@ -19,6 +19,12 @@
 			<a class="pkp_button" href="{$groupReviewDashboardUrl|escape}">
 				{translate key="plugins.generic.groupReview.dashboard.title"}
 			</a>
+			<a class="pkp_button" href="{$groupReviewParticipationUrl|escape}">
+				Record reviewer participation
+			</a>
+			<a class="pkp_button" href="{$groupReviewEditorMonitoringUrl|escape}">
+				Editor monitoring dashboard
+			</a>
 		</p>
 	</div>
 </tab>
