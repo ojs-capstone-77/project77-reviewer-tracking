@@ -48,7 +48,7 @@ class GroupReviewHandler extends Handler
 
         $this->addRoleAssignment(
             [Role::ROLE_ID_MANAGER, Role::ROLE_ID_SUB_EDITOR],
-            ['index']
+            ['index', 'participation', 'participationAttendance', 'participationContribution', 'participationRecorded', 'editorMonitoring', 'editorMonitoringReviewer']
         );
         $this->addRoleAssignment(
             [Role::ROLE_ID_MANAGER, Role::ROLE_ID_SUB_EDITOR],
@@ -99,6 +99,279 @@ class GroupReviewHandler extends Handler
             'pageTitle' => __('plugins.generic.groupReview.dashboard.title'),
             'polls' => $polls,
         ]);
+    }
+
+    public function participation($args, $request): void
+    {
+        $sessions = [
+            ['id' => 114, 'reviewerCount' => 3, 'meetingLabel' => 'Meeting today'],
+            ['id' => 109, 'reviewerCount' => 4, 'meetingLabel' => 'Meeting tomorrow'],
+        ];
+        foreach ($sessions as &$session) {
+            $session['attendanceUrl'] = $request->getRouter()->url(
+                $request,
+                null,
+                'groupReview',
+                'participationAttendance',
+                null,
+                ['sessionId' => $session['id']]
+            );
+        }
+        unset($session);
+
+        $this->display($request, 'participation.tpl', [
+            'pageTitle' => 'Reviewer Participation Recording',
+            'sessions' => $sessions,
+        ]);
+    }
+
+    public function participationAttendance($args, $request): void
+    {
+        $sessionId = (int) $request->getUserVar('sessionId') ?: 114;
+        $reviewers = $this->participationMockReviewers($sessionId);
+
+        $this->display($request, 'participationAttendance.tpl', [
+            'pageTitle' => 'Reviewer Participation Recording',
+            'sessionId' => $sessionId,
+            'reviewers' => $reviewers,
+            'continueUrl' => $request->getRouter()->url($request, null, 'groupReview', 'participationContribution'),
+            'backUrl' => $request->getRouter()->url($request, null, 'groupReview', 'participation'),
+        ]);
+    }
+
+    public function participationContribution($args, $request): void
+    {
+        $sessionId = (int) $request->getUserVar('sessionId') ?: 114;
+        $presentIndices = $this->participationIntListPreservingZero($request->getUserVar('present'));
+        $reviewers = $this->participationMockReviewers($sessionId);
+
+        $presentNames = [];
+        foreach ($presentIndices as $idx) {
+            if (isset($reviewers[$idx])) {
+                $presentNames[] = $reviewers[$idx];
+            }
+        }
+        if (!$presentNames) {
+            $presentNames = [$reviewers[0] ?? 'Reviewer'];
+            $presentIndices = [0];
+        }
+
+        $step = (int) $request->getUserVar('step');
+        if ($step < 0) {
+            $step = 0;
+        }
+        if ($step >= count($presentNames)) {
+            $step = count($presentNames) - 1;
+        }
+        $isLast = $step >= count($presentNames) - 1;
+
+        $this->display($request, 'participationContribution.tpl', [
+            'pageTitle' => 'Reviewer Participation Recording',
+            'sessionId' => $sessionId,
+            'reviewerName' => $presentNames[$step],
+            'presentIndices' => $presentIndices,
+            'presentCount' => count($presentNames),
+            'nextStep' => $step + 1,
+            'isLast' => $isLast,
+            'formAction' => $request->getRouter()->url(
+                $request,
+                null,
+                'groupReview',
+                $isLast ? 'participationRecorded' : 'participationContribution'
+            ),
+        ]);
+    }
+
+    public function participationRecorded($args, $request): void
+    {
+        $sessionId = (int) $request->getUserVar('sessionId') ?: 114;
+        $count = (int) $request->getUserVar('presentCount') ?: 1;
+
+        $this->display($request, 'participationRecorded.tpl', [
+            'pageTitle' => 'Reviewer Participation Recording',
+            'sessionId' => $sessionId,
+            'count' => $count,
+            'backUrl' => $request->getRouter()->url($request, null, 'groupReview', 'participation'),
+        ]);
+    }
+
+    private function participationMockReviewers(int $sessionId): array
+    {
+        $sessions = [
+            114 => ['J. Alvarez', 'R. Osei', 'M. Tan'],
+            109 => ['K. Novak', 'P. Damini', 'S. Ibrahim', 'L. Chen'],
+        ];
+        return $sessions[$sessionId] ?? $sessions[114];
+    }
+
+    private function participationIntListPreservingZero($value): array
+    {
+        $values = is_array($value) ? $value : [];
+        $values = array_filter($values, fn ($item): bool => is_scalar($item));
+        $values = array_values(array_unique(array_map('intval', $values)));
+        sort($values);
+        return $values;
+    }
+
+    public function editorMonitoring($args, $request): void
+    {
+        $filter = (string) $request->getUserVar('filter');
+        if (!in_array($filter, ['overloaded', 'unresponsive'], true)) {
+            $filter = 'all';
+        }
+
+        $reviewers = $this->editorMonitoringReviewers();
+        if ($filter === 'overloaded') {
+            $reviewers = array_filter($reviewers, fn ($reviewer): bool => $reviewer['load'] > 5);
+        } elseif ($filter === 'unresponsive') {
+            $reviewers = array_filter($reviewers, fn ($reviewer): bool => $reviewer['lastActivityDays'] > 14);
+        }
+
+        foreach ($reviewers as &$reviewer) {
+            $reviewer['loadHigh'] = $reviewer['load'] > 5;
+            $reviewer['viewUrl'] = $request->getRouter()->url(
+                $request,
+                null,
+                'groupReview',
+                'editorMonitoringReviewer',
+                null,
+                ['reviewer' => $reviewer['slug']]
+            );
+        }
+        unset($reviewer);
+
+        $this->display($request, 'editorMonitoring.tpl', [
+            'pageTitle' => 'Editor Monitoring Dashboard',
+            'filter' => $filter,
+            'reviewers' => array_values($reviewers),
+            'allUrl' => $request->getRouter()->url($request, null, 'groupReview', 'editorMonitoring'),
+            'overloadedUrl' => $request->getRouter()->url($request, null, 'groupReview', 'editorMonitoring', null, ['filter' => 'overloaded']),
+            'unresponsiveUrl' => $request->getRouter()->url($request, null, 'groupReview', 'editorMonitoring', null, ['filter' => 'unresponsive']),
+        ]);
+    }
+
+    public function editorMonitoringReviewer($args, $request): void
+    {
+        $slug = (string) $request->getUserVar('reviewer');
+        $profiles = $this->editorMonitoringReviewers();
+        $profile = $profiles[$slug] ?? reset($profiles);
+
+        $this->display($request, 'editorMonitoringReviewer.tpl', [
+            'pageTitle' => 'Editor Monitoring Dashboard',
+            'reviewer' => $profile,
+            'backUrl' => $request->getRouter()->url($request, null, 'groupReview', 'editorMonitoring'),
+        ]);
+    }
+
+    private function editorMonitoringReviewers(): array
+    {
+        return [
+            'jalvarez' => [
+                'slug' => 'jalvarez',
+                'name' => 'J. Alvarez',
+                'load' => 3,
+                'responseRate' => 85,
+                'selectionRate' => 60,
+                'lastActivityDays' => 2,
+                'totalReviews' => 12,
+                'currentLoad' => '3 active',
+                'experienceLevel' => 'Senior · 3+ years',
+                'methodology' => 'Quantitative',
+                'strengths' => 'Clear written feedback',
+                'development' => 'Timeliness',
+                'history' => [
+                    ['label' => 'Submission #114 group review', 'when' => '3 days ago', 'detail' => 'Writing, Discussion · Present'],
+                    ['label' => 'Submission #101 group review', 'when' => '2 weeks ago', 'detail' => 'Analysis · Present'],
+                ],
+            ],
+            'rosei' => [
+                'slug' => 'rosei',
+                'name' => 'R. Osei',
+                'load' => 6,
+                'responseRate' => 72,
+                'selectionRate' => 45,
+                'lastActivityDays' => 3,
+                'totalReviews' => 9,
+                'currentLoad' => '6 active',
+                'experienceLevel' => 'Mid · 1-3 years',
+                'methodology' => 'Qualitative',
+                'strengths' => 'Thorough analysis',
+                'development' => 'Response time',
+                'history' => [
+                    ['label' => 'Submission #109 group review', 'when' => '5 days ago', 'detail' => 'Analysis · Present'],
+                    ['label' => 'Submission #97 group review', 'when' => '3 weeks ago', 'detail' => 'Discussion · Absent'],
+                ],
+            ],
+            'mtan' => [
+                'slug' => 'mtan',
+                'name' => 'M. Tan',
+                'load' => 2,
+                'responseRate' => 93,
+                'selectionRate' => 70,
+                'lastActivityDays' => 1,
+                'totalReviews' => 15,
+                'currentLoad' => '2 active',
+                'experienceLevel' => 'Senior · 4+ years',
+                'methodology' => 'Mixed methods',
+                'strengths' => 'Fast turnaround',
+                'development' => 'Depth of detail',
+                'history' => [
+                    ['label' => 'Submission #114 group review', 'when' => '3 days ago', 'detail' => 'Editing · Present'],
+                    ['label' => 'Submission #108 group review', 'when' => '1 week ago', 'detail' => 'Writing · Present'],
+                ],
+            ],
+            'knovak' => [
+                'slug' => 'knovak',
+                'name' => 'K. Novak',
+                'load' => 7,
+                'responseRate' => 68,
+                'selectionRate' => 38,
+                'lastActivityDays' => 5,
+                'totalReviews' => 6,
+                'currentLoad' => '7 active',
+                'experienceLevel' => 'Junior · <1 year',
+                'methodology' => 'Quantitative',
+                'strengths' => 'Domain expertise',
+                'development' => 'Written clarity',
+                'history' => [
+                    ['label' => 'Submission #109 group review', 'when' => '5 days ago', 'detail' => 'Discussion · Present'],
+                ],
+            ],
+            'pdamini' => [
+                'slug' => 'pdamini',
+                'name' => 'P. Damini',
+                'load' => 1,
+                'responseRate' => 40,
+                'selectionRate' => 20,
+                'lastActivityDays' => 18,
+                'totalReviews' => 4,
+                'currentLoad' => '1 active',
+                'experienceLevel' => 'Mid · 2 years',
+                'methodology' => 'Qualitative',
+                'strengths' => 'Constructive tone',
+                'development' => 'Timeliness',
+                'history' => [
+                    ['label' => 'Submission #109 group review', 'when' => '3 weeks ago', 'detail' => 'Analysis · Present'],
+                ],
+            ],
+            'sibrahim' => [
+                'slug' => 'sibrahim',
+                'name' => 'S. Ibrahim',
+                'load' => 1,
+                'responseRate' => 35,
+                'selectionRate' => 15,
+                'lastActivityDays' => 21,
+                'totalReviews' => 3,
+                'currentLoad' => '1 active',
+                'experienceLevel' => 'Junior · <1 year',
+                'methodology' => 'Quantitative',
+                'strengths' => 'Attention to detail',
+                'development' => 'Communication',
+                'history' => [
+                    ['label' => 'Submission #109 group review', 'when' => '3 weeks ago', 'detail' => 'Editing · Absent'],
+                ],
+            ],
+        ];
     }
 
     public function create($args, $request): void
