@@ -28,6 +28,7 @@ class GroupReviewMigration extends Migration
     {
         $this->refreshEmailTemplates();
         $this->createSessionsTable();
+        $this->createParticipationTable();
         $this->createSlotsTable();
         $this->createMembersTable();
         $this->createAvailabilityTable();
@@ -38,6 +39,7 @@ class GroupReviewMigration extends Migration
 
     public function down(): void
     {
+        Schema::dropIfExists('group_review_participation');
         Schema::dropIfExists('group_review_reminder_log');
         Schema::dropIfExists('group_review_availability');
         Schema::dropIfExists('group_review_members');
@@ -50,6 +52,49 @@ class GroupReviewMigration extends Migration
         if (Schema::hasTable('email_templates_default_data')) {
             DB::table('email_templates_default_data')->whereIn('email_key', self::EMAIL_KEYS)->delete();
         }
+    }
+
+    private function createParticipationTable(): void
+    {
+        if (Schema::hasTable('group_review_participation')) {
+            return;
+        }
+
+        Schema::create('group_review_participation', function (Blueprint $table) {
+            $table->bigInteger('participation_id')->autoIncrement();
+            $table->bigInteger('context_id');
+            $table->foreign('context_id', 'grp_participation_context_fk')
+                ->references('journal_id')->on('journals')->onDelete('cascade');
+            $table->bigInteger('session_id');
+            $table->foreign('session_id', 'grp_participation_session_fk')
+                ->references('session_id')->on('group_review_sessions')->onDelete('cascade');
+            $table->bigInteger('review_round_id');
+            $table->foreign('review_round_id', 'grp_participation_round_fk')
+                ->references('review_round_id')->on('review_rounds')->onDelete('cascade');
+            $table->bigInteger('submission_id');
+            $table->foreign('submission_id', 'grp_participation_submission_fk')
+                ->references('submission_id')->on('submissions')->onDelete('cascade');
+            $table->bigInteger('reviewer_user_id');
+            $table->foreign('reviewer_user_id', 'grp_participation_reviewer_fk')
+                ->references('user_id')->on('users')->onDelete('cascade');
+            $table->bigInteger('leader_user_id');
+            $table->foreign('leader_user_id', 'grp_participation_leader_fk')
+                ->references('user_id')->on('users')->onDelete('cascade');
+            $table->string('attendance', 64);
+            $table->json('contribution_types');
+            $table->text('contribution_comments')->nullable();
+            $table->json('shaping_feedback_types');
+            $table->text('shaping_feedback_comments')->nullable();
+            $table->text('other_contribution')->nullable();
+            $table->string('status', 16)->default('draft');
+            $table->dateTime('created_at');
+            $table->dateTime('updated_at');
+            $table->dateTime('submitted_at')->nullable();
+
+            $table->unique(['session_id', 'reviewer_user_id'], 'grp_participation_session_reviewer_unique');
+            $table->index(['context_id', 'submission_id'], 'grp_participation_context_submission_idx');
+            $table->index(['reviewer_user_id'], 'grp_participation_reviewer_idx');
+        });
     }
 
     /**
