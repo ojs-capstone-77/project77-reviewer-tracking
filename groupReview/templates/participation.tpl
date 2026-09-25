@@ -1,28 +1,35 @@
 {extends file="layouts/backend.tpl"}
 
 {block name="page"}
-	<div class="grp grpTool">
-		<h1 class="app__pageHeading">Reviewer Participation Recording</h1>
+	<h1 class="app__pageHeading">Reviewer Participation Recording</h1>
 
-		<div class="grpTool__card">
-			<div class="grpTool__cardHeader">
-				<span>ASRHE Journal Test &mdash; group leader</span>
-				<span class="grpTool__bell" aria-hidden="true">&#128276;</span>
-			</div>
-			<div class="grpTool__cardBody">
-				<div class="grpTool__sectionLabel">Active group reviews</div>
-				<ul class="grpTool__list">
-					{foreach from=$sessions item=session}
-						<li class="grpTool__listItem">
-							<div>
-								<div class="grpTool__listTitle">Submission #{$session.id} group review</div>
-								<div class="grp__muted">{$session.reviewerCount} reviewers assigned &middot; {$session.meetingLabel}</div>
+	<div class="grpTool__card">
+		<div class="grpTool__cardHeader">
+			<span>Your review groups</span>
+		</div>
+		<div class="grpTool__cardBody">
+			<div class="grpTool__sectionLabel">Group reviews</div>
+			<ul class="grpTool__list">
+				{foreach from=$sessions item=session}
+					<li class="grpTool__listItem">
+						<div>
+							<div class="grpTool__listTitle">
+								Submission #{$session.submissionId} group review
+								<span class="grpTool__badge grpTool__badge--{$session.status}">{if $session.status === 'submitted'}Submitted{else}Draft{/if}</span>
 							</div>
-							<a href="{$session.attendanceUrl|escape}" class="grpTool__openLink">Open &rarr;</a>
-						</li>
-					{/foreach}
-				</ul>
-			</div>
+							<div class="grp__muted">Round {$session.round} &middot; {$session.reviewerCount} reviewers assigned &middot; {$session.meetingLabel}</div>
+						</div>
+						<div class="grpTool__listMeta">
+							<span class="grp__muted">Last saved {$session.lastSaved}</span>
+							<a href="{$session.openUrl|escape}" class="grpTool__openLink">Open &rarr;</a>
+						</div>
+					</li>
+				{/foreach}
+			</ul>
+
+			<p class="grp__actions">
+				<a class="pkp_button" href="{$backUrl|escape}">Back</a>
+			</p>
 		</div>
 	</div>
 {/block}
