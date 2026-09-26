@@ -145,6 +145,24 @@ class ParticipationService
     }
 
     /**
+     * Return the journal's finalized group-review sessions, newest first.
+     * A session has a participation form once its members are selected.
+     *
+     * @return int[]
+     */
+    public function getFormSessionIds(int $contextId): array
+    {
+        return DB::table('group_review_sessions')
+            ->where('context_id', $contextId)
+            ->where('status', GroupReviewService::STATUS_FINALIZED)
+            ->orderByDesc('session_id')
+            ->limit(100)
+            ->pluck('session_id')
+            ->map(fn ($id): int => (int) $id)
+            ->all();
+    }
+
+    /**
      * Create a record and return its identifier.
      *
      * @param array{

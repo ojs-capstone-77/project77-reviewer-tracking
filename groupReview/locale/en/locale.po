@@ -389,3 +389,6 @@ msgstr "Selected meeting time with time zone"
 
 msgid "plugins.generic.groupReview.emailVariable.meetingUrl"
 msgstr "Meeting URL"
+
+msgid "plugins.generic.groupReview.participation.error.formNotFound"
+msgstr "This review group does not have a participation form yet. Members must be selected first."

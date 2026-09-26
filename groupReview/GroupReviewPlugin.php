@@ -295,6 +295,11 @@ class GroupReviewPlugin extends GenericPlugin
             "{$request->getBaseUrl()}/{$this->getPluginPath()}/css/app.css",
             ['contexts' => ['backend']]
         );
+        $templateMgr->addJavaScript(
+            'groupReviewParticipationForm',
+            "{$request->getBaseUrl()}/{$this->getPluginPath()}/js/participationForm.js",
+            ['contexts' => ['backend']]
+        );
         return false;
     }
 

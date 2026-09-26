@@ -572,3 +572,13 @@
 	cursor: not-allowed;
 }
 
+
+button.grpTool__pageNav {
+	background: #fff;
+	font-family: inherit;
+	cursor: pointer;
+}
+
+.grpTool__participationForm [hidden] {
+	display: none !important;
+}
