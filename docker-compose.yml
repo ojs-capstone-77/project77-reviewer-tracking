@@ -25,6 +25,7 @@ services:
       - ojs_public:/var/www/html/public
       - /etc/localtime:/etc/localtime
       - ./volumes/logs:/var/log/apache2
+      - ./config/config.inc.php:/var/www/html/config.inc.php
       - ./groupReview:/var/www/html/plugins/generic/groupReview
     networks: [ ojsdev ]
     depends_on:

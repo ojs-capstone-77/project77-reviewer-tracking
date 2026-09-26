@@ -55,11 +55,19 @@ Install recommended extensions (search for `@recommended` inside VSCode extensio
 
 `composer install`
 
+### Create the OJS config file
+
+```
+cp ojs-src/config.TEMPLATE.inc.php config/config.inc.php
+cat config/override.config.inc.ini >> config/config.inc.php
+chmod 666 config/config.inc.php
+```
+
 ### Build from Dockerfile and create containers
 
 `docker compose up --build -d`
 
-If you previously installed you might also need to do `docker compose down -v` to delete old volumes.
+If you previously installed you might also need to do `docker compose down -v` to delete old volumes, and redo the config file step above.
 
 ### Verify .env variables and run install script
 
@@ -144,7 +152,7 @@ Relevant files: `.vscode/launch.json`, `Dockerfile` (installs Xdebug into the ap
 | Plugin live reload | `groupReview/` on the host is mounted into the app container at `/var/www/html/plugins/generic/groupReview`. Edits to PHP, `.tpl` and `.css` files are picked up by refreshing the browser | `docker-compose.yml`, `groupReview/` |
 | Error logs | Apache error logs from the app container are written to `volumes/logs` on the host | `docker-compose.yml`, `volumes/logs` |
 | PhpMyAdmin | DB browser for the OJS database, at http://localhost:8081 by default | `docker-compose.yml`, `.env` |
-| Mailpit | Captures emails sent by OJS, at http://localhost:8082 by default | `docker-compose.yml`, `.env`, `config/override.config.inc.ini` (SMTP config appended to `config.inc.php`), `Dockerfile` |
+| Mailpit | Captures emails sent by OJS, at http://localhost:8082 by default | `docker-compose.yml`, `.env`, `config/override.config.inc.ini` (SMTP config appended to `config/config.inc.php`) |
 
 <a href="docs/images/readme/phpmyadmin.png"><img src="docs/images/readme/phpmyadmin.png" width="500"></a>
 
