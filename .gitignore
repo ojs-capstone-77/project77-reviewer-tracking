@@ -1,4 +1,5 @@
 volumes/logs
+config/config.inc.php
 vendor/
 ojs-src/
 .php-cs-fixer.cache
