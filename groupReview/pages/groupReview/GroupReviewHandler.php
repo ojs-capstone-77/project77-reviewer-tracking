@@ -144,7 +144,7 @@ class GroupReviewHandler extends Handler
         $this->display($request, 'participation.tpl', [
             'pageTitle' => 'Reviewer Participation Recording',
             'sessions' => $sessions,
-            'backUrl' => $request->getRouter()->url($request, null, 'groupReview', 'index'),
+            'backUrl' => $this->participationBackUrl($request, (int) $request->getUserVar('submissionId')),
         ]);
     }
 
@@ -212,7 +212,7 @@ class GroupReviewHandler extends Handler
             'emptyReviewerSlots' => $emptySlots ? range(1, $emptySlots) : [],
             'attendanceOptions' => $this->participationAttendanceOptions(),
             'contributionOptions' => $this->participationContributionOptions(),
-            'cancelUrl' => $request->getRouter()->url($request, null, 'groupReview', 'participation'),
+            'cancelUrl' => $this->participationListUrl($request, (int) $bundle['poll']['submission_id']),
             'saveUrl' => $request->getRouter()->url($request, null, 'groupReview', 'saveParticipationForm'),
         ]);
     }
@@ -308,7 +308,7 @@ class GroupReviewHandler extends Handler
             'pageTitle' => 'Reviewer Participation Recording',
             'sessionId' => $sessionId,
             'session' => $session,
-            'backUrl' => $request->getRouter()->url($request, null, 'groupReview', 'participation'),
+            'backUrl' => $this->participationListUrl($request, (int) $bundle['poll']['submission_id']),
         ]);
     }
 
@@ -491,6 +491,33 @@ class GroupReviewHandler extends Handler
             'submittedAt' => $format($form['submitted_at'] ?? null),
             'submittedBy' => $this->participationUserName($form['submitted_by'] ?? null),
         ];
+    }
+
+    /** The review group list, remembering the submission it was opened from. */
+    private function participationListUrl($request, int $submissionId): string
+    {
+        return $request->getRouter()->url($request, null, 'groupReview', 'participation', null, [
+            'submissionId' => $submissionId,
+        ]);
+    }
+
+    /** Back from the review group list to the submission's Group Review tab. */
+    private function participationBackUrl($request, int $submissionId): string
+    {
+        if ($submissionId <= 0) {
+            return $request->getRouter()->url($request, null, 'groupReview', 'index');
+        }
+
+        return $request->getDispatcher()->url(
+            $request,
+            Application::ROUTE_PAGE,
+            $request->getContext()->getPath(),
+            'workflow',
+            'index',
+            [$submissionId, WORKFLOW_STAGE_ID_EXTERNAL_REVIEW],
+            null,
+            'groupReview'
+        );
     }
 
     private function participationRound(array $poll): int
