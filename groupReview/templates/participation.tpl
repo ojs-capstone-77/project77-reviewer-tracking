@@ -3,7 +3,7 @@
 {block name="page"}
 	<h1 class="app__pageHeading">Reviewer Participation Recording</h1>
 
-	<div class="grpTool__card">
+	<div class="grpTool__card grpTool__card--wide">
 		<div class="grpTool__cardHeader">
 			<span>Your review groups</span>
 		</div>

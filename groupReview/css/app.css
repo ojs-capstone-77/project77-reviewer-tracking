@@ -454,7 +454,6 @@
 
 .grpTool__matrix th:first-child,
 .grpTool__matrix td:first-child {
-	width: 18%;
 	font-weight: 700;
 }
 
@@ -573,60 +572,3 @@
 	cursor: not-allowed;
 }
 
-.grpTool__modalOverlay {
-	display: none;
-	position: fixed;
-	inset: 0;
-	align-items: center;
-	justify-content: center;
-	background: rgba(10, 37, 64, 0.5);
-	z-index: 1000;
-}
-
-.grpTool__modalOverlay:not([hidden]) {
-	display: flex;
-}
-
-.grpTool__modal {
-	width: 100%;
-	max-width: 420px;
-	background: #fff;
-	border-radius: 4px;
-	overflow: hidden;
-	box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-}
-
-.grpTool__modalHeader {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	padding: 0.85rem 1.1rem;
-	background: #0a2540;
-	color: #fff;
-	font-weight: 700;
-}
-
-.grpTool__modalClose {
-	background: none;
-	border: none;
-	color: #fff;
-	font-size: 1.25rem;
-	line-height: 1;
-	cursor: pointer;
-	padding: 0;
-}
-
-.grpTool__modalBody {
-	padding: 1.1rem;
-}
-
-.grpTool__modalBody textarea {
-	min-height: 100px;
-}
-
-.grpTool__modalActions {
-	display: flex;
-	justify-content: flex-end;
-	gap: 0.5rem;
-	padding: 0 1.1rem 1.1rem;
-}

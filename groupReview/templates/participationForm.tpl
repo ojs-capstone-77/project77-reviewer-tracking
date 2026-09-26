@@ -47,11 +47,20 @@
 			</div>
 
 			<table class="grpTool__matrix">
+				<colgroup>
+					<col style="width: 18%">
+					{foreach from=$reviewerSlots item=_reviewerSlot}
+						<col style="width: 41%">
+					{/foreach}
+				</colgroup>
 				<thead>
 					<tr>
 						<th>Criterion</th>
 						{foreach from=$pageReviewers item=reviewer}
 							<th>{$reviewer.name|escape}</th>
+						{/foreach}
+						{foreach from=$emptyReviewerSlots item=_emptySlot}
+							<th></th>
 						{/foreach}
 					</tr>
 				</thead>
@@ -73,6 +82,9 @@
 								{/if}
 							</td>
 						{/foreach}
+						{foreach from=$emptyReviewerSlots item=_emptySlot}
+							<td></td>
+						{/foreach}
 					</tr>
 					<tr>
 						<td>
@@ -81,6 +93,9 @@
 						</td>
 						{foreach from=$pageReviewers item=reviewer}
 							<td><textarea class="grpTool__matrixTextarea">{$reviewer.meetingComments|escape}</textarea></td>
+						{/foreach}
+						{foreach from=$emptyReviewerSlots item=_emptySlot}
+							<td></td>
 						{/foreach}
 					</tr>
 
@@ -102,6 +117,9 @@
 								</div>
 							</td>
 						{/foreach}
+						{foreach from=$emptyReviewerSlots item=_emptySlot}
+							<td></td>
+						{/foreach}
 					</tr>
 					<tr>
 						<td>
@@ -110,6 +128,9 @@
 						</td>
 						{foreach from=$pageReviewers item=reviewer}
 							<td><textarea class="grpTool__matrixTextarea">{$reviewer.feedbackComments|escape}</textarea></td>
+						{/foreach}
+						{foreach from=$emptyReviewerSlots item=_emptySlot}
+							<td></td>
 						{/foreach}
 					</tr>
 
@@ -120,6 +141,9 @@
 						<td>Other comments</td>
 						{foreach from=$pageReviewers item=reviewer}
 							<td><textarea class="grpTool__matrixTextarea">{$reviewer.otherComments|escape}</textarea></td>
+						{/foreach}
+						{foreach from=$emptyReviewerSlots item=_emptySlot}
+							<td></td>
 						{/foreach}
 					</tr>
 				</tbody>
@@ -158,7 +182,7 @@
 					<button type="button" class="pkp_button">Save</button>
 					<a class="pkp_button grpTool__cancelButton" href="{$cancelUrl|escape}">Cancel</a>
 				</span>
-				<button type="button" id="grpParticipationSubmit" class="pkp_button pkp_button_primary"{if !$canSubmit} disabled{/if} onclick="document.getElementById('grpParticipationModalOverlay').hidden=false;">{$submitLabel}</button>
+				<pkp-button id="grpParticipationSubmit" :is-primary="true" :is-disabled="{if !$canSubmit}true{else}false{/if}" @click="$modal.show('grpParticipationSubmit')">{$submitLabel}</pkp-button>
 			</p>
 			<div class="grp__muted grpTool__lastSaved">
 				{if $isSubmitted}
@@ -169,22 +193,18 @@
 		</div>
 	</div>
 
-	<div id="grpParticipationModalOverlay" class="grpTool__modalOverlay" hidden onclick="event.target===this&&(this.hidden=true)">
-		<div class="grpTool__modal" role="dialog" aria-modal="true" aria-labelledby="grpParticipationModalTitle">
-			<div class="grpTool__modalHeader">
-				<span id="grpParticipationModalTitle">{$submitLabel}</span>
-				<button type="button" class="grpTool__modalClose" aria-label="Close" onclick="document.getElementById('grpParticipationModalOverlay').hidden=true;">&times;</button>
-			</div>
-			<div class="grpTool__modalBody">
-				<label class="grp__field">
-					<span>Comments</span>
-					<textarea id="grpParticipationModalComments"></textarea>
-				</label>
-			</div>
-			<div class="grpTool__modalActions">
-				<button type="button" class="pkp_button" onclick="document.getElementById('grpParticipationModalOverlay').hidden=true;">Cancel</button>
-				<a class="pkp_button pkp_button_primary" href="{$submitUrl|escape}">{$submitLabel}</a>
-			</div>
-		</div>
-	</div>
+	<pkp-modal
+		name="grpParticipationSubmit"
+		title="{$submitLabel|escape}"
+		close-label="{translate key="common.close"}"
+	>
+		<label class="grp__field">
+			<span>Comments</span>
+			<textarea id="grpParticipationModalComments"></textarea>
+		</label>
+		<template slot="footer">
+			<pkp-button @click="$modal.hide('grpParticipationSubmit')">Cancel</pkp-button>
+			<pkp-button element="a" href="{$submitUrl|escape}" :is-primary="true">{$submitLabel}</pkp-button>
+		</template>
+	</pkp-modal>
 {/block}
