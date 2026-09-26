@@ -37,6 +37,76 @@ class ParticipationService
     private const STATUS_VALUES = ['draft', 'submitted'];
 
     /**
+     * Save a selected reviewer's record for a group-review session.
+     *
+     * Submission, review round and leader identifiers are derived from the
+     * authorized session rather than trusted from request data.
+     *
+     * @return array{participation_id:int,created:bool,status:string}
+     */
+    public function saveForSession(
+        int $contextId,
+        int $sessionId,
+        int $leaderUserId,
+        array $data
+    ): array {
+        return DB::transaction(function () use ($contextId, $sessionId, $leaderUserId, $data): array {
+            $session = DB::table('group_review_sessions')
+                ->where('context_id', $contextId)
+                ->where('session_id', $sessionId)
+                ->lockForUpdate()
+                ->first();
+            if (!$session) {
+                throw new InvalidArgumentException('The group review session was not found.');
+            }
+
+            $reviewerUserId = $this->positiveInteger(
+                $data['reviewer_user_id'] ?? null,
+                'reviewer_user_id'
+            );
+            $isSelectedMember = DB::table('group_review_members')
+                ->where('session_id', $sessionId)
+                ->where('user_id', $reviewerUserId)
+                ->where('selected', true)
+                ->exists();
+            if (!$isSelectedMember) {
+                throw new InvalidArgumentException('The reviewer must be a selected member of this group review.');
+            }
+
+            $record = array_merge($data, [
+                'session_id' => $sessionId,
+                'review_round_id' => (int) $session->review_round_id,
+                'submission_id' => (int) $session->submission_id,
+                'reviewer_user_id' => $reviewerUserId,
+                'leader_user_id' => $leaderUserId,
+            ]);
+            $existing = DB::table('group_review_participation')
+                ->where('context_id', $contextId)
+                ->where('session_id', $sessionId)
+                ->where('reviewer_user_id', $reviewerUserId)
+                ->first();
+            if ($existing && (string) $existing->status === 'submitted') {
+                throw new InvalidArgumentException('Submitted participation records cannot be changed by a Review Group Leader.');
+            }
+
+            if ($existing) {
+                $participationId = (int) $existing->participation_id;
+                $this->update($contextId, $participationId, $record);
+                $created = false;
+            } else {
+                $participationId = $this->create($contextId, $record);
+                $created = true;
+            }
+
+            return [
+                'participation_id' => $participationId,
+                'created' => $created,
+                'status' => (string) ($record['status'] ?? 'draft'),
+            ];
+        });
+    }
+
+    /**
      * Create a record and return its identifier.
      *
      * @param array{
@@ -96,6 +166,36 @@ class ParticipationService
             ->all();
     }
 
+    /** Return journal- and submission-scoped records, optionally for one reviewer. */
+    public function getForSubmission(int $contextId, int $submissionId, ?int $reviewerUserId = null): array
+    {
+        $query = DB::table('group_review_participation')
+            ->where('context_id', $contextId)
+            ->where('submission_id', $submissionId);
+        if ($reviewerUserId !== null) {
+            $query->where('reviewer_user_id', $reviewerUserId);
+        }
+
+        return $query->orderBy('reviewer_user_id')
+            ->orderBy('participation_id')
+            ->get()
+            ->map(fn ($row): array => $this->hydrate((array) $row))
+            ->all();
+    }
+
+    /**
+     * Restrict non-privileged readers to their own records even if no filter
+     * was supplied. A request for another reviewer's records is forbidden.
+     */
+    public function readableReviewerId(?int $requestedReviewerId, int $userId, bool $canReadAll): ?int
+    {
+        if (!$canReadAll && $requestedReviewerId !== null && $requestedReviewerId !== $userId) {
+            throw new \DomainException('You cannot view another reviewer\'s participation records.');
+        }
+
+        return $canReadAll ? $requestedReviewerId : $userId;
+    }
+
     /** Update a record and return whether a journal-scoped row was changed. */
     public function update(int $contextId, int $participationId, array $data): bool
     {
@@ -147,9 +247,7 @@ class ParticipationService
         }
 
         foreach (['session_id', 'review_round_id', 'submission_id', 'reviewer_user_id', 'leader_user_id'] as $key) {
-            if (!isset($data[$key]) || (int) $data[$key] <= 0) {
-                throw new InvalidArgumentException("The {$key} must be positive.");
-            }
+            $data[$key] = $this->positiveInteger($data[$key] ?? null, $key);
         }
         if (!isset($data['attendance']) || !in_array($data['attendance'], self::ATTENDANCE_VALUES, true)) {
             throw new InvalidArgumentException('The attendance value is invalid.');
@@ -176,6 +274,15 @@ class ParticipationService
             'other_contribution' => $this->text($data['other_contribution'] ?? null, 'other contribution'),
             'status' => $status,
         ];
+    }
+
+    private function positiveInteger(mixed $value, string $label): int
+    {
+        if (filter_var($value, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]) === false) {
+            throw new InvalidArgumentException("The {$label} must be a positive integer.");
+        }
+
+        return (int) $value;
     }
 
     private function validateList(mixed $value, array $allowed, string $label): array

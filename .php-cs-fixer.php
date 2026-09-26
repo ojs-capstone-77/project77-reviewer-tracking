@@ -5,7 +5,7 @@ $finder = PhpCsFixer\Finder::create()
     ->name('*.php')
     ->ignoreDotFiles(true)
     ->ignoreVCS(true)
-    ->exclude(['vendor', 'node_modules', 'ojs-src']);
+    ->exclude(['vendor', 'node_modules', 'ojs-src', 'groupReview/tests']);
 
 $config = new PhpCsFixer\Config();
 $config->setRules([
