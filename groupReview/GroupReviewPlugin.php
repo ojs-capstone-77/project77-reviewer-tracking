@@ -276,7 +276,6 @@ class GroupReviewPlugin extends GenericPlugin
             'groupReviewUrl' => $request->getRouter()->url($request, null, 'groupReview', $op, null, $params),
             'groupReviewDashboardUrl' => $request->getRouter()->url($request, null, 'groupReview', 'index'),
             'groupReviewParticipationUrl' => $request->getRouter()->url($request, null, 'groupReview', 'participation'),
-            'groupReviewEditorMonitoringUrl' => $request->getRouter()->url($request, null, 'groupReview', 'editorMonitoring'),
         ]);
         $output .= $templateMgr->fetch($this->getTemplateResource('workflow/groupReviewTab.tpl'));
         return false;
