@@ -2,6 +2,8 @@ parameters:
     level: 5
     paths:
         - groupReview
+    excludePaths:
+        - groupReview/tests
     scanDirectories:
         - ojs-src
     stubFiles:
