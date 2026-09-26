@@ -56,3 +56,15 @@ msgstr "[{$journalName}] Group review poll completed: {$submissionTitle}"
 
 msgid "emails.groupReview.thanksInvitedRgms.body"
 msgstr "<p>Dear {$recipientName},</p><p>Thank you for your interest in the group review meeting for “{$submissionTitle}”. The meeting has now been scheduled and you were not selected for this group; no further action is required from you.</p><p>Regards,<br>{$journalName}</p>"
+
+msgid "plugins.generic.groupReview.participationSubmitted.name"
+msgstr "Reviewer Participation Form Submitted"
+
+msgid "emails.groupReview.participationSubmitted.description"
+msgstr "Sent to the journal editors assigned to the submission when a reviewer participation form is submitted or resubmitted."
+
+msgid "emails.groupReview.participationSubmitted.subject"
+msgstr "[{$journalName}] Reviewer participation form submitted: {$submissionTitle}"
+
+msgid "emails.groupReview.participationSubmitted.body"
+msgstr "<p>Dear {$recipientName},</p><p>{$submitterName} has submitted the reviewer participation form for round {$round} of “{$submissionTitle}”.</p><p>Comment: {$comment}</p><p><a href=\"{$formUrl}\">Open the participation form</a></p><p>Regards,<br>{$journalName}</p>"

@@ -11,4 +11,8 @@
 		body="emails.groupReview.thanksInvitedRgms.body" />
 	<email key="GROUP_REVIEW_THANKS_RGMS" name="plugins.generic.groupReview.thanksRgms.name"
 		subject="emails.groupReview.thanksRgms.subject" body="emails.groupReview.thanksRgms.body" />
+	<email key="GROUP_REVIEW_PARTICIPATION_SUBMITTED"
+		name="plugins.generic.groupReview.participationSubmitted.name"
+		subject="emails.groupReview.participationSubmitted.subject"
+		body="emails.groupReview.participationSubmitted.body" />
 </emails>

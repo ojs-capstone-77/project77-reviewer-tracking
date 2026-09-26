@@ -11,6 +11,7 @@ use APP\facades\Repo;
 use APP\handler\Handler;
 use APP\notification\NotificationManager;
 use APP\plugins\generic\groupReview\classes\GroupReviewService;
+use APP\plugins\generic\groupReview\classes\mail\GroupReviewParticipationSubmitted;
 use APP\plugins\generic\groupReview\classes\mail\GroupReviewPollCreated;
 use APP\plugins\generic\groupReview\classes\mail\GroupReviewPollThankInvitees;
 use APP\plugins\generic\groupReview\classes\mail\GroupReviewPollThankRgms;
@@ -278,6 +279,7 @@ class GroupReviewHandler extends Handler
         $this->logParticipationEvent($request, $bundle, $submit, (string) $request->getUserVar('submissionComment'));
 
         if ($submit) {
+            $this->notifyParticipationEditors($request, $bundle, (string) $request->getUserVar('submissionComment'));
             $request->redirect(null, 'groupReview', 'participationRecorded', null, ['sessionId' => $sessionId]);
             return;
         }
@@ -536,6 +538,83 @@ class GroupReviewHandler extends Handler
         } catch (Throwable $e) {
             error_log('Group Review participation activity log failed: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Notify the submission's assigned editors (OJS notification and email)
+     * that the participation form was submitted, including the comment.
+     * Failures are logged and do not undo the submission.
+     */
+    private function notifyParticipationEditors($request, array $bundle, string $comment): void
+    {
+        $context = $request->getContext();
+        $contextId = (int) $context->getId();
+        $submissionId = (int) $bundle['poll']['submission_id'];
+        $submitter = $request->getUser();
+        $comment = trim($comment);
+        $formUrl = $request->getDispatcher()->url(
+            $request,
+            Application::ROUTE_PAGE,
+            $context->getPath(),
+            'groupReview',
+            'participationForm',
+            null,
+            ['sessionId' => (int) $bundle['poll']['session_id']]
+        );
+        $notificationManager = new NotificationManager();
+
+        foreach ($this->participationEditors($contextId, $submissionId, (int) $submitter->getId()) as $editor) {
+            try {
+                $notificationManager->createNotification(
+                    $request,
+                    (int) $editor->getId(),
+                    GroupReviewNotification::NOTIFICATION_TYPE_PARTICIPATION_SUBMITTED,
+                    $contextId,
+                    Application::ASSOC_TYPE_SUBMISSION,
+                    $submissionId,
+                    GroupReviewNotification::NOTIFICATION_LEVEL_TASK
+                );
+            } catch (Throwable $e) {
+                error_log('Group Review participation notification failed: ' . $e->getMessage());
+            }
+
+            $mailable = new GroupReviewParticipationSubmitted(
+                $context,
+                $editor->getFullName(),
+                $bundle['submission'] ? $bundle['submission']->getLocalizedTitle() : '',
+                $this->participationRound($bundle['poll']),
+                $submitter->getFullName(),
+                $comment !== '' ? $comment : __('plugins.generic.groupReview.participation.noComment'),
+                $formUrl
+            );
+            $this->sendMailable($context, $editor, $mailable, GroupReviewParticipationSubmitted::getEmailTemplateKey());
+        }
+    }
+
+    /**
+     * Journal editors (manager-role user groups) assigned to the submission,
+     * other than the user who submitted the form.
+     */
+    private function participationEditors(int $contextId, int $submissionId, int $submitterId): array
+    {
+        $userIds = DB::table('stage_assignments as sa')
+            ->join('user_groups as ug', 'ug.user_group_id', '=', 'sa.user_group_id')
+            ->where('sa.submission_id', $submissionId)
+            ->where('ug.context_id', $contextId)
+            ->where('ug.role_id', Role::ROLE_ID_MANAGER)
+            ->where('sa.user_id', '!=', $submitterId)
+            ->distinct()
+            ->pluck('sa.user_id');
+
+        $editors = [];
+        foreach ($userIds as $userId) {
+            $user = Repo::user()->get((int) $userId);
+            if ($user && !$user->getDisabled()) {
+                $editors[] = $user;
+            }
+        }
+
+        return $editors;
     }
 
     /** @return array<int, array{id:int, name:string}> Selected members, by name. */

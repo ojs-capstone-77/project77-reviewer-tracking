@@ -10,6 +10,7 @@ namespace APP\plugins\generic\groupReview;
 
 use APP\core\Application;
 use APP\plugins\generic\groupReview\classes\GroupReviewService;
+use APP\plugins\generic\groupReview\classes\mail\GroupReviewParticipationSubmitted;
 use APP\plugins\generic\groupReview\classes\mail\GroupReviewPollClosing;
 use APP\plugins\generic\groupReview\classes\mail\GroupReviewPollCreated;
 use APP\plugins\generic\groupReview\classes\mail\GroupReviewPollThankInvitees;
@@ -320,6 +321,7 @@ class GroupReviewPlugin extends GenericPlugin
         $args[0]->push(GroupReviewPollClosing::class);
         $args[0]->push(GroupReviewPollThankRgms::class);
         $args[0]->push(GroupReviewPollThankInvitees::class);
+        $args[0]->push(GroupReviewParticipationSubmitted::class);
     }
 
     /** Render the two poll task labels used by the student implementation. */
@@ -331,6 +333,8 @@ class GroupReviewPlugin extends GenericPlugin
             $message = __('plugins.generic.groupReview.tasks.pollCreated.label');
         } elseif ($notification->getType() === GroupReviewNotification::NOTIFICATION_TYPE_POLL_CLOSING) {
             $message = __('plugins.generic.groupReview.tasks.pollClosing.label');
+        } elseif ($notification->getType() === GroupReviewNotification::NOTIFICATION_TYPE_PARTICIPATION_SUBMITTED) {
+            $message = __('plugins.generic.groupReview.tasks.participationSubmitted.label');
         }
     }
 

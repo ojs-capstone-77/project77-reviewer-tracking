@@ -22,6 +22,7 @@ class GroupReviewMigration extends Migration
         'GROUP_REVIEW_POLL_CLOSING',
         'GROUP_REVIEW_THANKS_INVITED_RGMS',
         'GROUP_REVIEW_THANKS_RGMS',
+        'GROUP_REVIEW_PARTICIPATION_SUBMITTED',
     ];
 
     public function up(): void
