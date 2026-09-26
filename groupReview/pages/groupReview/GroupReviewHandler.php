@@ -222,7 +222,7 @@ class GroupReviewHandler extends Handler
         $data = [
             'reviewer_user_id' => $request->getUserVar('reviewerUserId'),
             'attendance' => $request->getUserVar('attendance'),
-            'contribution_types' => $request->getUserVar('contributionTypes'),
+            'attendance_other' => $request->getUserVar('attendanceOther'),
             'contribution_comments' => $request->getUserVar('contributionComments'),
             'shaping_feedback_types' => $request->getUserVar('shapingFeedbackTypes'),
             'shaping_feedback_comments' => $request->getUserVar('shapingFeedbackComments'),
