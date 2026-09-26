@@ -25,11 +25,13 @@ use DomainException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use InvalidArgumentException;
+use PKP\core\Core;
 use PKP\core\JSONMessage;
 use PKP\security\authorization\ContextAccessPolicy;
 use PKP\security\authorization\ContextRequiredPolicy;
 use PKP\security\authorization\UserRequiredPolicy;
 use PKP\security\Role;
+use PKP\security\Validation;
 use Throwable;
 
 class GroupReviewHandler extends Handler
@@ -248,7 +250,8 @@ class GroupReviewHandler extends Handler
         }
 
         try {
-            if (!$this->participationBundle($contextId, $sessionId)) {
+            $bundle = $this->participationBundle($contextId, $sessionId);
+            if (!$bundle) {
                 throw new InvalidArgumentException('The group review session has no participation form.');
             }
             (new ParticipationService())->saveForm(
@@ -271,6 +274,8 @@ class GroupReviewHandler extends Handler
             ]);
             return;
         }
+
+        $this->logParticipationEvent($request, $bundle, $submit, (string) $request->getUserVar('submissionComment'));
 
         if ($submit) {
             $request->redirect(null, 'groupReview', 'participationRecorded', null, ['sessionId' => $sessionId]);
@@ -474,9 +479,7 @@ class GroupReviewHandler extends Handler
         return [
             'id' => (int) $poll['session_id'],
             'submissionId' => (int) $poll['submission_id'],
-            'round' => (int) DB::table('review_rounds')
-                ->where('review_round_id', (int) $poll['review_round_id'])
-                ->value('round'),
+            'round' => $this->participationRound($poll),
             'leaderName' => $bundle['leader'] ? $bundle['leader']->getFullName() : '',
             'meetingLabel' => $meetingLabel,
             'reviewerCount' => count($this->participationReviewers($bundle)),
@@ -486,6 +489,53 @@ class GroupReviewHandler extends Handler
             'submittedAt' => $format($form['submitted_at'] ?? null),
             'submittedBy' => $this->participationUserName($form['submitted_by'] ?? null),
         ];
+    }
+
+    private function participationRound(array $poll): int
+    {
+        return (int) DB::table('review_rounds')
+            ->where('review_round_id', (int) $poll['review_round_id'])
+            ->value('round');
+    }
+
+    /**
+     * Add a participation form entry to the submission's Activity Log: who
+     * edited or submitted it and when, plus the submission comment. What
+     * changed is not recorded. A failure to log does not undo the save.
+     */
+    private function logParticipationEvent($request, array $bundle, bool $submit, string $comment): void
+    {
+        try {
+            $round = $this->participationRound($bundle['poll']);
+            $comment = trim($comment);
+            if ($submit && $comment !== '') {
+                $message = __('plugins.generic.groupReview.participation.log.submittedWithComment', [
+                    'round' => $round,
+                    'comment' => $comment,
+                ]);
+                $isTranslated = true;
+            } else {
+                $message = $submit
+                    ? 'plugins.generic.groupReview.participation.log.submitted'
+                    : 'plugins.generic.groupReview.participation.log.edited';
+                $isTranslated = false;
+            }
+
+            Repo::eventLog()->add(Repo::eventLog()->newDataObject([
+                'assocType' => Application::ASSOC_TYPE_SUBMISSION,
+                'assocId' => (int) $bundle['poll']['submission_id'],
+                'eventType' => $submit
+                    ? ParticipationService::LOG_FORM_SUBMITTED
+                    : ParticipationService::LOG_FORM_EDITED,
+                'userId' => Validation::loggedInAs() ?? $request->getUser()->getId(),
+                'round' => $round,
+                'message' => $message,
+                'isTranslated' => $isTranslated,
+                'dateLogged' => Core::getCurrentDate(),
+            ]));
+        } catch (Throwable $e) {
+            error_log('Group Review participation activity log failed: ' . $e->getMessage());
+        }
     }
 
     /** @return array<int, array{id:int, name:string}> Selected members, by name. */

@@ -22,6 +22,10 @@ class ParticipationService
     public const STATUS_DRAFT = 'draft';
     public const STATUS_SUBMITTED = 'submitted';
 
+    /** Submission event log types for participation form activity. */
+    public const LOG_FORM_EDITED = 0xA0000001;
+    public const LOG_FORM_SUBMITTED = 0xA0000002;
+
     private const ATTENDANCE_VALUES = [
         self::ATTENDANCE_ATTENDED,
         self::ATTENDANCE_APOLOGY,

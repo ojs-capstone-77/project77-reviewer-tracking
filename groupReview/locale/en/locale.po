@@ -392,3 +392,12 @@ msgstr "Meeting URL"
 
 msgid "plugins.generic.groupReview.participation.error.formNotFound"
 msgstr "This review group does not have a participation form yet. Members must be selected first."
+
+msgid "plugins.generic.groupReview.participation.log.edited"
+msgstr "Participation form for round {$round} edited."
+
+msgid "plugins.generic.groupReview.participation.log.submitted"
+msgstr "Participation form for round {$round} submitted."
+
+msgid "plugins.generic.groupReview.participation.log.submittedWithComment"
+msgstr "Participation form for round {$round} submitted: \"{$comment}\""
