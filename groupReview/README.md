@@ -65,6 +65,8 @@ Uploading plugin code and running migrations affect the shared OJS installation.
 
 - A leader must belong to `RGL` and be assigned to that exact submission under the RGL group in External Review.
 - An invitee must be active, belong to the journal's `RGM` group and have a membership record for that exact poll.
+- `groupReview/getParticipation` accepts a GET request with a required positive `submissionId` and optional positive `reviewerUserId`. Journal managers and members of the journal's `QRE` user group can read all records for that submission; assigned RGLs can read records for their submission; other journal users with access to this operation can only read their own records. Configure the Quality Review Editor user group with the `QRE` abbreviation and Section Editor permission level to enable its read access.
+- The read endpoint returns an OJS JSONMessage with `status`, `code` and `records` (an array, empty when there are no matches). It returns `invalid_request`, `not_found`, `forbidden` or `read_failed` on errors. The participation mock-up does not yet call this endpoint.
 - Submission, review-round, slot, member and poll identifiers are checked within the current journal.
 - Create, update, availability, finalize, resend and cancel actions require POST and a valid CSRF token.
 - Finalization accepts only invited RGM users who marked themselves available for the selected slot.

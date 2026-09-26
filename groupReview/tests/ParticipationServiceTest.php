@@ -58,6 +58,18 @@ test('invalid attendance is rejected', function () use ($validate, $service, $ba
     assertThrows(fn () => $validate->invoke($service, 10, $data), InvalidArgumentException::class);
 });
 
+test('non-integer identifiers are rejected', function () use ($validate, $service, $base) {
+    $data = array_merge($base, ['reviewer_user_id' => '4reviewer']);
+
+    assertThrows(fn () => $validate->invoke($service, 10, $data), InvalidArgumentException::class);
+});
+
+test('zero identifiers are rejected', function () use ($validate, $service, $base) {
+    $data = array_merge($base, ['session_id' => 0]);
+
+    assertThrows(fn () => $validate->invoke($service, 10, $data), InvalidArgumentException::class);
+});
+
 test('invalid contribution type is rejected', function () use ($validate, $service, $base) {
     $data = array_merge($base, ['contribution_types' => ['discussion', 'invalid']]);
 
@@ -66,6 +78,18 @@ test('invalid contribution type is rejected', function () use ($validate, $servi
 
 test('non-string list values are rejected', function () use ($validate, $service, $base) {
     $data = array_merge($base, ['shaping_feedback_types' => ['created_draft', 3]]);
+
+    assertThrows(fn () => $validate->invoke($service, 10, $data), InvalidArgumentException::class);
+});
+
+test('non-array list values are rejected', function () use ($validate, $service, $base) {
+    $data = array_merge($base, ['contribution_types' => 'discussion']);
+
+    assertThrows(fn () => $validate->invoke($service, 10, $data), InvalidArgumentException::class);
+});
+
+test('invalid status is rejected', function () use ($validate, $service, $base) {
+    $data = array_merge($base, ['status' => 'published']);
 
     assertThrows(fn () => $validate->invoke($service, 10, $data), InvalidArgumentException::class);
 });

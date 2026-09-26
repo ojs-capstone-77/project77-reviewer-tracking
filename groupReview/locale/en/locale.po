@@ -96,6 +96,27 @@ msgstr "Only a current Review Group Leader (RGL) assigned to this submission in 
 msgid "plugins.generic.groupReview.authorization.invitee"
 msgstr "Only a Review Group Member invited to this journal's poll may access it."
 
+msgid "plugins.generic.groupReview.participation.saved"
+msgstr "The participation record was saved."
+
+msgid "plugins.generic.groupReview.participation.error.saveFailed"
+msgstr "The participation record could not be saved. Please try again."
+
+msgid "plugins.generic.groupReview.participation.retrieved"
+msgstr "Participation records retrieved."
+
+msgid "plugins.generic.groupReview.participation.error.invalidFilter"
+msgstr "Supply a valid submission ID and, optionally, a valid reviewer user ID."
+
+msgid "plugins.generic.groupReview.participation.error.notFound"
+msgstr "The submission was not found in this journal."
+
+msgid "plugins.generic.groupReview.participation.error.forbidden"
+msgstr "You may only view your own participation records."
+
+msgid "plugins.generic.groupReview.participation.error.readFailed"
+msgstr "The participation records could not be retrieved. Please try again."
+
 msgid "plugins.generic.groupReview.create.title"
 msgstr "Create Group Review Poll"
 
