@@ -11,6 +11,7 @@ use APP\facades\Repo;
 use APP\handler\Handler;
 use APP\notification\NotificationManager;
 use APP\plugins\generic\groupReview\classes\GroupReviewService;
+use APP\plugins\generic\groupReview\classes\ParticipationService;
 use APP\plugins\generic\groupReview\classes\mail\GroupReviewPollCreated;
 use APP\plugins\generic\groupReview\classes\mail\GroupReviewPollThankInvitees;
 use APP\plugins\generic\groupReview\classes\mail\GroupReviewPollThankRgms;
@@ -20,7 +21,11 @@ use APP\plugins\generic\groupReview\classes\security\authorization\LeaderRequire
 use APP\plugins\generic\groupReview\GroupReviewPlugin;
 use APP\template\TemplateManager;
 use Carbon\Carbon;
+use DomainException;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
+use InvalidArgumentException;
+use PKP\core\JSONMessage;
 use PKP\security\authorization\ContextAccessPolicy;
 use PKP\security\authorization\ContextRequiredPolicy;
 use PKP\security\authorization\UserRequiredPolicy;
@@ -37,8 +42,10 @@ class GroupReviewHandler extends Handler
     private const LEADER_OPERATIONS = [
         'create', 'store', 'invite', 'storeInvitations', 'view', 'edit', 'update',
         'selectMeetingMembers', 'reviewMessages', 'finalize', 'cancel', 'resend',
+        'saveParticipation',
     ];
     private const INVITEE_OPERATIONS = ['availability', 'saveAvailability'];
+    private const PARTICIPATION_READ_OPERATIONS = ['getParticipation'];
 
     public function __construct(GroupReviewPlugin $plugin)
     {
@@ -55,6 +62,10 @@ class GroupReviewHandler extends Handler
             self::LEADER_OPERATIONS
         );
         $this->addRoleAssignment(Role::ROLE_ID_SUB_EDITOR, self::INVITEE_OPERATIONS);
+        $this->addRoleAssignment(
+            [Role::ROLE_ID_MANAGER, Role::ROLE_ID_SUB_EDITOR, Role::ROLE_ID_REVIEWER],
+            self::PARTICIPATION_READ_OPERATIONS
+        );
     }
 
     public function authorize($request, &$args, $roleAssignments)
@@ -193,6 +204,146 @@ class GroupReviewHandler extends Handler
             'session' => $session,
             'backUrl' => $request->getRouter()->url($request, null, 'groupReview', 'participation'),
         ]);
+    }
+
+    public function saveParticipation($args, $request): JSONMessage
+    {
+        if (!$request->isPost() || !$request->checkCSRF()) {
+            return $this->participationResponse(
+                false,
+                'invalid_request',
+                __('plugins.generic.groupReview.error.invalidRequest')
+            );
+        }
+
+        $context = $request->getContext();
+        $user = $request->getUser();
+        $sessionId = (int) $request->getUserVar('pollId');
+        $data = [
+            'reviewer_user_id' => $request->getUserVar('reviewerUserId'),
+            'attendance' => $request->getUserVar('attendance'),
+            'contribution_types' => $request->getUserVar('contributionTypes'),
+            'contribution_comments' => $request->getUserVar('contributionComments'),
+            'shaping_feedback_types' => $request->getUserVar('shapingFeedbackTypes'),
+            'shaping_feedback_comments' => $request->getUserVar('shapingFeedbackComments'),
+            'other_contribution' => $request->getUserVar('otherContribution'),
+            'status' => $request->getUserVar('status'),
+        ];
+
+        try {
+            $saved = (new ParticipationService())->saveForSession(
+                (int) $context->getId(),
+                $sessionId,
+                (int) $user->getId(),
+                $data
+            );
+        } catch (InvalidArgumentException $e) {
+            return $this->participationResponse(false, 'validation_failed', $e->getMessage());
+        } catch (Throwable $e) {
+            error_log('Group Review participation save failed: ' . $e->getMessage());
+            return $this->participationResponse(
+                false,
+                'save_failed',
+                __('plugins.generic.groupReview.participation.error.saveFailed')
+            );
+        }
+
+        $response = $this->participationResponse(
+            true,
+            $saved['created'] ? 'created' : 'updated',
+            __('plugins.generic.groupReview.participation.saved')
+        );
+        $response->setAdditionalAttributes([
+            'code' => $saved['created'] ? 'created' : 'updated',
+            'participationId' => $saved['participation_id'],
+            'recordStatus' => $saved['status'],
+        ]);
+        return $response;
+    }
+
+    public function getParticipation($args, $request): JSONMessage
+    {
+        if ($request->isPost()) {
+            return $this->participationResponse(
+                false,
+                'invalid_request',
+                __('plugins.generic.groupReview.error.invalidRequest')
+            );
+        }
+
+        $submissionId = $this->positiveParticipationId($request->getUserVar('submissionId'));
+        $requestedReviewer = $request->getUserVar('reviewerUserId');
+        $reviewerId = $requestedReviewer === null
+            ? null
+            : $this->positiveParticipationId($requestedReviewer);
+        if ($submissionId === null || ($requestedReviewer !== null && $reviewerId === null)) {
+            return $this->participationResponse(
+                false,
+                'invalid_request',
+                __('plugins.generic.groupReview.participation.error.invalidFilter')
+            );
+        }
+
+        try {
+            $contextId = (int) $request->getContext()->getId();
+            $submission = Repo::submission()->get($submissionId);
+            if (!$submission || (int) $submission->getContextId() !== $contextId) {
+                return $this->participationResponse(
+                    false,
+                    'not_found',
+                    __('plugins.generic.groupReview.participation.error.notFound')
+                );
+            }
+
+            $user = $request->getUser();
+            $userId = (int) $user->getId();
+            $isManager = $user->hasRole([Role::ROLE_ID_MANAGER], $contextId);
+            $qualityEditorGroupId = $isManager
+                ? null
+                : $this->service->getUserGroupIdByAbbreviation($contextId, 'QRE');
+            $isQualityEditor = $qualityEditorGroupId !== null
+                && DB::table('user_groups')
+                    ->where('user_group_id', $qualityEditorGroupId)
+                    ->where('role_id', Role::ROLE_ID_SUB_EDITOR)
+                    ->exists()
+                && DB::table('user_user_groups')
+                    ->where('user_group_id', $qualityEditorGroupId)
+                    ->where('user_id', $userId)
+                    ->exists();
+            $canReadAll = $isManager
+                || $isQualityEditor
+                || $this->service->isLeader($contextId, $submissionId, $userId);
+            $participation = new ParticipationService();
+            $reviewerId = $participation->readableReviewerId($reviewerId, $userId, $canReadAll);
+            $records = $participation->getForSubmission($contextId, $submissionId, $reviewerId);
+        } catch (DomainException $e) {
+            return $this->participationResponse(
+                false,
+                'forbidden',
+                __('plugins.generic.groupReview.participation.error.forbidden')
+            );
+        } catch (Throwable $e) {
+            error_log('Group Review participation retrieval failed: ' . $e->getMessage());
+            return $this->participationResponse(
+                false,
+                'read_failed',
+                __('plugins.generic.groupReview.participation.error.readFailed')
+            );
+        }
+
+        $response = $this->participationResponse(
+            true,
+            'ok',
+            __('plugins.generic.groupReview.participation.retrieved')
+        );
+        $response->setAdditionalAttributes(['code' => 'ok', 'records' => $records]);
+        return $response;
+    }
+
+    private function positiveParticipationId(mixed $value): ?int
+    {
+        $id = filter_var($value, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+        return $id === false ? null : $id;
     }
 
     private function participationSessions($request): array
@@ -1110,6 +1261,13 @@ class GroupReviewHandler extends Handler
         if (!$request->isPost() || !$request->checkCSRF()) {
             throw new \RuntimeException(__('plugins.generic.groupReview.error.invalidRequest'));
         }
+    }
+
+    private function participationResponse(bool $success, string $code, string $message): JSONMessage
+    {
+        $response = new JSONMessage($success, $message);
+        $response->setAdditionalAttributes(['code' => $code]);
+        return $response;
     }
 
     private function intArray($value): array
