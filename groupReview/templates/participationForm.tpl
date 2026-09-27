@@ -34,7 +34,7 @@
 
 			<div class="grpTool__pagination">
 				<div class="grpTool__paginationGroup">
-					<button type="button" class="grpTool__pageNav{if $page === 0} grpTool__pageNav--disabled{/if}" data-grp-page-step="-1"{if $page === 0} disabled{/if}>&larr; Previous</button>
+					<button type="button" class="grpTool__pageNav{if $page === 0} grpTool__pageNav--disabled{/if}" data-grp-page-step="-1"{if $page === 0} disabled{/if}>Previous</button>
 					{foreach from=$pages item=pageInfo}
 						<span class="grpTool__dots" data-grp-page="{$pageInfo.index}"{if $pageInfo.index !== $page} hidden{/if}>
 							{foreach from=$pages item=dot}
@@ -47,7 +47,7 @@
 					{foreach from=$pages item=pageInfo}
 						<span class="grp__muted grpTool__pageRange" data-grp-page="{$pageInfo.index}"{if $pageInfo.index !== $page} hidden{/if}>{$pageInfo.rangeLabel}</span>
 					{/foreach}
-					<button type="button" class="grpTool__pageNav{if $page === $lastPage} grpTool__pageNav--disabled{/if}" data-grp-page-step="1"{if $page === $lastPage} disabled{/if}>Next &rarr;</button>
+					<button type="button" class="grpTool__pageNav grpTool__pageNav--next{if $page === $lastPage} grpTool__pageNav--disabled{/if}" data-grp-page-step="1"{if $page === $lastPage} disabled{/if}><span>Next</span></button>
 				</div>
 			</div>
 
@@ -77,13 +77,12 @@
 						<td>Meeting attendance</td>
 						{foreach from=$reviewers item=reviewer}
 							<td data-grp-page="{$reviewer.page}"{if $reviewer.page !== $page} hidden{/if}>
-								<input type="hidden" name="reviewers[{$reviewer.id|intval}][reviewerUserId]" value="{$reviewer.id|intval}">
 								<select class="grpTool__attendanceSelect" name="reviewers[{$reviewer.id|intval}][attendance]">
 									{foreach from=$attendanceOptions key=optionKey item=optionLabel}
 										<option value="{$optionKey}"{if $reviewer.attendance === $optionKey} selected{/if}>{$optionLabel|escape}</option>
 									{/foreach}
 								</select>
-								<input type="text" class="grpTool__attendanceNote" name="reviewers[{$reviewer.id|intval}][attendanceOther]" value="{$reviewer.attendanceNote|escape}" placeholder="If other, specify">
+								<input type="text" class="grpTool__attendanceNote" name="reviewers[{$reviewer.id|intval}][attendanceOther]" value="{$reviewer.attendanceNote|escape}"{if $reviewer.attendance !== 'other'} hidden{/if}>
 							</td>
 						{/foreach}
 						{foreach from=$emptyReviewerSlots item=_emptySlot}
@@ -155,7 +154,7 @@
 
 			<div class="grpTool__pagination">
 				<div class="grpTool__paginationGroup">
-					<button type="button" class="grpTool__pageNav{if $page === 0} grpTool__pageNav--disabled{/if}" data-grp-page-step="-1"{if $page === 0} disabled{/if}>&larr; Previous</button>
+					<button type="button" class="grpTool__pageNav{if $page === 0} grpTool__pageNav--disabled{/if}" data-grp-page-step="-1"{if $page === 0} disabled{/if}>Previous</button>
 					{foreach from=$pages item=pageInfo}
 						<span class="grpTool__dots" data-grp-page="{$pageInfo.index}"{if $pageInfo.index !== $page} hidden{/if}>
 							{foreach from=$pages item=dot}
@@ -168,7 +167,7 @@
 					{foreach from=$pages item=pageInfo}
 						<span class="grp__muted grpTool__pageRange" data-grp-page="{$pageInfo.index}"{if $pageInfo.index !== $page} hidden{/if}>{$pageInfo.rangeLabel}</span>
 					{/foreach}
-					<button type="button" class="grpTool__pageNav{if $page === $lastPage} grpTool__pageNav--disabled{/if}" data-grp-page-step="1"{if $page === $lastPage} disabled{/if}>Next &rarr;</button>
+					<button type="button" class="grpTool__pageNav grpTool__pageNav--next{if $page === $lastPage} grpTool__pageNav--disabled{/if}" data-grp-page-step="1"{if $page === $lastPage} disabled{/if}><span>Next</span></button>
 				</div>
 			</div>
 

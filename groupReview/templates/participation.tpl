@@ -23,7 +23,7 @@
 							{if $session.lastSaved}
 								<span class="grp__muted">Last saved {$session.lastSaved|escape}</span>
 							{/if}
-							<a href="{$session.openUrl|escape}" class="grpTool__openLink">Open &rarr;</a>
+							<a href="{$session.openUrl|escape}" class="grpTool__openLink">Open</a>
 						</div>
 					</li>
 				{foreachelse}

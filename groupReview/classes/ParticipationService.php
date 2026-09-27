@@ -56,7 +56,7 @@ class ParticipationService
      * @param array{general_comments?:?string, submission_comment?:?string} $form
      *
      * @return array{
-     *   form_id:int, status:string,
+     *   status:string,
      *   reviewers:array<int, array{participation_id:int, created:bool}>
      * }
      */
@@ -90,11 +90,10 @@ class ParticipationService
                 $saved[$reviewerUserId] = $this->saveReviewer($contextId, $session, $reviewerUserId, $data);
             }
 
-            $formId = $this->saveFormRecord($contextId, $sessionId, $userId, $form, $submit);
+            $this->saveFormRecord($contextId, $sessionId, $userId, $form, $submit);
             $current = $this->getFormRecord($contextId, $sessionId);
 
             return [
-                'form_id' => $formId,
                 'status' => (string) $current['status'],
                 'reviewers' => $saved,
             ];
@@ -331,7 +330,7 @@ class ParticipationService
      * Upsert the form-level record. Only form fields present in $form are
      * changed. A form stays submitted once submitted, even when edited later.
      */
-    private function saveFormRecord(int $contextId, int $sessionId, int $userId, array $form, bool $submit): int
+    private function saveFormRecord(int $contextId, int $sessionId, int $userId, array $form, bool $submit): void
     {
         $now = gmdate('Y-m-d H:i:s');
         $values = [
@@ -353,15 +352,15 @@ class ParticipationService
             DB::table('group_review_participation_forms')
                 ->where('form_id', (int) $existing['form_id'])
                 ->update($values);
-            return (int) $existing['form_id'];
+            return;
         }
 
-        return (int) DB::table('group_review_participation_forms')->insertGetId(array_merge([
+        DB::table('group_review_participation_forms')->insert(array_merge([
             'context_id' => $contextId,
             'session_id' => $sessionId,
             'status' => self::STATUS_DRAFT,
             'created_at' => $now,
-        ], $values), 'form_id');
+        ], $values));
     }
 
     private function getFormRecord(int $contextId, int $sessionId): ?array
