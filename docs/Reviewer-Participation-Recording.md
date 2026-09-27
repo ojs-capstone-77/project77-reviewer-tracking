@@ -1,6 +1,7 @@
 # Reviewer Participation Recording Requirements
 
-**Prepared by:** Jahan Haidari (BA)
+**Creator by:** Jahan Haidari (BA)
+
 **Team:** 77
 
 ---
