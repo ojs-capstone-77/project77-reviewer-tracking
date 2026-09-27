@@ -96,6 +96,9 @@ msgstr "Only a current Review Group Leader (RGL) assigned to this submission in 
 msgid "plugins.generic.groupReview.authorization.invitee"
 msgstr "Only a Review Group Member invited to this journal's poll may access it."
 
+msgid "plugins.generic.groupReview.authorization.participation"
+msgstr "Only the journal's Manager, an assigned Journal editor, or the assigned Review Group Leader for this submission may view or record participation."
+
 msgid "plugins.generic.groupReview.participation.saved"
 msgstr "The participation record was saved."
 

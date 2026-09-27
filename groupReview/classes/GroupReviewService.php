@@ -79,6 +79,84 @@ class GroupReviewService
         return (bool) $assignments->next();
     }
 
+    /**
+     * The submission a group-review session belongs to, or null if no
+     * session with that ID exists in this journal.
+     */
+    public function getSessionSubmissionId(int $contextId, int $sessionId): ?int
+    {
+        $row = DB::table('group_review_sessions')
+            ->where('context_id', $contextId)
+            ->where('session_id', $sessionId)
+            ->first();
+
+        return $row ? (int) $row->submission_id : null;
+    }
+
+    /**
+     * Whether the user is the journal's assigned Journal editor for this
+     * submission. Journal enrollment alone is not enough; a real stage
+     * assignment on this exact submission is required, same as isLeader().
+     */
+    public function isAssignedEditor(int $contextId, int $submissionId, int $userId): bool
+    {
+        $submission = Repo::submission()->get($submissionId);
+        if (!$submission
+            || (int) $submission->getContextId() !== $contextId
+            || (int) $submission->getStageId() !== WORKFLOW_STAGE_ID_EXTERNAL_REVIEW
+            || (int) $submission->getStatus() !== PKPSubmission::STATUS_QUEUED) {
+            return false;
+        }
+
+        $editorGroupId = $this->getUserGroupIdByName($contextId, 'Journal editor');
+        if (!$editorGroupId) {
+            return false;
+        }
+
+        $stageAssignmentDao = DAORegistry::getDAO('StageAssignmentDAO');  /** @var StageAssignmentDAO $stageAssignmentDao */
+        $assignments = $stageAssignmentDao->getBySubmissionAndStageId(
+            $submissionId,
+            WORKFLOW_STAGE_ID_EXTERNAL_REVIEW,
+            $editorGroupId,
+            $userId
+        );
+
+        return (bool) $assignments->next();
+    }
+
+    /**
+     * Whether the user belongs to the journal's "Journal manager" user
+     * group. Managers are unrestricted: no per-submission check needed.
+     */
+    public function isManager(int $contextId, int $userId): bool
+    {
+        $managerGroupId = $this->getUserGroupIdByName($contextId, 'Journal manager');
+        if (!$managerGroupId) {
+            return false;
+        }
+
+        return DB::table('user_user_groups')
+            ->where('user_group_id', $managerGroupId)
+            ->where('user_id', $userId)
+            ->exists();
+    }
+
+    /**
+     * Append a line to the plugin's own access-control log file, kept
+     * separate from PHP's generic error log so denied attempts are easy
+     * to find and review on their own.
+     */
+    public function logAccessDenied(string $message): void
+    {
+        $logDir = dirname(__DIR__) . '/logs';
+        if (!is_dir($logDir)) {
+            @mkdir($logDir, 0755, true);
+        }
+
+        $line = '[' . gmdate('Y-m-d H:i:s') . ' UTC] ' . $message . PHP_EOL;
+        @file_put_contents($logDir . '/participation-access.log', $line, FILE_APPEND | LOCK_EX);
+    }
+
     public function isInvited(int $contextId, int $sessionId, int $userId): bool
     {
         return $this->rgmIsEligible($contextId, $userId)
@@ -238,6 +316,34 @@ class GroupReviewService
         foreach ($groups as $group) {
             foreach ($locales as $locale) {
                 if (strcasecmp(trim((string) $group->getAbbrev($locale)), $abbreviation) === 0) {
+                    return (int) $group->getId();
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Look up a user group by its display name rather than its
+     * abbreviation. "Journal manager" and "Journal editor" are OJS's own
+     * stock groups and are not guaranteed to have a plugin abbreviation
+     * set, unlike the plugin's own RGL/RGM groups.
+     */
+    public function getUserGroupIdByName(int $contextId, string $name): ?int
+    {
+        $groups = Repo::userGroup()->getCollector()
+            ->filterByContextIds([$contextId])
+            ->getMany();
+
+        $locales = array_values(array_unique(array_filter([
+            Locale::getLocale(),
+            'en',
+        ])));
+
+        foreach ($groups as $group) {
+            foreach ($locales as $locale) {
+                if (strcasecmp(trim((string) $group->getName($locale)), $name) === 0) {
                     return (int) $group->getId();
                 }
             }
