@@ -19,6 +19,7 @@ use APP\plugins\generic\groupReview\classes\notification\Notification as GroupRe
 use APP\plugins\generic\groupReview\classes\ParticipationService;
 use APP\plugins\generic\groupReview\classes\security\authorization\InviteeRequiredPolicy;
 use APP\plugins\generic\groupReview\classes\security\authorization\LeaderRequiredPolicy;
+use APP\plugins\generic\groupReview\classes\security\authorization\ParticipationAccessPolicy;
 use APP\plugins\generic\groupReview\GroupReviewPlugin;
 use APP\template\TemplateManager;
 use Carbon\Carbon;
@@ -48,6 +49,7 @@ class GroupReviewHandler extends Handler
         'saveParticipation',
     ];
     private const INVITEE_OPERATIONS = ['availability', 'saveAvailability'];
+    private const PARTICIPATION_OPERATIONS = ['participation', 'participationForm', 'participationRecorded'];
     private const PARTICIPATION_READ_OPERATIONS = ['getParticipation'];
     private const PARTICIPATION_DATE_FORMAT = 'j F Y, H:i';
 
@@ -83,6 +85,8 @@ class GroupReviewHandler extends Handler
             $this->addPolicy(new LeaderRequiredPolicy($request));
         } elseif (in_array($operation, self::INVITEE_OPERATIONS, true)) {
             $this->addPolicy(new InviteeRequiredPolicy($request));
+        } elseif (in_array($operation, self::PARTICIPATION_OPERATIONS, true)) {
+            $this->addPolicy(new ParticipationAccessPolicy($request));
         }
 
         return parent::authorize($request, $args, $roleAssignments);
