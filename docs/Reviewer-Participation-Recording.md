@@ -63,30 +63,21 @@ The following data fields will be captured during or after the group review meet
 
 ---
 
-## 4. Contribution Types
 
-| Option | Description |
-|--------|-------------|
-| Discussion | Contributed to verbal discussion during the meeting |
-| Writing | Contributed to written portions of the review |
-| Analysis | Contributed analytical input |
-| Editing | Contributed to editing or refining the review |
-| Other | Other contributions not covered by the above |
-
----
-
-## 5. Shaping the Feedback Response Options
+## 4. Shaping the Feedback Response Options
 
 | Option | Description |
 |--------|-------------|
 | Uploaded their notes or comments | Provided written input before or during the meeting |
 | Commented on the feedback draft | Provided feedback on the draft review report |
-| Offered creating the draft | Was willing to create the draft, even if not selected |
+| Offered creating the draft (or was willing to, not necessarily selected to do so) | Was willing to create the draft, even if not selected |
 | Created the draft | Actually created the draft review report |
+| Did not contribute to shaping the response | Had not played a part in shaping the response |
+| Other | Contributed in ways not listed in the checkbox |
 
 ---
 
-## 6. Who Needs to Record It
+## 5. Who Needs to Record It
 
 | Role | What They Record | When |
 |------|------------------|------|
@@ -98,7 +89,7 @@ The following data fields will be captured during or after the group review meet
 
 ---
 
-## 7. Problem It Solves
+## 6. Problem It Solves
 
 | Problem | Solution |
 |---------|----------|
@@ -111,7 +102,7 @@ The following data fields will be captured during or after the group review meet
 
 ---
 
-## 8. User Stories
+## 7. User Stories
 
 ### Review Group Leader
 
@@ -139,7 +130,7 @@ As a Reviewer, I want to view my own participation records so that I can track m
 
 ---
 
-## 9. Roles and Permissions
+## 8. Roles and Permissions
 
 | Role | Can View | Can Record | Can Edit |
 |------|----------|------------|----------|
@@ -151,7 +142,7 @@ As a Reviewer, I want to view my own participation records so that I can track m
 
 ---
 
-## 10. Acceptance Criteria
+## 9. Acceptance Criteria
 
 | Number | Acceptance Criteria                                                                                                                                   |
 |--------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -173,7 +164,7 @@ As a Reviewer, I want to view my own participation records so that I can track m
 
 ---
 
-## 11. Assumptions
+## 10. Assumptions
 
 1. All reviewers have a valid OJS user account.
 
@@ -191,7 +182,7 @@ As a Reviewer, I want to view my own participation records so that I can track m
 
 ---
 
-## 12. Open Questions
+## 11. Open Questions
 
 | Number | Question | Who to Ask   |
 |--------|----------|--------------|
@@ -203,7 +194,7 @@ As a Reviewer, I want to view my own participation records so that I can track m
 
 ---
 
-## 13. Future Considerations
+## 12. Future Considerations
 
 1. This data will feed into Tool 2, the Editor Monitoring Dashboard.
 
@@ -211,7 +202,7 @@ As a Reviewer, I want to view my own participation records so that I can track m
 
 3. Future enhancements may include bulk entry for multiple reviewers at once.
 
-## 14. Configurable Fields
+## 13. Configurable Fields
 Editors will manage which fields are configurable through journal settings.
 **Configurable options:**
 - Which fields are required vs optional
