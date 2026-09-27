@@ -574,9 +574,15 @@
 
 
 button.grpTool__pageNav {
+	margin: 0;
 	background: #fff;
 	font-family: inherit;
+	line-height: inherit;
 	cursor: pointer;
+}
+
+button.grpTool__pageNav:disabled {
+	cursor: default;
 }
 
 .grpTool__participationForm [hidden] {

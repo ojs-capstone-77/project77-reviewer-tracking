@@ -185,12 +185,8 @@
 				{if $isSubmitted}
 					<pkp-button :is-primary="true" @click="$modal.show('grpParticipationSubmit')">{$submitLabel}</pkp-button>
 				{else}
-					<span data-grp-page="{$lastPage}"{if $lastPage !== $page} hidden{/if}>
-						<pkp-button :is-primary="true" @click="$modal.show('grpParticipationSubmit')">{$submitLabel}</pkp-button>
-					</span>
-					<span data-grp-before-last-page{if $lastPage === $page} hidden{/if}>
-						<pkp-button :is-primary="true" :is-disabled="true">{$submitLabel}</pkp-button>
-					</span>
+					<pkp-button :is-primary="true" @click="$modal.show('grpParticipationSubmit')" data-grp-page="{$lastPage}"{if $lastPage !== $page} hidden{/if}>{$submitLabel}</pkp-button>
+					<pkp-button :is-primary="true" :is-disabled="true" data-grp-before-last-page{if $lastPage === $page} hidden{/if}>{$submitLabel}</pkp-button>
 				{/if}
 			</p>
 			</form>
@@ -216,7 +212,7 @@
 		</label>
 		<template slot="footer">
 			<pkp-button @click="$modal.hide('grpParticipationSubmit')">Cancel</pkp-button>
-			<button type="submit" form="grpParticipationForm" name="formAction" value="submit" class="pkp_button pkp_button_primary">{$submitLabel}</button>
+			<button type="submit" form="grpParticipationForm" name="formAction" value="submit" class="pkpButton pkpButton--isPrimary">{$submitLabel}</button>
 		</template>
 	</pkp-modal>
 {/block}
