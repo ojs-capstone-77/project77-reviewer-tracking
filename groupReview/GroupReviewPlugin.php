@@ -10,6 +10,7 @@ namespace APP\plugins\generic\groupReview;
 
 use APP\core\Application;
 use APP\plugins\generic\groupReview\classes\GroupReviewService;
+use APP\plugins\generic\groupReview\classes\mail\GroupReviewParticipationSubmitted;
 use APP\plugins\generic\groupReview\classes\mail\GroupReviewPollClosing;
 use APP\plugins\generic\groupReview\classes\mail\GroupReviewPollCreated;
 use APP\plugins\generic\groupReview\classes\mail\GroupReviewPollThankInvitees;
@@ -275,7 +276,14 @@ class GroupReviewPlugin extends GenericPlugin
             'groupReviewCanLead' => $canManagePoll,
             'groupReviewUrl' => $request->getRouter()->url($request, null, 'groupReview', $op, null, $params),
             'groupReviewDashboardUrl' => $request->getRouter()->url($request, null, 'groupReview', 'index'),
-            'groupReviewParticipationUrl' => $request->getRouter()->url($request, null, 'groupReview', 'participation'),
+            'groupReviewParticipationUrl' => $request->getRouter()->url(
+                $request,
+                null,
+                'groupReview',
+                'participation',
+                null,
+                ['submissionId' => (int) $submission->getId()]
+            ),
         ]);
         $output .= $templateMgr->fetch($this->getTemplateResource('workflow/groupReviewTab.tpl'));
         return false;
@@ -293,6 +301,11 @@ class GroupReviewPlugin extends GenericPlugin
         $templateMgr->addStyleSheet(
             'groupReview',
             "{$request->getBaseUrl()}/{$this->getPluginPath()}/css/app.css",
+            ['contexts' => ['backend']]
+        );
+        $templateMgr->addJavaScript(
+            'groupReviewParticipationForm',
+            "{$request->getBaseUrl()}/{$this->getPluginPath()}/js/participationForm.js",
             ['contexts' => ['backend']]
         );
         return false;
@@ -315,6 +328,7 @@ class GroupReviewPlugin extends GenericPlugin
         $args[0]->push(GroupReviewPollClosing::class);
         $args[0]->push(GroupReviewPollThankRgms::class);
         $args[0]->push(GroupReviewPollThankInvitees::class);
+        $args[0]->push(GroupReviewParticipationSubmitted::class);
     }
 
     /** Render the two poll task labels used by the student implementation. */
@@ -326,6 +340,8 @@ class GroupReviewPlugin extends GenericPlugin
             $message = __('plugins.generic.groupReview.tasks.pollCreated.label');
         } elseif ($notification->getType() === GroupReviewNotification::NOTIFICATION_TYPE_POLL_CLOSING) {
             $message = __('plugins.generic.groupReview.tasks.pollClosing.label');
+        } elseif ($notification->getType() === GroupReviewNotification::NOTIFICATION_TYPE_PARTICIPATION_SUBMITTED) {
+            $message = __('plugins.generic.groupReview.tasks.participationSubmitted.label');
         }
     }
 

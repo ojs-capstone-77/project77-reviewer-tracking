@@ -22,6 +22,7 @@ class GroupReviewMigration extends Migration
         'GROUP_REVIEW_POLL_CLOSING',
         'GROUP_REVIEW_THANKS_INVITED_RGMS',
         'GROUP_REVIEW_THANKS_RGMS',
+        'GROUP_REVIEW_PARTICIPATION_SUBMITTED',
     ];
 
     public function up(): void
@@ -29,6 +30,8 @@ class GroupReviewMigration extends Migration
         $this->refreshEmailTemplates();
         $this->createSessionsTable();
         $this->createParticipationTable();
+        $this->alignParticipationTable();
+        $this->createParticipationFormsTable();
         $this->createSlotsTable();
         $this->createMembersTable();
         $this->createAvailabilityTable();
@@ -39,6 +42,7 @@ class GroupReviewMigration extends Migration
 
     public function down(): void
     {
+        Schema::dropIfExists('group_review_participation_forms');
         Schema::dropIfExists('group_review_participation');
         Schema::dropIfExists('group_review_reminder_log');
         Schema::dropIfExists('group_review_availability');
@@ -81,19 +85,78 @@ class GroupReviewMigration extends Migration
             $table->foreign('leader_user_id', 'grp_participation_leader_fk')
                 ->references('user_id')->on('users')->onDelete('cascade');
             $table->string('attendance', 64);
-            $table->json('contribution_types');
+            $table->text('attendance_other')->nullable();
             $table->text('contribution_comments')->nullable();
             $table->json('shaping_feedback_types');
             $table->text('shaping_feedback_comments')->nullable();
             $table->text('other_contribution')->nullable();
-            $table->string('status', 16)->default('draft');
             $table->dateTime('created_at');
             $table->dateTime('updated_at');
-            $table->dateTime('submitted_at')->nullable();
 
             $table->unique(['session_id', 'reviewer_user_id'], 'grp_participation_session_reviewer_unique');
             $table->index(['context_id', 'submission_id'], 'grp_participation_context_submission_idx');
             $table->index(['reviewer_user_id'], 'grp_participation_reviewer_idx');
+        });
+    }
+
+    /**
+     * Bring participation tables created before the form-level record
+     * existed in line with the current schema. Status and submission
+     * details now live on group_review_participation_forms.
+     */
+    private function alignParticipationTable(): void
+    {
+        if (!Schema::hasTable('group_review_participation')) {
+            return;
+        }
+
+        if (!Schema::hasColumn('group_review_participation', 'attendance_other')) {
+            Schema::table('group_review_participation', function (Blueprint $table) {
+                $table->text('attendance_other')->nullable();
+            });
+        }
+
+        $obsolete = array_values(array_filter(
+            ['contribution_types', 'status', 'submitted_at'],
+            fn (string $column): bool => Schema::hasColumn('group_review_participation', $column)
+        ));
+        if ($obsolete) {
+            Schema::table('group_review_participation', function (Blueprint $table) use ($obsolete) {
+                $table->dropColumn($obsolete);
+            });
+        }
+    }
+
+    /** One participation form per group-review session. */
+    private function createParticipationFormsTable(): void
+    {
+        if (Schema::hasTable('group_review_participation_forms')) {
+            return;
+        }
+
+        Schema::create('group_review_participation_forms', function (Blueprint $table) {
+            $table->bigInteger('form_id')->autoIncrement();
+            $table->bigInteger('context_id');
+            $table->foreign('context_id', 'grp_participation_form_context_fk')
+                ->references('journal_id')->on('journals')->onDelete('cascade');
+            $table->bigInteger('session_id');
+            $table->foreign('session_id', 'grp_participation_form_session_fk')
+                ->references('session_id')->on('group_review_sessions')->onDelete('cascade');
+            $table->string('status', 16)->default('draft');
+            $table->text('general_comments')->nullable();
+            $table->text('submission_comment')->nullable();
+            $table->dateTime('created_at');
+            $table->dateTime('updated_at');
+            $table->bigInteger('updated_by')->nullable();
+            $table->foreign('updated_by', 'grp_participation_form_updated_by_fk')
+                ->references('user_id')->on('users')->onDelete('set null');
+            $table->dateTime('submitted_at')->nullable();
+            $table->bigInteger('submitted_by')->nullable();
+            $table->foreign('submitted_by', 'grp_participation_form_submitted_by_fk')
+                ->references('user_id')->on('users')->onDelete('set null');
+
+            $table->unique(['session_id'], 'grp_participation_form_session_unique');
+            $table->index(['context_id'], 'grp_participation_form_context_idx');
         });
     }
 

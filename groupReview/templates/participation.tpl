@@ -17,13 +17,17 @@
 								Submission #{$session.submissionId} group review
 								<span class="grpTool__badge grpTool__badge--{$session.status}">{if $session.status === 'submitted'}Submitted{else}Draft{/if}</span>
 							</div>
-							<div class="grp__muted">Round {$session.round} &middot; {$session.reviewerCount} reviewers assigned &middot; {$session.meetingLabel}</div>
+							<div class="grp__muted">Round {$session.round} &middot; {$session.reviewerCount} reviewers assigned &middot; {$session.meetingLabel|escape}</div>
 						</div>
 						<div class="grpTool__listMeta">
-							<span class="grp__muted">Last saved {$session.lastSaved}</span>
-							<a href="{$session.openUrl|escape}" class="grpTool__openLink">Open &rarr;</a>
+							{if $session.lastSaved}
+								<span class="grp__muted">Last saved {$session.lastSaved|escape}</span>
+							{/if}
+							<a href="{$session.openUrl|escape}" class="grpTool__openLink">Open</a>
 						</div>
 					</li>
+				{foreachelse}
+					<li class="grpTool__listItem grp__muted">No review groups yet.</li>
 				{/foreach}
 			</ul>
 

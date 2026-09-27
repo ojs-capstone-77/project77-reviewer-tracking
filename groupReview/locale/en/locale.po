@@ -389,3 +389,33 @@ msgstr "Selected meeting time with time zone"
 
 msgid "plugins.generic.groupReview.emailVariable.meetingUrl"
 msgstr "Meeting URL"
+
+msgid "plugins.generic.groupReview.participation.error.formNotFound"
+msgstr "This review group does not have a participation form yet. Members must be selected first."
+
+msgid "plugins.generic.groupReview.participation.log.edited"
+msgstr "Participation form for round {$round} edited."
+
+msgid "plugins.generic.groupReview.participation.log.submitted"
+msgstr "Participation form for round {$round} submitted."
+
+msgid "plugins.generic.groupReview.participation.log.submittedWithComment"
+msgstr "Participation form for round {$round} submitted: \"{$comment}\""
+
+msgid "plugins.generic.groupReview.participation.noComment"
+msgstr "No comment was added."
+
+msgid "plugins.generic.groupReview.tasks.participationSubmitted.label"
+msgstr "A reviewer participation form has been submitted."
+
+msgid "plugins.generic.groupReview.emailVariable.round"
+msgstr "Review round number"
+
+msgid "plugins.generic.groupReview.emailVariable.submitterName"
+msgstr "Name of the user who submitted the form"
+
+msgid "plugins.generic.groupReview.emailVariable.comment"
+msgstr "Comment added when submitting the form"
+
+msgid "plugins.generic.groupReview.emailVariable.formUrl"
+msgstr "Participation form URL"

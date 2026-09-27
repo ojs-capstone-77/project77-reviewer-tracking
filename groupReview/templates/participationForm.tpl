@@ -23,26 +23,31 @@
 				</div>
 			</div>
 
+			{if $saveError}
+				<div class="grp__notice grp__notice--error">{translate key="plugins.generic.groupReview.participation.error.saveFailed"}</div>
+			{/if}
+
+			<form id="grpParticipationForm" method="post" action="{$saveUrl|escape}" data-grp-current-page="{$page|intval}" data-grp-page-count="{$pageCount|intval}">
+			{csrf}
+			<input type="hidden" name="sessionId" value="{$sessionId|intval}">
+			<input type="hidden" name="page" value="{$page|intval}">
+
 			<div class="grpTool__pagination">
 				<div class="grpTool__paginationGroup">
-					{if $previousUrl}
-						<a class="grpTool__pageNav" href="{$previousUrl|escape}">&larr; Previous</a>
-					{else}
-						<span class="grpTool__pageNav grpTool__pageNav--disabled">&larr; Previous</span>
-					{/if}
-					<span class="grpTool__dots">
-						{foreach from=$pageDots item=isActive}
-							<span class="grpTool__dot{if $isActive} grpTool__dot--active{/if}"></span>
-						{/foreach}
-					</span>
+					<button type="button" class="grpTool__pageNav{if $page === 0} grpTool__pageNav--disabled{/if}" data-grp-page-step="-1"{if $page === 0} disabled{/if}>Previous</button>
+					{foreach from=$pages item=pageInfo}
+						<span class="grpTool__dots" data-grp-page="{$pageInfo.index}"{if $pageInfo.index !== $page} hidden{/if}>
+							{foreach from=$pages item=dot}
+								<span class="grpTool__dot{if $dot.index === $pageInfo.index} grpTool__dot--active{/if}"></span>
+							{/foreach}
+						</span>
+					{/foreach}
 				</div>
 				<div class="grpTool__paginationGroup">
-					<span class="grp__muted grpTool__pageRange">{if $reviewersOnPage === 1}Reviewer{else}Reviewers{/if} {$rangeLabel} of {$reviewerCount}</span>
-					{if $nextUrl}
-						<a class="grpTool__pageNav" href="{$nextUrl|escape}">Next &rarr;</a>
-					{else}
-						<span class="grpTool__pageNav grpTool__pageNav--disabled">Next &rarr;</span>
-					{/if}
+					{foreach from=$pages item=pageInfo}
+						<span class="grp__muted grpTool__pageRange" data-grp-page="{$pageInfo.index}"{if $pageInfo.index !== $page} hidden{/if}>{$pageInfo.rangeLabel}</span>
+					{/foreach}
+					<button type="button" class="grpTool__pageNav grpTool__pageNav--next{if $page === $lastPage} grpTool__pageNav--disabled{/if}" data-grp-page-step="1"{if $page === $lastPage} disabled{/if}><span>Next</span></button>
 				</div>
 			</div>
 
@@ -56,11 +61,11 @@
 				<thead>
 					<tr>
 						<th>Criterion</th>
-						{foreach from=$pageReviewers item=reviewer}
-							<th>{$reviewer.name|escape}</th>
+						{foreach from=$reviewers item=reviewer}
+							<th data-grp-page="{$reviewer.page}"{if $reviewer.page !== $page} hidden{/if}>{$reviewer.name|escape}</th>
 						{/foreach}
 						{foreach from=$emptyReviewerSlots item=_emptySlot}
-							<th></th>
+							<th data-grp-page="{$lastPage}"{if $lastPage !== $page} hidden{/if}></th>
 						{/foreach}
 					</tr>
 				</thead>
@@ -70,20 +75,18 @@
 					</tr>
 					<tr>
 						<td>Meeting attendance</td>
-						{foreach from=$pageReviewers item=reviewer}
-							<td>
-								<select class="grpTool__attendanceSelect">
+						{foreach from=$reviewers item=reviewer}
+							<td data-grp-page="{$reviewer.page}"{if $reviewer.page !== $page} hidden{/if}>
+								<select class="grpTool__attendanceSelect" name="reviewers[{$reviewer.id|intval}][attendance]">
 									{foreach from=$attendanceOptions key=optionKey item=optionLabel}
 										<option value="{$optionKey}"{if $reviewer.attendance === $optionKey} selected{/if}>{$optionLabel|escape}</option>
 									{/foreach}
 								</select>
-								{if $reviewer.attendance === 'other'}
-									<input type="text" class="grpTool__attendanceNote" value="{$reviewer.attendanceNote|escape}">
-								{/if}
+								<input type="text" class="grpTool__attendanceNote" name="reviewers[{$reviewer.id|intval}][attendanceOther]" value="{$reviewer.attendanceNote|escape}"{if $reviewer.attendance !== 'other'} hidden{/if}>
 							</td>
 						{/foreach}
 						{foreach from=$emptyReviewerSlots item=_emptySlot}
-							<td></td>
+							<td data-grp-page="{$lastPage}"{if $lastPage !== $page} hidden{/if}></td>
 						{/foreach}
 					</tr>
 					<tr>
@@ -91,11 +94,11 @@
 							Comments on contributions
 							<div class="grpTool__matrixHint">e.g. level of preparedness, interaction with others, depth of contributions. Focus on elements that stand out by their strengths or indicate where professional development might be required; no need to comment on expected levels of contributions.</div>
 						</td>
-						{foreach from=$pageReviewers item=reviewer}
-							<td><textarea class="grpTool__matrixTextarea">{$reviewer.meetingComments|escape}</textarea></td>
+						{foreach from=$reviewers item=reviewer}
+							<td data-grp-page="{$reviewer.page}"{if $reviewer.page !== $page} hidden{/if}><textarea class="grpTool__matrixTextarea" name="reviewers[{$reviewer.id|intval}][contributionComments]">{$reviewer.meetingComments|escape}</textarea></td>
 						{/foreach}
 						{foreach from=$emptyReviewerSlots item=_emptySlot}
-							<td></td>
+							<td data-grp-page="{$lastPage}"{if $lastPage !== $page} hidden{/if}></td>
 						{/foreach}
 					</tr>
 
@@ -104,13 +107,13 @@
 					</tr>
 					<tr>
 						<td>Contributions</td>
-						{foreach from=$pageReviewers item=reviewer}
-							<td>
+						{foreach from=$reviewers item=reviewer}
+							<td data-grp-page="{$reviewer.page}"{if $reviewer.page !== $page} hidden{/if}>
 								<div class="grpTool__checks grpTool__checks--stacked">
 									{assign var="checkedMap" value=$reviewer.contributionChecked}
 									{foreach from=$contributionOptions key=optionKey item=optionLabel}
 										<label class="grpTool__check">
-											<input type="checkbox"{if $checkedMap[$optionKey]} checked{/if}>
+											<input type="checkbox" name="reviewers[{$reviewer.id|intval}][shapingFeedbackTypes][]" value="{$optionKey|escape}"{if $checkedMap[$optionKey]} checked{/if}>
 											{$optionLabel|escape}
 										</label>
 									{/foreach}
@@ -118,7 +121,7 @@
 							</td>
 						{/foreach}
 						{foreach from=$emptyReviewerSlots item=_emptySlot}
-							<td></td>
+							<td data-grp-page="{$lastPage}"{if $lastPage !== $page} hidden{/if}></td>
 						{/foreach}
 					</tr>
 					<tr>
@@ -126,11 +129,11 @@
 							Comments on contributions
 							<div class="grpTool__matrixHint">Again, focus on elements that stand out by their strengths or indicate where professional development might be required; no need to comment on expected levels of contributions.</div>
 						</td>
-						{foreach from=$pageReviewers item=reviewer}
-							<td><textarea class="grpTool__matrixTextarea">{$reviewer.feedbackComments|escape}</textarea></td>
+						{foreach from=$reviewers item=reviewer}
+							<td data-grp-page="{$reviewer.page}"{if $reviewer.page !== $page} hidden{/if}><textarea class="grpTool__matrixTextarea" name="reviewers[{$reviewer.id|intval}][shapingFeedbackComments]">{$reviewer.feedbackComments|escape}</textarea></td>
 						{/foreach}
 						{foreach from=$emptyReviewerSlots item=_emptySlot}
-							<td></td>
+							<td data-grp-page="{$lastPage}"{if $lastPage !== $page} hidden{/if}></td>
 						{/foreach}
 					</tr>
 
@@ -139,11 +142,11 @@
 					</tr>
 					<tr>
 						<td>Other comments</td>
-						{foreach from=$pageReviewers item=reviewer}
-							<td><textarea class="grpTool__matrixTextarea">{$reviewer.otherComments|escape}</textarea></td>
+						{foreach from=$reviewers item=reviewer}
+							<td data-grp-page="{$reviewer.page}"{if $reviewer.page !== $page} hidden{/if}><textarea class="grpTool__matrixTextarea" name="reviewers[{$reviewer.id|intval}][otherContribution]">{$reviewer.otherComments|escape}</textarea></td>
 						{/foreach}
 						{foreach from=$emptyReviewerSlots item=_emptySlot}
-							<td></td>
+							<td data-grp-page="{$lastPage}"{if $lastPage !== $page} hidden{/if}></td>
 						{/foreach}
 					</tr>
 				</tbody>
@@ -151,44 +154,48 @@
 
 			<div class="grpTool__pagination">
 				<div class="grpTool__paginationGroup">
-					{if $previousUrl}
-						<a class="grpTool__pageNav" href="{$previousUrl|escape}">&larr; Previous</a>
-					{else}
-						<span class="grpTool__pageNav grpTool__pageNav--disabled">&larr; Previous</span>
-					{/if}
-					<span class="grpTool__dots">
-						{foreach from=$pageDots item=isActive}
-							<span class="grpTool__dot{if $isActive} grpTool__dot--active{/if}"></span>
-						{/foreach}
-					</span>
+					<button type="button" class="grpTool__pageNav{if $page === 0} grpTool__pageNav--disabled{/if}" data-grp-page-step="-1"{if $page === 0} disabled{/if}>Previous</button>
+					{foreach from=$pages item=pageInfo}
+						<span class="grpTool__dots" data-grp-page="{$pageInfo.index}"{if $pageInfo.index !== $page} hidden{/if}>
+							{foreach from=$pages item=dot}
+								<span class="grpTool__dot{if $dot.index === $pageInfo.index} grpTool__dot--active{/if}"></span>
+							{/foreach}
+						</span>
+					{/foreach}
 				</div>
 				<div class="grpTool__paginationGroup">
-					<span class="grp__muted grpTool__pageRange">{if $reviewersOnPage === 1}Reviewer{else}Reviewers{/if} {$rangeLabel} of {$reviewerCount}</span>
-					{if $nextUrl}
-						<a class="grpTool__pageNav" href="{$nextUrl|escape}">Next &rarr;</a>
-					{else}
-						<span class="grpTool__pageNav grpTool__pageNav--disabled">Next &rarr;</span>
-					{/if}
+					{foreach from=$pages item=pageInfo}
+						<span class="grp__muted grpTool__pageRange" data-grp-page="{$pageInfo.index}"{if $pageInfo.index !== $page} hidden{/if}>{$pageInfo.rangeLabel}</span>
+					{/foreach}
+					<button type="button" class="grpTool__pageNav grpTool__pageNav--next{if $page === $lastPage} grpTool__pageNav--disabled{/if}" data-grp-page-step="1"{if $page === $lastPage} disabled{/if}><span>Next</span></button>
 				</div>
 			</div>
 
 			<label class="grp__field grpTool__generalComments">
 				<span>General comments for the editors</span>
-				<textarea></textarea>
+				<textarea name="generalComments">{$generalComments|escape}</textarea>
 			</label>
 
 			<p class="grp__actions grpTool__formActions">
 				<span class="grpTool__formActionsLeft">
-					<button type="button" class="pkp_button">Save</button>
+					<button type="submit" name="formAction" value="save" class="pkp_button" data-grp-save disabled>Save</button>
 					<a class="pkp_button grpTool__cancelButton" href="{$cancelUrl|escape}">Cancel</a>
 				</span>
-				<pkp-button id="grpParticipationSubmit" :is-primary="true" :is-disabled="{if !$canSubmit}true{else}false{/if}" @click="$modal.show('grpParticipationSubmit')">{$submitLabel}</pkp-button>
+				{if $isSubmitted}
+					<pkp-button :is-primary="true" @click="$modal.show('grpParticipationSubmit')">{$submitLabel}</pkp-button>
+				{else}
+					<pkp-button :is-primary="true" @click="$modal.show('grpParticipationSubmit')" data-grp-page="{$lastPage}"{if $lastPage !== $page} hidden{/if}>{$submitLabel}</pkp-button>
+					<pkp-button :is-primary="true" :is-disabled="true" data-grp-before-last-page{if $lastPage === $page} hidden{/if}>{$submitLabel}</pkp-button>
+				{/if}
 			</p>
+			</form>
 			<div class="grp__muted grpTool__lastSaved">
 				{if $isSubmitted}
-					<div>Submitted {$session.submittedAt} by {$session.submittedBy|escape}</div>
+					<div>Submitted {$session.submittedAt|escape} by {$session.submittedBy|escape}</div>
 				{/if}
-				<div>Last saved {$session.lastSaved} by {$session.lastSavedBy|escape}</div>
+				{if $session.lastSaved}
+					<div>Last saved {$session.lastSaved|escape} by {$session.lastSavedBy|escape}</div>
+				{/if}
 			</div>
 		</div>
 	</div>
@@ -200,11 +207,11 @@
 	>
 		<label class="grp__field">
 			<span>Comments</span>
-			<textarea id="grpParticipationModalComments"></textarea>
+			<textarea id="grpParticipationModalComments" name="submissionComment" form="grpParticipationForm"></textarea>
 		</label>
 		<template slot="footer">
 			<pkp-button @click="$modal.hide('grpParticipationSubmit')">Cancel</pkp-button>
-			<pkp-button element="a" href="{$submitUrl|escape}" :is-primary="true">{$submitLabel}</pkp-button>
+			<button type="submit" form="grpParticipationForm" name="formAction" value="submit" class="pkpButton pkpButton--isPrimary">{$submitLabel}</button>
 		</template>
 	</pkp-modal>
 {/block}
