@@ -105,7 +105,7 @@ http://localhost:8080/test/management/settings/workflow#review
 
 http://localhost:8080/test/management/settings/access#roles
 
-The plugin requires these two roles to exist on the journal.
+The plugin requires these two roles to exist on the journal. The test data script (see [Loading test data](#loading-test-data)) creates them if they're missing.
 
 Role for **Review Group Leader**
 
@@ -175,6 +175,20 @@ No command needed, this is picked up live by the container.
 docker exec -it ojsdev_app php lib/pkp/tools/installPluginVersion.php plugins/generic/groupReview/version.xml
 ```
 
+### Loading test data
+
+Creates a realistic set of group review data (roles, test users, submissions, polls, participation forms and decisions) so the dashboard and participation pages have something to show. Dates are relative to today, so every run on the same day creates the same data. What it contains is described at the top of `groupReview/tests/testData.php`.
+
+Run the database migration first if it has changed, then:
+```
+docker exec -it -u 100:101 -e XDEBUG_MODE=off ojsdev_app php /var/www/html/plugins/generic/groupReview/tests/testData.php <journal path> seed
+```
+
+The journal path is the part of the journal's URL after `index.php/`. For `http://localhost:8080/index.php/test` it is `test`.
+
+- `seed` removes any existing test data, then creates it fresh. Use `clear` instead to only remove it.
+- Test accounts are named by role (`test_editor_01`, `test_rgl_01`, `test_rgm_01`, …) and use the password `password`.
+
 ### Checking before a pull request
 
 CI runs these on every push.
@@ -207,6 +221,7 @@ vendor/bin/phpstan analyse
 | `docker compose restart app` | Restart app container |
 | `docker exec -it ojsdev_app bash` | Shell into the app container |
 | `docker exec -it ojsdev_app php lib/pkp/tools/installPluginVersion.php plugins/generic/groupReview/version.xml` | Rerun the plugin's DB migration after editing `GroupReviewMigration.php` |
+| `docker exec -it -u 100:101 -e XDEBUG_MODE=off ojsdev_app php /var/www/html/plugins/generic/groupReview/tests/testData.php <journal path> seed` | Load test data (use `clear` to remove it) |
 | `docker exec -it ojsdev_db mariadb -u ojsdev -p ojs` | MySQL shell on the OJS database |
 | `composer install` | Install this repo's dev dependencies |
 | `composer install -d ojs-src/lib/pkp --ignore-platform-reqs` | Install OJS core's dependencies |
@@ -215,6 +230,8 @@ vendor/bin/phpstan analyse
 ## 6. Plugin usage
 
 ### Create test users
+
+Or load the test data instead (see [Loading test data](#loading-test-data)), which creates a full set of test users.
 
 http://localhost:8080/test/management/settings/access#users
 
