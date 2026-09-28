@@ -36,12 +36,16 @@ class GroupReviewMigration extends Migration
         $this->createMembersTable();
         $this->createAvailabilityTable();
         $this->createReminderLogTable();
+        $this->createReviewerLabelsTable();
+        $this->createReviewerLabelHistoryTable();
         $this->migrateLegacyContextSettings();
         $this->migrateLegacyData();
     }
 
     public function down(): void
     {
+        Schema::dropIfExists('group_review_reviewer_label_history');
+        Schema::dropIfExists('group_review_reviewer_labels');
         Schema::dropIfExists('group_review_participation_forms');
         Schema::dropIfExists('group_review_participation');
         Schema::dropIfExists('group_review_reminder_log');
@@ -313,6 +317,55 @@ class GroupReviewMigration extends Migration
 
             $table->unique(['slot_id', 'user_id'], 'grp_avail_slot_user_unique');
             $table->index(['session_id', 'user_id'], 'grp_avail_session_user_idx');
+        });
+    }
+
+    /** Each reviewer's current label values, one row per value. */
+    private function createReviewerLabelsTable(): void
+    {
+        if (Schema::hasTable('group_review_reviewer_labels')) {
+            return;
+        }
+
+        Schema::create('group_review_reviewer_labels', function (Blueprint $table) {
+            $table->bigInteger('label_id')->autoIncrement();
+            $table->bigInteger('context_id');
+            $table->foreign('context_id', 'grp_label_context_fk')
+                ->references('journal_id')->on('journals')->onDelete('cascade');
+            $table->bigInteger('user_id');
+            $table->foreign('user_id', 'grp_label_user_fk')
+                ->references('user_id')->on('users')->onDelete('cascade');
+            $table->string('label_type', 64);
+            $table->string('value', 64);
+
+            $table->unique(['context_id', 'user_id', 'label_type', 'value'], 'grp_label_unique');
+            $table->index(['context_id', 'label_type', 'value'], 'grp_label_value_idx');
+        });
+    }
+
+    /** One row per saved change to a reviewer's labels: who, when, what changed and the note. */
+    private function createReviewerLabelHistoryTable(): void
+    {
+        if (Schema::hasTable('group_review_reviewer_label_history')) {
+            return;
+        }
+
+        Schema::create('group_review_reviewer_label_history', function (Blueprint $table) {
+            $table->bigInteger('history_id')->autoIncrement();
+            $table->bigInteger('context_id');
+            $table->foreign('context_id', 'grp_label_history_context_fk')
+                ->references('journal_id')->on('journals')->onDelete('cascade');
+            $table->bigInteger('user_id');
+            $table->foreign('user_id', 'grp_label_history_user_fk')
+                ->references('user_id')->on('users')->onDelete('cascade');
+            $table->bigInteger('changed_by')->nullable();
+            $table->foreign('changed_by', 'grp_label_history_changed_by_fk')
+                ->references('user_id')->on('users')->onDelete('set null');
+            $table->dateTime('changed_at');
+            $table->text('summary');
+            $table->text('note')->nullable();
+
+            $table->index(['context_id', 'user_id'], 'grp_label_history_user_idx');
         });
     }
 
