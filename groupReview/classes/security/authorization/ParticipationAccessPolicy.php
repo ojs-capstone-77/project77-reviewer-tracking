@@ -28,14 +28,11 @@ class ParticipationAccessPolicy extends AuthorizationPolicy
         $operation = $this->request->getRequestedOp();
         $service = new GroupReviewService();
 
-        if ($service->isManager($contextId, $userId)) {
-            return self::AUTHORIZATION_PERMIT;
-        }
-
         // The review group list has no session; it is opened from a submission.
         $sessionId = (int) $this->request->getUserVar('sessionId');
+        $session = $sessionId ? $service->get($contextId, $sessionId) : null;
         $submissionId = $sessionId
-            ? $service->getSessionSubmissionId($contextId, $sessionId)
+            ? (int) ($session['submission_id'] ?? 0)
             : (int) $this->request->getUserVar('submissionId');
         if (!$submissionId) {
             $service->logAccessDenied(sprintf(
@@ -49,13 +46,15 @@ class ParticipationAccessPolicy extends AuthorizationPolicy
             return self::AUTHORIZATION_DENY;
         }
 
-        if ($service->isAssignedEditor($contextId, $submissionId, $userId)
-            || $service->isLeader($contextId, $submissionId, $userId)) {
+        // Journal editors see every form; an RGL only the forms they lead.
+        if ($service->isJournalEditor($contextId, $submissionId, $userId)
+            || ($service->isAssignedLeader($contextId, $submissionId, $userId)
+                && (!$session || (int) $session['leader_user_id'] === $userId))) {
             return self::AUTHORIZATION_PERMIT;
         }
 
         $service->logAccessDenied(sprintf(
-            'Denied user #%d on operation "%s": not the Manager, an assigned Journal editor, or the assigned Review Group Leader for submission #%d (session #%d).',
+            'Denied user #%d on operation "%s": not a Journal editor, or the assigned Review Group Leader leading this form, for submission #%d (session #%d).',
             $userId,
             $operation,
             $submissionId,

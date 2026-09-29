@@ -17,6 +17,7 @@ class ParticipationService
     public const ATTENDANCE_APOLOGY = 'did_not_attend_with_apology';
     public const ATTENDANCE_NO_APOLOGY = 'did_not_attend_without_apology';
     public const ATTENDANCE_NOT_APPLICABLE = 'not_applicable';
+    public const ATTENDANCE_NOT_RECORDED = 'not_recorded';
     public const ATTENDANCE_OTHER = 'other';
 
     public const STATUS_DRAFT = 'draft';
@@ -31,6 +32,7 @@ class ParticipationService
         self::ATTENDANCE_APOLOGY,
         self::ATTENDANCE_NO_APOLOGY,
         self::ATTENDANCE_NOT_APPLICABLE,
+        self::ATTENDANCE_NOT_RECORDED,
         self::ATTENDANCE_OTHER,
     ];
 
@@ -148,17 +150,23 @@ class ParticipationService
     }
 
     /**
-     * Return the journal's finalized group-review sessions, newest first.
-     * A session has a participation form once its members are selected.
+     * Return the submission's finalized group-review sessions, newest first,
+     * optionally only those led by one user. A session has a participation
+     * form once its members are selected.
      *
      * @return int[]
      */
-    public function getFormSessionIds(int $contextId): array
+    public function getFormSessionIds(int $contextId, int $submissionId, ?int $leaderUserId = null): array
     {
-        return DB::table('group_review_sessions')
+        $query = DB::table('group_review_sessions')
             ->where('context_id', $contextId)
-            ->where('status', GroupReviewService::STATUS_FINALIZED)
-            ->orderByDesc('session_id')
+            ->where('submission_id', $submissionId)
+            ->where('status', GroupReviewService::STATUS_FINALIZED);
+        if ($leaderUserId !== null) {
+            $query->where('leader_user_id', $leaderUserId);
+        }
+
+        return $query->orderByDesc('session_id')
             ->limit(100)
             ->pluck('session_id')
             ->map(fn ($id): int => (int) $id)

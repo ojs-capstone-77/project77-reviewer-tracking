@@ -49,7 +49,9 @@ class GroupReviewHandler extends Handler
         'saveParticipation',
     ];
     private const INVITEE_OPERATIONS = ['availability', 'saveAvailability'];
-    private const PARTICIPATION_OPERATIONS = ['participation', 'participationForm', 'participationRecorded'];
+    private const PARTICIPATION_OPERATIONS = [
+        'participation', 'participationForm', 'saveParticipationForm', 'participationRecorded',
+    ];
     private const PARTICIPATION_READ_OPERATIONS = ['getParticipation'];
     private const PARTICIPATION_DATE_FORMAT = 'j F Y, H:i';
 
@@ -123,9 +125,13 @@ class GroupReviewHandler extends Handler
     public function participation($args, $request): void
     {
         $contextId = (int) $request->getContext()->getId();
+        $submissionId = (int) $request->getUserVar('submissionId');
+        $userId = (int) $request->getUser()->getId();
+        // Journal editors see every form; an RGL only the forms they lead.
+        $leaderUserId = $this->service->isJournalEditor($contextId, $submissionId, $userId) ? null : $userId;
         $participation = new ParticipationService();
         $sessions = [];
-        foreach ($participation->getFormSessionIds($contextId) as $sessionId) {
+        foreach ($participation->getFormSessionIds($contextId, $submissionId, $leaderUserId) as $sessionId) {
             $bundle = $this->service->getBundle($contextId, $sessionId);
             if (!$bundle) {
                 continue;
@@ -148,7 +154,7 @@ class GroupReviewHandler extends Handler
         $this->display($request, 'participation.tpl', [
             'pageTitle' => 'Reviewer Participation Recording',
             'sessions' => $sessions,
-            'backUrl' => $this->participationBackUrl($request, (int) $request->getUserVar('submissionId')),
+            'backUrl' => $this->participationBackUrl($request, $submissionId),
         ]);
     }
 
@@ -177,7 +183,7 @@ class GroupReviewHandler extends Handler
             $record = $saved['reviewers'][$reviewer['id']] ?? null;
             $formReviewers[] = array_merge($reviewer, [
                 'page' => intdiv($index, $pageSize),
-                'attendance' => $record['attendance'] ?? ParticipationService::ATTENDANCE_ATTENDED,
+                'attendance' => $record['attendance'] ?? ParticipationService::ATTENDANCE_NOT_RECORDED,
                 'attendanceNote' => $record['attendance_other'] ?? '',
                 'meetingComments' => $record['contribution_comments'] ?? '',
                 'contributionChecked' => array_fill_keys($record['shaping_feedback_types'] ?? [], true),
@@ -205,7 +211,6 @@ class GroupReviewHandler extends Handler
             'generalComments' => $saved['form']['general_comments'] ?? '',
             'saveError' => (bool) $request->getUserVar('saveError'),
             'isSubmitted' => $isSubmitted,
-            'submitLabel' => $isSubmitted ? 'Resubmit' : 'Submit',
             'reviewers' => $formReviewers,
             'pages' => $pages,
             'page' => $page,
@@ -494,6 +499,7 @@ class GroupReviewHandler extends Handler
             'lastSavedBy' => $this->participationUserName($form['updated_by'] ?? null),
             'submittedAt' => $format($form['submitted_at'] ?? null),
             'submittedBy' => $this->participationUserName($form['submitted_by'] ?? null),
+            'submissionComment' => (string) ($form['submission_comment'] ?? ''),
         ];
     }
 
@@ -593,6 +599,7 @@ class GroupReviewHandler extends Handler
             ['sessionId' => (int) $bundle['poll']['session_id']]
         );
         $notificationManager = new NotificationManager();
+        $round = $this->participationRound($bundle['poll']);
 
         foreach ($this->participationEditors($contextId, $submissionId, (int) $submitter->getId()) as $editor) {
             try {
@@ -603,7 +610,8 @@ class GroupReviewHandler extends Handler
                     $contextId,
                     Application::ASSOC_TYPE_SUBMISSION,
                     $submissionId,
-                    GroupReviewNotification::NOTIFICATION_LEVEL_TASK
+                    GroupReviewNotification::NOTIFICATION_LEVEL_TASK,
+                    ['submitterName' => $submitter->getFullName(), 'round' => $round]
                 );
             } catch (Throwable $e) {
                 error_log('Group Review participation notification failed: ' . $e->getMessage());
@@ -613,7 +621,7 @@ class GroupReviewHandler extends Handler
                 $context,
                 $editor->getFullName(),
                 $bundle['submission'] ? $bundle['submission']->getLocalizedTitle() : '',
-                $this->participationRound($bundle['poll']),
+                $round,
                 $submitter->getFullName(),
                 $comment !== '' ? $comment : __('plugins.generic.groupReview.participation.noComment'),
                 $formUrl
@@ -670,6 +678,7 @@ class GroupReviewHandler extends Handler
     private function participationAttendanceOptions(): array
     {
         return [
+            ParticipationService::ATTENDANCE_NOT_RECORDED => 'Not recorded',
             ParticipationService::ATTENDANCE_ATTENDED => 'Attended',
             ParticipationService::ATTENDANCE_APOLOGY => 'Did not attend, prior apology',
             ParticipationService::ATTENDANCE_NO_APOLOGY => 'Did not attend, no prior apology',
