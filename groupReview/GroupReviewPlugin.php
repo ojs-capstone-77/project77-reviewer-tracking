@@ -216,24 +216,7 @@ class GroupReviewPlugin extends GenericPlugin
             || !$context
             || !$user
             || (int) $submission->getContextId() !== (int) $context->getId()
-            || !$this->getEnabled((int) $context->getId())
-            || $stageId !== WORKFLOW_STAGE_ID_EXTERNAL_REVIEW) {
-            return false;
-        }
-
-        $reviewRoundDao = \PKP\db\DAORegistry::getDAO('ReviewRoundDAO');  /** @var ReviewRoundDAO $reviewRoundDao */
-        $reviewRound = $reviewRoundDao->getLastReviewRoundBySubmissionId(
-            $submission->getId(),
-            WORKFLOW_STAGE_ID_EXTERNAL_REVIEW
-        );
-        if (!$reviewRound) {
-            return false;
-        }
-        $requestedReviewRoundId = (int) (
-            $templateMgr->getTemplateVars('reviewRoundId')
-            ?: $request->getUserVar('reviewRoundId')
-        );
-        if ($requestedReviewRoundId && $requestedReviewRoundId !== (int) $reviewRound->getId()) {
+            || !$this->getEnabled((int) $context->getId())) {
             return false;
         }
 
@@ -241,49 +224,72 @@ class GroupReviewPlugin extends GenericPlugin
         if (!$service->isEnabled($context)) {
             return false;
         }
-        $poll = $service->getActiveForSubmissionRound(
-            (int) $context->getId(),
-            (int) $submission->getId(),
-            (int) $reviewRound->getId()
-        );
-        $canLead = $service->isLeader(
-            (int) $context->getId(),
-            (int) $submission->getId(),
-            (int) $user->getId()
-        );
-        $canManagePoll = $canLead;
-        $isMember = $poll && $service->isInvited(
-            (int) $context->getId(),
-            (int) $poll['session_id'],
-            (int) $user->getId()
-        );
+        $contextId = (int) $context->getId();
+        $submissionId = (int) $submission->getId();
+        $userId = (int) $user->getId();
 
-        if (!$canManagePoll && !$isMember) {
+        // Journal editors and the assigned RGL keep the tab at any
+        // stage, including after archiving, for the participation forms.
+        $canViewParticipation = $service->isJournalEditor($contextId, $submissionId, $userId)
+            || $service->isAssignedLeader($contextId, $submissionId, $userId);
+
+        // The poll is only managed from the current external review round.
+        $reviewRound = null;
+        if ($stageId === WORKFLOW_STAGE_ID_EXTERNAL_REVIEW) {
+            $reviewRoundDao = \PKP\db\DAORegistry::getDAO('ReviewRoundDAO');  /** @var ReviewRoundDAO $reviewRoundDao */
+            $reviewRound = $reviewRoundDao->getLastReviewRoundBySubmissionId(
+                $submissionId,
+                WORKFLOW_STAGE_ID_EXTERNAL_REVIEW
+            );
+            $requestedReviewRoundId = (int) (
+                $templateMgr->getTemplateVars('reviewRoundId')
+                ?: $request->getUserVar('reviewRoundId')
+            );
+            if ($reviewRound && $requestedReviewRoundId && $requestedReviewRoundId !== (int) $reviewRound->getId()) {
+                $reviewRound = null;
+            }
+        }
+
+        $poll = $reviewRound
+            ? $service->getActiveForSubmissionRound($contextId, $submissionId, (int) $reviewRound->getId())
+            : null;
+        $canManagePoll = $reviewRound && $service->isLeader($contextId, $submissionId, $userId);
+        $isMember = $poll && $service->isInvited($contextId, (int) $poll['session_id'], $userId);
+        $showPoll = $canManagePoll || $isMember;
+
+        if (!$showPoll && !$canViewParticipation) {
             return false;
         }
 
-        $params = $poll
-            ? ['pollId' => (int) $poll['session_id']]
-            : ['submissionId' => (int) $submission->getId(), 'reviewRoundId' => (int) $reviewRound->getId()];
-        $op = $poll
-            ? ($canManagePoll
-                ? ((int) $poll['status'] === GroupReviewService::STATUS_DRAFT ? 'invite' : 'view')
-                : 'availability')
-            : 'create';
+        $groupReviewUrl = null;
+        if ($showPoll) {
+            $params = $poll
+                ? ['pollId' => (int) $poll['session_id']]
+                : ['submissionId' => $submissionId, 'reviewRoundId' => (int) $reviewRound->getId()];
+            $op = $poll
+                ? ($canManagePoll
+                    ? ((int) $poll['status'] === GroupReviewService::STATUS_DRAFT ? 'invite' : 'view')
+                    : 'availability')
+                : 'create';
+            $groupReviewUrl = $request->getRouter()->url($request, null, 'groupReview', $op, null, $params);
+        }
 
         $templateMgr->assign([
             'groupReviewPoll' => $poll,
             'groupReviewCanLead' => $canManagePoll,
-            'groupReviewUrl' => $request->getRouter()->url($request, null, 'groupReview', $op, null, $params),
+            'groupReviewShowPoll' => $showPoll,
+            'groupReviewUrl' => $groupReviewUrl,
             'groupReviewDashboardUrl' => $request->getRouter()->url($request, null, 'groupReview', 'index'),
-            'groupReviewParticipationUrl' => $request->getRouter()->url(
-                $request,
-                null,
-                'groupReview',
-                'participation',
-                null,
-                ['submissionId' => (int) $submission->getId()]
-            ),
+            'groupReviewParticipationUrl' => $canViewParticipation
+                ? $request->getRouter()->url(
+                    $request,
+                    null,
+                    'groupReview',
+                    'participation',
+                    null,
+                    ['submissionId' => $submissionId]
+                )
+                : null,
         ]);
         $output .= $templateMgr->fetch($this->getTemplateResource('workflow/groupReviewTab.tpl'));
         return false;
@@ -300,15 +306,27 @@ class GroupReviewPlugin extends GenericPlugin
         }
         $templateMgr->addStyleSheet(
             'groupReview',
-            "{$request->getBaseUrl()}/{$this->getPluginPath()}/css/app.css",
+            $this->assetUrl($request, 'css/app.css'),
             ['contexts' => ['backend']]
         );
         $templateMgr->addJavaScript(
             'groupReviewParticipationForm',
-            "{$request->getBaseUrl()}/{$this->getPluginPath()}/js/participationForm.js",
+            $this->assetUrl($request, 'js/participationForm.js'),
             ['contexts' => ['backend']]
         );
         return false;
+    }
+
+    /**
+     * URL of a plugin asset, versioned by the file's modification time so
+     * browsers fetch it again whenever it changes. OJS's own ?v= is the OJS
+     * version, which stays the same across plugin updates.
+     */
+    private function assetUrl($request, string $path): string
+    {
+        $url = "{$request->getBaseUrl()}/{$this->getPluginPath()}/{$path}";
+        $modified = @filemtime("{$this->getPluginPath()}/{$path}");
+        return $modified ? "{$url}?v={$modified}" : $url;
     }
 
     /** Let OJS's bundled Acron plugin discover the hourly task. */
@@ -341,7 +359,16 @@ class GroupReviewPlugin extends GenericPlugin
         } elseif ($notification->getType() === GroupReviewNotification::NOTIFICATION_TYPE_POLL_CLOSING) {
             $message = __('plugins.generic.groupReview.tasks.pollClosing.label');
         } elseif ($notification->getType() === GroupReviewNotification::NOTIFICATION_TYPE_PARTICIPATION_SUBMITTED) {
-            $message = __('plugins.generic.groupReview.tasks.participationSubmitted.label');
+            // Who submitted and the round are saved with the notification;
+            // older notifications without them keep the general wording.
+            $notificationSettingsDao = \PKP\db\DAORegistry::getDAO('NotificationSettingsDAO');  /** @var \PKP\notification\NotificationSettingsDAO $notificationSettingsDao */
+            $settings = $notificationSettingsDao->getNotificationSettings($notification->getId());
+            $message = isset($settings['submitterName'], $settings['round'])
+                ? __('plugins.generic.groupReview.tasks.participationSubmitted.detail', [
+                    'submitterName' => htmlspecialchars((string) $settings['submitterName']),
+                    'round' => (int) $settings['round'],
+                ])
+                : __('plugins.generic.groupReview.tasks.participationSubmitted.label');
         }
     }
 

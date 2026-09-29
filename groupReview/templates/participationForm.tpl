@@ -34,7 +34,7 @@
 
 			<div class="grpTool__pagination">
 				<div class="grpTool__paginationGroup">
-					<button type="button" class="grpTool__pageNav{if $page === 0} grpTool__pageNav--disabled{/if}" data-grp-page-step="-1"{if $page === 0} disabled{/if}>Previous</button>
+					<button type="button" class="pkpButton grpTool__pageNav" data-grp-page-step="-1"{if $page === 0} disabled{/if}>Previous</button>
 					{foreach from=$pages item=pageInfo}
 						<span class="grpTool__dots" data-grp-page="{$pageInfo.index}"{if $pageInfo.index !== $page} hidden{/if}>
 							{foreach from=$pages item=dot}
@@ -47,7 +47,7 @@
 					{foreach from=$pages item=pageInfo}
 						<span class="grp__muted grpTool__pageRange" data-grp-page="{$pageInfo.index}"{if $pageInfo.index !== $page} hidden{/if}>{$pageInfo.rangeLabel}</span>
 					{/foreach}
-					<button type="button" class="grpTool__pageNav grpTool__pageNav--next{if $page === $lastPage} grpTool__pageNav--disabled{/if}" data-grp-page-step="1"{if $page === $lastPage} disabled{/if}><span>Next</span></button>
+					<button type="button" class="pkpButton grpTool__pageNav grpTool__pageNav--next" data-grp-page-step="1"{if $page === $lastPage} disabled{/if}><span>Next</span></button>
 				</div>
 			</div>
 
@@ -77,12 +77,12 @@
 						<td>Meeting attendance</td>
 						{foreach from=$reviewers item=reviewer}
 							<td data-grp-page="{$reviewer.page}"{if $reviewer.page !== $page} hidden{/if}>
-								<select class="grpTool__attendanceSelect" name="reviewers[{$reviewer.id|intval}][attendance]">
+								<select class="pkpFormField__input pkpFormField--select__input grpTool__attendanceSelect" name="reviewers[{$reviewer.id|intval}][attendance]">
 									{foreach from=$attendanceOptions key=optionKey item=optionLabel}
 										<option value="{$optionKey}"{if $reviewer.attendance === $optionKey} selected{/if}>{$optionLabel|escape}</option>
 									{/foreach}
 								</select>
-								<input type="text" class="grpTool__attendanceNote" name="reviewers[{$reviewer.id|intval}][attendanceOther]" value="{$reviewer.attendanceNote|escape}"{if $reviewer.attendance !== 'other'} hidden{/if}>
+								<input type="text" class="pkpFormField__input pkpFormField--text__input grpTool__attendanceNote" name="reviewers[{$reviewer.id|intval}][attendanceOther]" value="{$reviewer.attendanceNote|escape}"{if $reviewer.attendance !== 'other'} hidden{/if}>
 							</td>
 						{/foreach}
 						{foreach from=$emptyReviewerSlots item=_emptySlot}
@@ -154,7 +154,7 @@
 
 			<div class="grpTool__pagination">
 				<div class="grpTool__paginationGroup">
-					<button type="button" class="grpTool__pageNav{if $page === 0} grpTool__pageNav--disabled{/if}" data-grp-page-step="-1"{if $page === 0} disabled{/if}>Previous</button>
+					<button type="button" class="pkpButton grpTool__pageNav" data-grp-page-step="-1"{if $page === 0} disabled{/if}>Previous</button>
 					{foreach from=$pages item=pageInfo}
 						<span class="grpTool__dots" data-grp-page="{$pageInfo.index}"{if $pageInfo.index !== $page} hidden{/if}>
 							{foreach from=$pages item=dot}
@@ -167,7 +167,7 @@
 					{foreach from=$pages item=pageInfo}
 						<span class="grp__muted grpTool__pageRange" data-grp-page="{$pageInfo.index}"{if $pageInfo.index !== $page} hidden{/if}>{$pageInfo.rangeLabel}</span>
 					{/foreach}
-					<button type="button" class="grpTool__pageNav grpTool__pageNav--next{if $page === $lastPage} grpTool__pageNav--disabled{/if}" data-grp-page-step="1"{if $page === $lastPage} disabled{/if}><span>Next</span></button>
+					<button type="button" class="pkpButton grpTool__pageNav grpTool__pageNav--next" data-grp-page-step="1"{if $page === $lastPage} disabled{/if}><span>Next</span></button>
 				</div>
 			</div>
 
@@ -178,20 +178,20 @@
 
 			<p class="grp__actions grpTool__formActions">
 				<span class="grpTool__formActionsLeft">
-					<button type="submit" name="formAction" value="save" class="pkp_button" data-grp-save disabled>Save</button>
+					<button type="submit" name="formAction" value="save" class="pkp_button" data-grp-needs-change disabled>Save</button>
 					<a class="pkp_button grpTool__cancelButton" href="{$cancelUrl|escape}">Cancel</a>
 				</span>
 				{if $isSubmitted}
-					<pkp-button :is-primary="true" @click="$modal.show('grpParticipationSubmit')">{$submitLabel}</pkp-button>
+					<button type="button" class="pkpButton pkpButton--isPrimary" data-grp-needs-change disabled @click="$modal.show('grpParticipationSubmit')">Submit</button>
 				{else}
-					<pkp-button :is-primary="true" @click="$modal.show('grpParticipationSubmit')" data-grp-page="{$lastPage}"{if $lastPage !== $page} hidden{/if}>{$submitLabel}</pkp-button>
-					<pkp-button :is-primary="true" :is-disabled="true" data-grp-before-last-page{if $lastPage === $page} hidden{/if}>{$submitLabel}</pkp-button>
+					<pkp-button :is-primary="true" @click="$modal.show('grpParticipationSubmit')" data-grp-page="{$lastPage}"{if $lastPage !== $page} hidden{/if}>Submit</pkp-button>
+					<pkp-button :is-primary="true" :is-disabled="true" data-grp-before-last-page{if $lastPage === $page} hidden{/if}>Submit</pkp-button>
 				{/if}
 			</p>
 			</form>
 			<div class="grp__muted grpTool__lastSaved">
 				{if $isSubmitted}
-					<div>Submitted {$session.submittedAt|escape} by {$session.submittedBy|escape}</div>
+					<div>Submitted {$session.submittedAt|escape} by {$session.submittedBy|escape}{if $session.submissionComment}: {$session.submissionComment|escape|nl2br}{/if}</div>
 				{/if}
 				{if $session.lastSaved}
 					<div>Last saved {$session.lastSaved|escape} by {$session.lastSavedBy|escape}</div>
@@ -202,7 +202,7 @@
 
 	<pkp-modal
 		name="grpParticipationSubmit"
-		title="{$submitLabel|escape}"
+		title="Submit"
 		close-label="{translate key="common.close"}"
 	>
 		<label class="grp__field">
@@ -210,8 +210,8 @@
 			<textarea id="grpParticipationModalComments" name="submissionComment" form="grpParticipationForm"></textarea>
 		</label>
 		<template slot="footer">
-			<pkp-button @click="$modal.hide('grpParticipationSubmit')">Cancel</pkp-button>
-			<button type="submit" form="grpParticipationForm" name="formAction" value="submit" class="pkpButton pkpButton--isPrimary">{$submitLabel}</button>
+			<pkp-button :is-warnable="true" @click="$modal.hide('grpParticipationSubmit')">Cancel</pkp-button>
+			<button type="submit" form="grpParticipationForm" name="formAction" value="submit" class="pkpButton pkpButton--isPrimary">Submit</button>
 		</template>
 	</pkp-modal>
 {/block}

@@ -19,6 +19,7 @@ use PKP\db\DAORegistry;
 use PKP\facades\Locale;
 use PKP\note\NoteDAO;
 use PKP\query\QueryDAO;
+use PKP\security\Role;
 use PKP\stageAssignment\StageAssignmentDAO;
 use PKP\submission\PKPSubmission;
 use PKP\submission\reviewRound\ReviewRoundDAO;
@@ -48,9 +49,22 @@ class GroupReviewService
     {
         $submission = Repo::submission()->get($submissionId);
         if (!$submission
-            || (int) $submission->getContextId() !== $contextId
             || (int) $submission->getStageId() !== WORKFLOW_STAGE_ID_EXTERNAL_REVIEW
             || (int) $submission->getStatus() !== PKPSubmission::STATUS_QUEUED) {
+            return false;
+        }
+
+        return $this->isAssignedLeader($contextId, $submissionId, $userId);
+    }
+
+    /**
+     * Whether the user is the submission's assigned RGL, at any stage and
+     * after the submission is archived.
+     */
+    public function isAssignedLeader(int $contextId, int $submissionId, int $userId): bool
+    {
+        $submission = Repo::submission()->get($submissionId);
+        if (!$submission || (int) $submission->getContextId() !== $contextId) {
             return false;
         }
 
@@ -80,48 +94,21 @@ class GroupReviewService
     }
 
     /**
-     * The submission a group-review session belongs to, or null if no
-     * session with that ID exists in this journal.
+     * Whether the user is a journal editor (manager role, e.g. Journal
+     * editor or Journal manager) of the submission's journal. Like OJS,
+     * they can access any submission without being assigned to it.
+     * Applies at any stage and after archiving.
      */
-    public function getSessionSubmissionId(int $contextId, int $sessionId): ?int
-    {
-        $row = DB::table('group_review_sessions')
-            ->where('context_id', $contextId)
-            ->where('session_id', $sessionId)
-            ->first();
-
-        return $row ? (int) $row->submission_id : null;
-    }
-
-    /**
-     * Whether the user is the journal's assigned Journal editor for this
-     * submission. Journal enrollment alone is not enough; a real stage
-     * assignment on this exact submission is required, same as isLeader().
-     */
-    public function isAssignedEditor(int $contextId, int $submissionId, int $userId): bool
+    public function isJournalEditor(int $contextId, int $submissionId, int $userId): bool
     {
         $submission = Repo::submission()->get($submissionId);
-        if (!$submission
-            || (int) $submission->getContextId() !== $contextId
-            || (int) $submission->getStageId() !== WORKFLOW_STAGE_ID_EXTERNAL_REVIEW
-            || (int) $submission->getStatus() !== PKPSubmission::STATUS_QUEUED) {
+        if (!$submission || (int) $submission->getContextId() !== $contextId) {
             return false;
         }
 
-        $editorGroupId = $this->getUserGroupIdByName($contextId, 'Journal editor');
-        if (!$editorGroupId) {
-            return false;
-        }
+        $user = Repo::user()->get($userId);
 
-        $stageAssignmentDao = DAORegistry::getDAO('StageAssignmentDAO');  /** @var StageAssignmentDAO $stageAssignmentDao */
-        $assignments = $stageAssignmentDao->getBySubmissionAndStageId(
-            $submissionId,
-            WORKFLOW_STAGE_ID_EXTERNAL_REVIEW,
-            $editorGroupId,
-            $userId
-        );
-
-        return (bool) $assignments->next();
+        return $user && !$user->getDisabled() && $user->hasRole([Role::ROLE_ID_MANAGER], $contextId);
     }
 
     /**

@@ -77,6 +77,12 @@
 	color: #222;
 }
 
+/* Full width, so only let them grow taller, and not shrink below a few lines. */
+.grp__field textarea {
+	min-height: 4rem;
+	resize: vertical;
+}
+
 .grp__field small,
 .grp__member small,
 .grp__slotChoice small {
@@ -393,18 +399,7 @@
 	gap: 0.6rem;
 }
 
-.grpTool__pageNav {
-	display: inline-flex;
-	align-items: center;
-	padding: 0.3rem 0.65rem;
-	border: 1px solid #b8c4cf;
-	border-radius: 3px;
-	color: #006798;
-	font-weight: 700;
-	font-size: 0.8125rem;
-	text-decoration: none;
-}
-
+/* Previous/Next are OJS pkpButtons; Next keeps the width of "Previous". */
 .grpTool__pageNav--next {
 	display: inline-grid;
 	justify-items: center;
@@ -418,16 +413,6 @@
 .grpTool__pageNav--next::after {
 	content: "Previous";
 	visibility: hidden;
-}
-
-.grpTool__pageNav:hover {
-	background: #f5f8fa;
-	text-decoration: none;
-}
-
-.grpTool__pageNav--disabled {
-	color: #b8c4cf;
-	border-color: #e5eaee;
 }
 
 .grpTool__pageRange {
@@ -497,8 +482,15 @@
 	margin-top: 0.25rem;
 }
 
-.grpTool__matrix td:has(> .grpTool__matrixTextarea) {
+/* Let the textareas fill their row: percentage heights inside table cells
+   only resolve when the table, row and cell heights are set too. */
+.grpTool__matrix {
 	height: 1px;
+}
+
+.grpTool__matrix tr,
+.grpTool__matrix td {
+	height: 100%;
 }
 
 .grpTool__matrixTextarea {
@@ -513,23 +505,15 @@
 	resize: vertical;
 }
 
-.grpTool__attendanceSelect {
+/* Styled by OJS's pkpFormField__input; only fit them to the column. */
+.grpTool__matrix .grpTool__attendanceSelect,
+.grpTool__matrix .grpTool__attendanceNote {
 	box-sizing: border-box;
 	width: 100%;
-	padding: 0.5rem;
-	border: 1px solid #b8c4cf;
-	border-radius: 2px;
-	font: inherit;
-	margin-bottom: 0.5rem;
 }
 
-.grpTool__attendanceNote {
-	box-sizing: border-box;
-	width: 100%;
-	padding: 0.5rem;
-	border: 1px solid #b8c4cf;
-	border-radius: 2px;
-	font: inherit;
+.grpTool__matrix .grpTool__attendanceSelect {
+	margin-bottom: 0.5rem;
 }
 
 .grpTool__checks--stacked {
@@ -591,23 +575,6 @@
 	margin-top: 0.2rem;
 }
 
-.grpTool__formActions button[disabled] {
-	opacity: 0.5;
-	cursor: not-allowed;
-}
-
-
-button.grpTool__pageNav {
-	margin: 0;
-	background: #fff;
-	font-family: inherit;
-	line-height: inherit;
-	cursor: pointer;
-}
-
-button.grpTool__pageNav:disabled {
-	cursor: default;
-}
 
 .grpTool__participationForm [hidden] {
 	display: none !important;

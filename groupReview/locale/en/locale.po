@@ -403,13 +403,16 @@ msgid "plugins.generic.groupReview.participation.log.submitted"
 msgstr "Participation form for round {$round} submitted."
 
 msgid "plugins.generic.groupReview.participation.log.submittedWithComment"
-msgstr "Participation form for round {$round} submitted: \"{$comment}\""
+msgstr "Participation form for round {$round} submitted. Comment: {$comment}"
 
 msgid "plugins.generic.groupReview.participation.noComment"
 msgstr "No comment was added."
 
 msgid "plugins.generic.groupReview.tasks.participationSubmitted.label"
 msgstr "A reviewer participation form has been submitted."
+
+msgid "plugins.generic.groupReview.tasks.participationSubmitted.detail"
+msgstr "{$submitterName} submitted the participation form for round {$round}."
 
 msgid "plugins.generic.groupReview.emailVariable.round"
 msgstr "Review round number"

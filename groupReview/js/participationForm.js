@@ -5,7 +5,8 @@
  *
  * Paging: every reviewer is in the form; Previous/Next only show and hide
  * their columns.
- * Save: enabled only while the form differs from how it was loaded.
+ * Save, and Submit on an already-submitted form: enabled only while the form
+ * differs from how it was loaded.
  * Attendance: the details box shows only when "Other" is selected.
  */
 function grpParticipationForm(element) {
@@ -35,10 +36,12 @@ document.addEventListener('input', function (event) {
 			note.hidden = event.target.value !== 'other';
 		}
 	}
-	var save = form && form.querySelector('[data-grp-save]');
-	if (save) {
-		save.disabled = form.dataset.grpInitialState !== undefined
+	if (form) {
+		var unchanged = form.dataset.grpInitialState !== undefined
 			&& grpParticipationFormState(form) === form.dataset.grpInitialState;
+		form.querySelectorAll('[data-grp-needs-change]').forEach(function (button) {
+			button.disabled = unchanged;
+		});
 	}
 });
 
@@ -66,8 +69,6 @@ document.addEventListener('click', function (event) {
 	});
 	form.querySelectorAll('[data-grp-page-step]').forEach(function (navButton) {
 		var target = page + parseInt(navButton.dataset.grpPageStep, 10);
-		var disabled = target < 0 || target > lastPage;
-		navButton.disabled = disabled;
-		navButton.classList.toggle('grpTool__pageNav--disabled', disabled);
+		navButton.disabled = target < 0 || target > lastPage;
 	});
 });
