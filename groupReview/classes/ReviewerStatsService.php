@@ -148,7 +148,7 @@ class ReviewerStatsService
         $years = array_unique(array_column($data['polls'], 'year'));
         rsort($years);
 
-        return array_values($years);
+        return $years;
     }
 
     // Loading
