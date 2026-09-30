@@ -8,6 +8,8 @@
 			<div class="grpMon__sectionRow">
 				<h2 class="grpMon__sectionHeading">{translate key="plugins.generic.groupReview.monitoring.reviewers.title"}</h2>
 				<form class="grpMon__filters" method="get" action="{$reviewersUrl|escape}">
+					<input type="hidden" name="sort" value="{$sort|escape}">
+					<input type="hidden" name="dir" value="{$dir|escape}">
 					<select name="year" id="grpMonYear" aria-label="{translate key="plugins.generic.groupReview.monitoring.year"}" onchange="this.form.submit()">
 						<option value=""{if $year === null} selected{/if}>{translate key="plugins.generic.groupReview.monitoring.year.allTime"}</option>
 						{foreach from=$yearOptions item=yearOption}
