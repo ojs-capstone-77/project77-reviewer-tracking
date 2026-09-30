@@ -20,25 +20,33 @@ Users tested:
 ## Before Submission Acceptance
 
 ### test_rgl_01 sees the correct rounds and data
-![RGL only Round 1](images/test-participation-form-access-task-sprint-2-week-3/test_rgl_01-sees-correct-reviewer-participation-recording-submission.png)
+![RGL only Round 1](images/test-form-access/3.png)
+![RGL01](images/test-form-access/2.png)
 
 Button visible, can open its designated rounds as per the its role.
 
 
 ### test_editor_02
+![RGL01](images/test-form-access/8.png)
+![RGL01](images/test-form-access/7.png)
 
 Button visible, both rounds listed. Could open both rounds. Pasting both links directly worked.
 
 ### test_rgm_21
+![RGL01](images/test-form-access/4.png)
 
 No button visible. Pasting both links directly was denied.
 
 ---
 
 ## After Submission Acceptance
+![RGL01](images/test-form-access/5.png)
 
 test_rgl_01 could still access and edit their form.
 test_editor_02 could still access and edit both forms.
+![RGL01](images/test-form-access/1.png)
+![RGL01](images/test-form-access/3.png)
+![RGL01](images/test-form-access/6.png)
 
 ---
 
