@@ -129,6 +129,8 @@ class GroupReviewHandler extends Handler
         $userId = (int) $request->getUser()->getId();
         // Journal editors see every form; an RGL only the forms they lead.
         $leaderUserId = $this->service->isJournalEditor($contextId, $submissionId, $userId) ? null : $userId;
+        $submission = $submissionId ? Repo::submission()->get($submissionId) : null;
+        $publication = $submission ? $submission->getCurrentPublication() : null;
         $participation = new ParticipationService();
         $sessions = [];
         foreach ($participation->getFormSessionIds($contextId, $submissionId, $leaderUserId) as $sessionId) {
@@ -153,6 +155,8 @@ class GroupReviewHandler extends Handler
 
         $this->display($request, 'participation.tpl', [
             'pageTitle' => 'Reviewer Participation Recording',
+            'submissionTitle' => $submission ? $submission->getLocalizedTitle() : '',
+            'firstAuthor' => $publication ? $publication->getShortAuthorString() : '',
             'sessions' => $sessions,
             'backUrl' => $this->participationBackUrl($request, $submissionId),
         ]);
@@ -487,9 +491,14 @@ class GroupReviewHandler extends Handler
             ? $this->service->formatUtc($value, $timezone, self::PARTICIPATION_DATE_FORMAT)
             : null;
 
+        $submission = $bundle['submission'] ?? null;
+        $publication = $submission ? $submission->getCurrentPublication() : null;
+
         return [
             'id' => (int) $poll['session_id'],
             'submissionId' => (int) $poll['submission_id'],
+            'submissionTitle' => $submission ? $submission->getLocalizedTitle() : '',
+            'firstAuthor' => $publication ? $publication->getShortAuthorString() : '',
             'round' => $this->participationRound($poll),
             'leaderName' => $bundle['leader'] ? $bundle['leader']->getFullName() : '',
             'meetingLabel' => $meetingLabel,
