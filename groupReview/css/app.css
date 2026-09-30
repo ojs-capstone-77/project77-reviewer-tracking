@@ -579,3 +579,115 @@
 .grpTool__participationForm [hidden] {
 	display: none !important;
 }
+
+.grpMon__tabs {
+	display: flex;
+	gap: 0.25rem;
+	margin-top: 0.5rem;
+}
+
+.grpMon__tab {
+	padding: 0.75rem 1.25rem;
+	color: #006798;
+	font-weight: 700;
+	text-decoration: none;
+	border-radius: 6px 6px 0 0;
+}
+
+.grpMon__tab:hover {
+	text-decoration: underline;
+}
+
+.grpMon__tab--active {
+	color: #1a1a1a;
+	background: #ffffff;
+	border-top: 3px solid #006798;
+	padding-top: calc(0.75rem - 3px);
+}
+
+.grpMon__tab--active:hover {
+	text-decoration: none;
+}
+
+.grpMon__filters {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	margin: 1rem 0;
+}
+
+.grpMon__sortLink {
+	color: inherit;
+	font-weight: inherit;
+	text-decoration: none;
+}
+
+.grpMon__sortLink:hover {
+	color: #006798;
+	text-decoration: underline;
+}
+
+.grpMon__sectionRow {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	flex-wrap: wrap;
+	gap: 0.75rem;
+	margin: 1.5rem 0 1rem;
+}
+
+.grpMon__sectionHeading {
+	margin: 0;
+	font-size: 1.125rem;
+	font-weight: 700;
+}
+
+.grpMon__table {
+	width: 100%;
+	border-collapse: collapse;
+	margin: 0;
+}
+
+.grpMon__table th,
+.grpMon__table td {
+	padding: 0.75rem 1rem;
+	text-align: left;
+	vertical-align: top;
+	border-bottom: 1px solid #e3e7ea;
+}
+
+.grpMon__table thead th {
+	color: #637381;
+	font-weight: 600;
+	border-bottom: 1px solid #d8dee3;
+	white-space: nowrap;
+}
+
+.grpMon__labels {
+	margin-top: 0.15rem;
+	color: #637381;
+	font-size: 0.8125rem;
+}
+
+.grpMon__sortArrow {
+	margin-left: 0.25rem;
+	font-size: 0.65rem;
+	color: #637381;
+}
+
+.grpMon__viewLink {
+	color: #006798;
+	cursor: not-allowed;
+}
+
+.grpMon__page {
+	padding: 1.5rem;
+	margin-top: 0;
+	background: #ffffff;
+	border-radius: 0 4px 4px 4px;
+}
+
+.grpMon__percent {
+	color: #637381;
+	font-size: 0.8125rem;
+}

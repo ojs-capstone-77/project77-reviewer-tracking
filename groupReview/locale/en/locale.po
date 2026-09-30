@@ -99,6 +99,58 @@ msgstr "Only a Review Group Member invited to this journal's poll may access it.
 msgid "plugins.generic.groupReview.authorization.participation"
 msgstr "Only the journal's Manager, an assigned Journal editor, or the assigned Review Group Leader for this submission may view or record participation."
 
+msgid "plugins.generic.groupReview.authorization.editor"
+msgstr "Only the journal's Manager or an assigned Journal editor may view the reviewer monitoring dashboard."
+
+msgid "plugins.generic.groupReview.monitoring.dashboardTitle"
+msgstr "Editor Monitoring Dashboard"
+
+msgid "plugins.generic.groupReview.monitoring.reviewer"
+msgstr "Reviewer"
+
+msgid "plugins.generic.groupReview.monitoring.action"
+msgstr "Action"
+
+msgid "plugins.generic.groupReview.monitoring.tabs.overview"
+msgstr "Overview"
+
+msgid "plugins.generic.groupReview.monitoring.tabs.reviewers"
+msgstr "Reviewers"
+
+msgid "plugins.generic.groupReview.monitoring.reviewers.title"
+msgstr "Reviewers"
+
+msgid "plugins.generic.groupReview.monitoring.reviewers.empty"
+msgstr "No reviewers found for this journal yet."
+
+msgid "plugins.generic.groupReview.monitoring.year"
+msgstr "Year"
+
+msgid "plugins.generic.groupReview.monitoring.year.allTime"
+msgstr "All time"
+
+
+msgid "plugins.generic.groupReview.monitoring.completed"
+msgstr "Completed"
+
+msgid "plugins.generic.groupReview.monitoring.current"
+msgstr "Current"
+
+msgid "plugins.generic.groupReview.monitoring.attended"
+msgstr "Attended"
+
+msgid "plugins.generic.groupReview.monitoring.invited"
+msgstr "Invited"
+
+msgid "plugins.generic.groupReview.monitoring.available"
+msgstr "Available"
+
+msgid "plugins.generic.groupReview.monitoring.selected"
+msgstr "Selected"
+
+msgid "plugins.generic.groupReview.monitoring.viewComingSoon"
+msgstr "The reviewer detail page hasn't been built yet."
+
 msgid "plugins.generic.groupReview.participation.saved"
 msgstr "The participation record was saved."
 

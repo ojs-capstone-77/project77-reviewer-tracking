@@ -142,6 +142,15 @@ class ReviewerStatsService
         ];
     }
 
+    public function getYears(int $contextId): array
+    {
+        $data = $this->load($contextId);
+        $years = array_unique(array_column($data['polls'], 'year'));
+        rsort($years);
+
+        return $years;
+    }
+
     // Loading
 
     /**

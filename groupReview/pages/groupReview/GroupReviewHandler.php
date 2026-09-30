@@ -17,6 +17,9 @@ use APP\plugins\generic\groupReview\classes\mail\GroupReviewPollThankInvitees;
 use APP\plugins\generic\groupReview\classes\mail\GroupReviewPollThankRgms;
 use APP\plugins\generic\groupReview\classes\notification\Notification as GroupReviewNotification;
 use APP\plugins\generic\groupReview\classes\ParticipationService;
+use APP\plugins\generic\groupReview\classes\ReviewerLabelService;
+use APP\plugins\generic\groupReview\classes\ReviewerStatsService;
+use APP\plugins\generic\groupReview\classes\security\authorization\EditorRequiredPolicy;
 use APP\plugins\generic\groupReview\classes\security\authorization\InviteeRequiredPolicy;
 use APP\plugins\generic\groupReview\classes\security\authorization\LeaderRequiredPolicy;
 use APP\plugins\generic\groupReview\classes\security\authorization\ParticipationAccessPolicy;
@@ -54,6 +57,8 @@ class GroupReviewHandler extends Handler
     ];
     private const PARTICIPATION_READ_OPERATIONS = ['getParticipation'];
     private const PARTICIPATION_DATE_FORMAT = 'j F Y, H:i';
+    private const MONITORING_OPERATIONS = ['reviewers'];
+    private const MONITORING_SORT_COLUMNS = ['name', 'invited', 'available', 'selected', 'completed', 'current', 'attended'];
 
     public function __construct(GroupReviewPlugin $plugin)
     {
@@ -74,6 +79,7 @@ class GroupReviewHandler extends Handler
             [Role::ROLE_ID_MANAGER, Role::ROLE_ID_SUB_EDITOR, Role::ROLE_ID_REVIEWER],
             self::PARTICIPATION_READ_OPERATIONS
         );
+        $this->addRoleAssignment(Role::ROLE_ID_MANAGER, self::MONITORING_OPERATIONS);
     }
 
     public function authorize($request, &$args, $roleAssignments)
@@ -89,6 +95,8 @@ class GroupReviewHandler extends Handler
             $this->addPolicy(new InviteeRequiredPolicy($request));
         } elseif (in_array($operation, self::PARTICIPATION_OPERATIONS, true)) {
             $this->addPolicy(new ParticipationAccessPolicy($request));
+        } elseif (in_array($operation, self::MONITORING_OPERATIONS, true)) {
+            $this->addPolicy(new EditorRequiredPolicy($request));
         }
 
         return parent::authorize($request, $args, $roleAssignments);
@@ -119,6 +127,37 @@ class GroupReviewHandler extends Handler
         $this->display($request, 'dashboard.tpl', [
             'pageTitle' => __('plugins.generic.groupReview.dashboard.title'),
             'polls' => $polls,
+        ]);
+    }
+
+    public function reviewers($args, $request): void
+    {
+        $contextId = (int) $request->getContext()->getId();
+        $year = $this->monitoringYear($request);
+        $sort = $this->monitoringSort($request);
+        $dir = $this->monitoringDir($request);
+
+        $stats = new ReviewerStatsService();
+        $rows = $stats->getReviewerRows($contextId, $year);
+        $labels = (new ReviewerLabelService())->getLabels($contextId, array_column($rows, 'userId'));
+
+        $reviewers = [];
+        foreach ($rows as $row) {
+            $reviewers[] = $this->reviewerTableRow($row, $labels[$row['userId']] ?? [], $request);
+        }
+        $reviewers = $this->sortReviewerRows($reviewers, $sort, $dir);
+
+        $this->display($request, 'reviewers.tpl', [
+            'pageTitle' => __('plugins.generic.groupReview.monitoring.reviewers.title'),
+            'monitoringTabsResource' => $this->plugin->getTemplateResource('monitoringTabs.tpl'),
+            'year' => $year,
+            'yearOptions' => $stats->getYears($contextId),
+            'overviewUrl' => $request->getRouter()->url($request, null, 'groupReview', 'overview'),
+            'reviewersUrl' => $request->getRouter()->url($request, null, 'groupReview', 'reviewers'),
+            'sort' => $sort,
+            'dir' => $dir,
+            'sortUrls' => $this->monitoringSortUrls($request, $year, $sort, $dir),
+            'reviewers' => $reviewers,
         ]);
     }
 
@@ -1542,6 +1581,102 @@ class GroupReviewHandler extends Handler
             return false;
         }
         return in_array(strtolower((string) parse_url($url, PHP_URL_SCHEME)), ['https', 'http'], true);
+    }
+
+    private function monitoringYear($request): ?int
+    {
+        $year = $request->getUserVar('year');
+        if ($year === null) {
+            return (int) gmdate('Y');
+        }
+
+        return $year === '' ? null : (int) $year;
+    }
+
+    private function monitoringSort($request): string
+    {
+        $sort = (string) $request->getUserVar('sort');
+
+        return in_array($sort, self::MONITORING_SORT_COLUMNS, true) ? $sort : 'name';
+    }
+
+    private function monitoringDir($request): string
+    {
+        return $request->getUserVar('dir') === 'desc' ? 'desc' : 'asc';
+    }
+
+    private function monitoringSortUrls($request, ?int $year, string $sort, string $dir): array
+    {
+        $urls = [];
+        foreach (self::MONITORING_SORT_COLUMNS as $column) {
+            $nextDir = $sort === $column && $dir === 'asc' ? 'desc' : 'asc';
+            $urls[$column] = $request->getRouter()->url(
+                $request,
+                null,
+                'groupReview',
+                'reviewers',
+                null,
+                ['year' => $year ?? '', 'sort' => $column, 'dir' => $nextDir]
+            );
+        }
+
+        return $urls;
+    }
+
+    private function sortReviewerRows(array $reviewers, string $sort, string $dir): array
+    {
+        $factor = $dir === 'desc' ? -1 : 1;
+        usort($reviewers, function (array $a, array $b) use ($sort, $factor): int {
+            $result = is_string($a[$sort]) ? strcasecmp($a[$sort], $b[$sort]) : $a[$sort] <=> $b[$sort];
+
+            return $result * $factor;
+        });
+
+        return $reviewers;
+    }
+
+    private function reviewerTableRow(array $row, array $labels, $request): array
+    {
+        return [
+            'userId' => $row['userId'],
+            'name' => $row['name'],
+            'labelsText' => $this->reviewerLabelsText($labels),
+            'completed' => $row['completed'],
+            'current' => $row['current'],
+            'attended' => $row['attended'],
+            'attendedPercent' => $this->monitoringPercent($row['attended'], $row['attendanceRecorded']),
+            'invited' => $row['invited'],
+            'available' => $row['available'],
+            'availablePercent' => $this->monitoringPercent($row['available'], $row['invited']),
+            'selected' => $row['selected'],
+            'selectedPercent' => $this->monitoringPercent($row['selected'], $row['available']),
+            'url' => $request->getRouter()->url(
+                $request,
+                null,
+                'groupReview',
+                'reviewer',
+                null,
+                ['reviewerId' => $row['userId']]
+            ),
+        ];
+    }
+
+    private function reviewerLabelsText(array $labels): string
+    {
+        $service = new ReviewerLabelService();
+        $names = [];
+        foreach (ReviewerLabelService::TYPES as $type => $definition) {
+            foreach ($labels[$type] ?? [] as $value) {
+                $names[] = $service->name($type, $value);
+            }
+        }
+
+        return implode(', ', $names);
+    }
+
+    private function monitoringPercent(int $numerator, int $denominator): ?int
+    {
+        return $denominator > 0 ? (int) round($numerator / $denominator * 100) : null;
     }
 
     private function display($request, string $template, array $vars): void
