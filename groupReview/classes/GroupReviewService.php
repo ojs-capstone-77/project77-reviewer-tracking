@@ -106,6 +106,11 @@ class GroupReviewService
             return false;
         }
 
+        return $this->isJournalEditorUser($contextId, $userId);
+    }
+
+    public function isJournalEditorUser(int $contextId, int $userId): bool
+    {
         $user = Repo::user()->get($userId);
 
         return $user && !$user->getDisabled() && $user->hasRole([Role::ROLE_ID_MANAGER], $contextId);
