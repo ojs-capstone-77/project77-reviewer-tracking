@@ -63,7 +63,7 @@
 									<td>{$reviewer.invited|intval}</td>
 									<td>{$reviewer.available|intval}{if $reviewer.availablePercent !== null} <span class="grpMon__percent">({$reviewer.availablePercent|intval}%)</span>{/if}</td>
 									<td>{$reviewer.selected|intval}{if $reviewer.selectedPercent !== null} <span class="grpMon__percent">({$reviewer.selectedPercent|intval}%)</span>{/if}</td>
-									<td><span class="grpMon__viewLink" title="{translate key="plugins.generic.groupReview.monitoring.viewComingSoon"}">{translate key="common.view"}</span></td>
+									<td><a class="grpMon__viewLink" href="{$reviewer.url|escape}">{translate key="common.view"}</a></td>
 								</tr>
 							{/foreach}
 						</tbody>
