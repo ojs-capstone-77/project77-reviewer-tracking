@@ -57,7 +57,7 @@ class GroupReviewHandler extends Handler
     ];
     private const PARTICIPATION_READ_OPERATIONS = ['getParticipation'];
     private const PARTICIPATION_DATE_FORMAT = 'j F Y, H:i';
-    private const MONITORING_OPERATIONS = ['reviewers', 'reviewer', 'saveLabels'];
+    private const MONITORING_OPERATIONS = ['overview', 'reviewers', 'reviewer', 'saveLabels'];
     private const MONITORING_SORT_COLUMNS = ['name', 'invited', 'available', 'selected', 'completed', 'current', 'attended'];
 
     public function __construct(GroupReviewPlugin $plugin)
