@@ -4,7 +4,7 @@
 	<div class="grp">
 		{include file=$monitoringTabsResource activeTab="overview" overviewUrl=$overviewUrl reviewersUrl=$reviewersUrl}
 
-		<div class="grpMon__page">
+		<div class="pkpTab grpMon__page">
 			<div class="grpMon__sectionRow">
 				<h2 class="grpMon__sectionHeading">{translate key="plugins.generic.groupReview.monitoring.live"}</h2>
 			</div>
@@ -26,7 +26,7 @@
 			<div class="grpMon__sectionRow">
 				<h2 class="grpMon__sectionHeading">{translate key="plugins.generic.groupReview.monitoring.activity"}</h2>
 				<form class="grpMon__filters" method="get" action="{$overviewActionUrl|escape}">
-					<select name="year" id="grpMonYear" aria-label="{translate key="plugins.generic.groupReview.monitoring.year"}" onchange="this.form.submit()">
+					<select class="pkpFormField__input pkpFormField--select__input" name="year" id="grpMonYear" aria-label="{translate key="plugins.generic.groupReview.monitoring.year"}" onchange="this.form.submit()">
 						{foreach from=$yearOptions item=yearOption}
 							<option value="{$yearOption.value|escape}"{if $year == $yearOption.value} selected{/if}>{$yearOption.label|escape}</option>
 						{/foreach}
@@ -47,7 +47,7 @@
 			{foreach from=$labels item=labelGroup}
 				<h3 class="grpMon__subheading">{$labelGroup.name|escape}</h3>
 				<div class="grp__tableWrap">
-					<table class="grpMon__table">
+					<table class="grpMon__table grpMon__table--labels">
 						<thead>
 							<tr>
 								<th>{translate key="plugins.generic.groupReview.monitoring.labelValue"}</th>

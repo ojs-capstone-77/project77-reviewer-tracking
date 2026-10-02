@@ -314,12 +314,16 @@ class GroupReviewPlugin extends GenericPlugin
 
         $templateManager = TemplateManager::getManager($request);
         $menu = (array) $templateManager->getState('menu');
-        $menu['groupReview'] = [
+        $item = ['groupReview' => [
             'name' => __('plugins.generic.groupReview.displayName'),
             'url' => $request->getRouter()->url($request, null, 'groupReview', 'overview'),
-            'isCurrent' => $request->getRequestedPage() === 'groupReview',
-            'icon' => 'Dashboard',
-        ];
+            'isCurrent' => $request->getRequestedPage() === 'groupReview'
+                && in_array($request->getRequestedOp(), ['overview', 'reviewers', 'reviewer'], true),
+        ]];
+        $index = array_search('submissions', array_keys($menu), true);
+        $menu = $index === false
+            ? $menu + $item
+            : array_slice($menu, 0, $index + 1, true) + $item + array_slice($menu, $index + 1, null, true);
         $templateManager->setState(['menu' => $menu]);
     }
 
@@ -335,11 +339,6 @@ class GroupReviewPlugin extends GenericPlugin
         $templateMgr->addStyleSheet(
             'groupReview',
             $this->assetUrl($request, 'css/app.css'),
-            ['contexts' => ['backend']]
-        );
-        $templateMgr->addJavaScript(
-            'groupReviewParticipationForm',
-            $this->assetUrl($request, 'js/participationForm.js'),
             ['contexts' => ['backend']]
         );
         return false;
@@ -390,7 +389,8 @@ class GroupReviewPlugin extends GenericPlugin
             // Who submitted and the round are saved with the notification;
             // older notifications without them keep the general wording.
             $notificationSettingsDao = \PKP\db\DAORegistry::getDAO('NotificationSettingsDAO');  /** @var \PKP\notification\NotificationSettingsDAO $notificationSettingsDao */
-            $settings = $notificationSettingsDao->getNotificationSettings($notification->getId());
+            // Cast because OJS's docblock gives a malformed return type.
+            $settings = (array) $notificationSettingsDao->getNotificationSettings($notification->getId());
             $message = isset($settings['submitterName'], $settings['round'])
                 ? __('plugins.generic.groupReview.tasks.participationSubmitted.detail', [
                     'submitterName' => htmlspecialchars((string) $settings['submitterName']),

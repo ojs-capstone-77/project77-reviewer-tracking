@@ -582,32 +582,24 @@
 }
 
 .grpMon__tabs {
-	display: flex;
-	gap: 0.25rem;
 	margin-top: 0.5rem;
 }
 
-.grpMon__tab {
-	padding: 0.75rem 1.25rem;
-	color: #006798;
-	font-weight: 700;
-	text-decoration: none;
-	border-radius: 6px 6px 0 0;
+.grpMon__tabs .pkpTabs__button[aria-current='page'] {
+	color: #777;
 }
 
-.grpMon__tab:hover {
-	text-decoration: underline;
+.grpMon__tabs .pkpTabs__button[aria-current='page']:before {
+	background: #008acb;
+	width: 100%;
 }
 
-.grpMon__tab--active {
-	color: #1a1a1a;
-	background: #ffffff;
-	border-top: 3px solid #006798;
-	padding-top: calc(0.75rem - 3px);
-}
-
-.grpMon__tab--active:hover {
-	text-decoration: none;
+@media (min-width: 767px) {
+	.grpMon__tabs .pkpTabs__button[aria-current='page'] {
+		border: 1px solid #ddd;
+		border-bottom-color: transparent;
+		background: #fff;
+	}
 }
 
 .grpMon__filters {
@@ -615,6 +607,10 @@
 	align-items: center;
 	gap: 0.5rem;
 	margin: 1rem 0;
+}
+
+.grpMon__filters .pkpFormField--select__input {
+	width: auto;
 }
 
 .grpMon__sortLink {
@@ -664,6 +660,14 @@
 	white-space: nowrap;
 }
 
+.grpMon__table--labels {
+	table-layout: fixed;
+}
+
+.grpMon__table--labels th:first-child {
+	width: 50%;
+}
+
 .grpMon__labels {
 	margin-top: 0.15rem;
 	color: #637381;
@@ -682,13 +686,6 @@
 
 .grpMon__viewLink:hover {
 	text-decoration: underline;
-}
-
-.grpMon__page {
-	padding: 1.5rem;
-	margin-top: 0;
-	background: #ffffff;
-	border-radius: 0 4px 4px 4px;
 }
 
 .grpMon__percent {
@@ -751,6 +748,10 @@
 	margin: 0;
 	font-weight: 400;
 	text-align: left;
+}
+
+.grpMon__kv--counts .grpMon__kvRow dt {
+	flex: 0 1 340px;
 }
 
 .grpMon__kv--aligned .grpMon__kvRow dt {

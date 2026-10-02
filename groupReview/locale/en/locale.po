@@ -145,10 +145,10 @@ msgid "plugins.generic.groupReview.monitoring.labelValue"
 msgstr "Label"
 
 msgid "plugins.generic.groupReview.monitoring.labelTotal"
-msgstr "Label Total"
+msgstr "Total"
 
 msgid "plugins.generic.groupReview.monitoring.labelActive"
-msgstr "Label Active"
+msgstr "Active"
 
 msgid "plugins.generic.groupReview.monitoring.reviewers.title"
 msgstr "Reviewers"

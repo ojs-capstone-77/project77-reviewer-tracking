@@ -4,13 +4,13 @@
 	<div class="grp">
 		{include file=$monitoringTabsResource activeTab="reviewers" overviewUrl=$overviewUrl reviewersUrl=$reviewersUrl}
 
-		<div class="grpMon__page">
+		<div class="pkpTab grpMon__page">
 			{if $labelSaveError}
 				<div class="grp__notice grp__notice--error">{translate key="plugins.generic.groupReview.labels.saveError"}</div>
 			{/if}
 			<div class="grpMon__reviewerHeader">
 				<h2 class="grpMon__reviewerName">{$reviewer.name|escape}</h2>
-				<button type="button" class="pkpButton pkpButton--isPrimary" @click="$modal.show('grpEditLabels')">{translate key="plugins.generic.groupReview.monitoring.editLabels"}</button>
+				<button type="button" class="pkpButton" @click="$modal.show('grpEditLabels')">{translate key="plugins.generic.groupReview.monitoring.editLabels"}</button>
 			</div>
 
 			<dl class="grpMon__kv grpMon__kv--aligned">
@@ -25,7 +25,7 @@
 				<h3 class="grpMon__caps">{translate key="plugins.generic.groupReview.monitoring.activity"}</h3>
 				<form class="grpMon__filters" method="get" action="{$reviewerUrl|escape}">
 					<input type="hidden" name="reviewerId" value="{$reviewer.userId|intval}">
-					<select name="year" id="grpMonYear" aria-label="{translate key="plugins.generic.groupReview.monitoring.year"}" onchange="this.form.submit()">
+					<select class="pkpFormField__input pkpFormField--select__input" name="year" id="grpMonYear" aria-label="{translate key="plugins.generic.groupReview.monitoring.year"}" onchange="this.form.submit()">
 						{foreach from=$yearOptions item=yearOption}
 							<option value="{$yearOption.value|escape}"{if $year == $yearOption.value} selected{/if}>{$yearOption.label|escape}</option>
 						{/foreach}
@@ -35,19 +35,19 @@
 
 			<div class="grpMon__statsColumns">
 				<div>
-					<dl class="grpMon__kv grpMon__kv--aligned">
+					<dl class="grpMon__kv grpMon__kv--counts">
 						<div class="grpMon__kvRow"><dt>{translate key="plugins.generic.groupReview.monitoring.invited"}</dt><dd>{$stats.invited|intval}</dd></div>
 						<div class="grpMon__kvRow"><dt>{translate key="plugins.generic.groupReview.monitoring.available"}</dt><dd>{$stats.available|intval}</dd></div>
 						<div class="grpMon__kvRow"><dt>{translate key="plugins.generic.groupReview.monitoring.selected"}</dt><dd>{$stats.selected|intval}</dd></div>
 					</dl>
-					<dl class="grpMon__kv grpMon__kv--aligned grpMon__kv--gap">
+					<dl class="grpMon__kv grpMon__kv--counts grpMon__kv--gap">
 						<div class="grpMon__kvRow"><dt>{translate key="plugins.generic.groupReview.monitoring.notSelected"}</dt><dd>{$stats.notSelected|intval}</dd></div>
 						<div class="grpMon__kvRow"><dt>{translate key="plugins.generic.groupReview.monitoring.notAvailable"}</dt><dd>{$stats.notAvailable|intval}</dd></div>
 						<div class="grpMon__kvRow"><dt>{translate key="plugins.generic.groupReview.monitoring.noResponse"}</dt><dd>{$stats.noResponse|intval}</dd></div>
 					</dl>
 				</div>
 				<div>
-					<dl class="grpMon__kv grpMon__kv--aligned">
+					<dl class="grpMon__kv grpMon__kv--counts">
 						<div class="grpMon__kvRow"><dt>{translate key="plugins.generic.groupReview.monitoring.completed"}</dt><dd>{$stats.completed|intval}</dd></div>
 						<div class="grpMon__kvRow"><dt>{translate key="plugins.generic.groupReview.monitoring.current"}</dt><dd>{$stats.current|intval}</dd></div>
 						<div class="grpMon__kvRow"><dt>{translate key="plugins.generic.groupReview.monitoring.timesLed"}</dt><dd>{$stats.timesLed|intval}</dd></div>
@@ -61,7 +61,7 @@
 					{if empty($attendanceCounts)}
 						<p class="grp__muted">{translate key="plugins.generic.groupReview.monitoring.noCounts"}</p>
 					{else}
-						<dl class="grpMon__kv grpMon__kv--aligned">
+						<dl class="grpMon__kv grpMon__kv--counts">
 							{foreach from=$attendanceCounts item=count}
 								<div class="grpMon__kvRow"><dt>{$count.label|escape}</dt><dd>{$count.count|intval}</dd></div>
 							{/foreach}
@@ -73,7 +73,7 @@
 					{if empty($contributionCounts)}
 						<p class="grp__muted">{translate key="plugins.generic.groupReview.monitoring.noCounts"}</p>
 					{else}
-						<dl class="grpMon__kv grpMon__kv--aligned">
+						<dl class="grpMon__kv grpMon__kv--counts">
 							{foreach from=$contributionCounts item=count}
 								<div class="grpMon__kvRow"><dt>{$count.label|escape}</dt><dd>{$count.count|intval}</dd></div>
 							{/foreach}

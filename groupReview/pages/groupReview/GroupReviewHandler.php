@@ -57,6 +57,7 @@ class GroupReviewHandler extends Handler
     ];
     private const PARTICIPATION_READ_OPERATIONS = ['getParticipation'];
     private const PARTICIPATION_DATE_FORMAT = 'j F Y, H:i';
+    private const MONITORING_DATE_FORMAT = 'j F Y';
     private const MONITORING_OPERATIONS = ['overview', 'reviewers', 'reviewer', 'saveLabels'];
     private const MONITORING_SORT_COLUMNS = ['name', 'invited', 'available', 'selected', 'completed', 'current', 'attended'];
 
@@ -239,8 +240,8 @@ class GroupReviewHandler extends Handler
             'reviewer' => [
                 'userId' => $row['userId'],
                 'name' => $row['name'],
-                'reviewerSince' => $row['reviewerSince'],
-                'lastActivity' => $row['lastActivity'],
+                'reviewerSince' => $row['reviewerSince'] === null ? null : $this->service->formatUtc($row['reviewerSince'], 'UTC', self::MONITORING_DATE_FORMAT),
+                'lastActivity' => $row['lastActivity'] === null ? null : $this->service->formatUtc($row['lastActivity'], 'UTC', self::MONITORING_DATE_FORMAT),
                 'labels' => $this->reviewerLabelsList($labels),
             ],
             'stats' => $reviewerStats,

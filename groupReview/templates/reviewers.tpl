@@ -4,13 +4,13 @@
 	<div class="grp">
 		{include file=$monitoringTabsResource activeTab="reviewers" overviewUrl=$overviewUrl reviewersUrl=$reviewersUrl}
 
-		<div class="grpMon__page">
+		<div class="pkpTab grpMon__page">
 			<div class="grpMon__sectionRow">
 				<h2 class="grpMon__sectionHeading">{translate key="plugins.generic.groupReview.monitoring.reviewers.title"}</h2>
 				<form class="grpMon__filters" method="get" action="{$reviewersActionUrl|escape}">
 					<input type="hidden" name="sort" value="{$sort|escape}">
 					<input type="hidden" name="dir" value="{$dir|escape}">
-					<select name="year" id="grpMonYear" aria-label="{translate key="plugins.generic.groupReview.monitoring.year"}" onchange="this.form.submit()">
+					<select class="pkpFormField__input pkpFormField--select__input" name="year" id="grpMonYear" aria-label="{translate key="plugins.generic.groupReview.monitoring.year"}" onchange="this.form.submit()">
 						{foreach from=$yearOptions item=yearOption}
 							<option value="{$yearOption.value|escape}"{if $year == $yearOption.value} selected{/if}>{$yearOption.label|escape}</option>
 						{/foreach}
