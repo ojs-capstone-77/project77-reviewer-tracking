@@ -27,22 +27,22 @@ class ParticipationService
     public const LOG_FORM_EDITED = 0xA0000001;
     public const LOG_FORM_SUBMITTED = 0xA0000002;
 
-    private const ATTENDANCE_VALUES = [
-        self::ATTENDANCE_ATTENDED,
-        self::ATTENDANCE_APOLOGY,
-        self::ATTENDANCE_NO_APOLOGY,
-        self::ATTENDANCE_NOT_APPLICABLE,
-        self::ATTENDANCE_NOT_RECORDED,
-        self::ATTENDANCE_OTHER,
+    public const ATTENDANCE_OPTIONS = [
+        self::ATTENDANCE_NOT_RECORDED => 'Not recorded',
+        self::ATTENDANCE_ATTENDED => 'Attended',
+        self::ATTENDANCE_APOLOGY => 'Did not attend, prior apology',
+        self::ATTENDANCE_NO_APOLOGY => 'Did not attend, no prior apology',
+        self::ATTENDANCE_NOT_APPLICABLE => 'N/A',
+        self::ATTENDANCE_OTHER => 'Other',
     ];
 
-    private const SHAPING_VALUES = [
-        'uploaded_notes',
-        'commented_on_draft',
-        'offered_creating_draft',
-        'created_draft',
-        'did_not_contribute',
-        'other',
+    public const CONTRIBUTION_OPTIONS = [
+        'uploaded_notes' => 'Uploaded their notes or comments',
+        'commented_on_draft' => 'Commented on the feedback draft',
+        'offered_creating_draft' => 'Offered to create the draft',
+        'created_draft' => 'Created the draft',
+        'did_not_contribute' => 'Did not contribute to shaping the response',
+        'other' => 'Other',
     ];
 
     /**
@@ -390,11 +390,11 @@ class ParticipationService
         foreach (['session_id', 'review_round_id', 'submission_id', 'reviewer_user_id', 'leader_user_id'] as $key) {
             $data[$key] = $this->positiveInteger($data[$key] ?? null, $key);
         }
-        if (!isset($data['attendance']) || !in_array($data['attendance'], self::ATTENDANCE_VALUES, true)) {
+        if (!isset($data['attendance']) || !in_array($data['attendance'], array_keys(self::ATTENDANCE_OPTIONS), true)) {
             throw new InvalidArgumentException('The attendance value is invalid.');
         }
 
-        $shapingTypes = $this->validateList($data['shaping_feedback_types'] ?? [], self::SHAPING_VALUES, 'shaping feedback types');
+        $shapingTypes = $this->validateList($data['shaping_feedback_types'] ?? [], array_keys(self::CONTRIBUTION_OPTIONS), 'shaping feedback types');
         $attendanceOther = $data['attendance'] === self::ATTENDANCE_OTHER
             ? $this->text($data['attendance_other'] ?? null, 'attendance details')
             : null;
