@@ -57,7 +57,7 @@ class GroupReviewHandler extends Handler
     ];
     private const PARTICIPATION_READ_OPERATIONS = ['getParticipation'];
     private const PARTICIPATION_DATE_FORMAT = 'j F Y, H:i';
-    private const MONITORING_OPERATIONS = ['reviewers'];
+private const MONITORING_OPERATIONS = ['reviewers', 'overview'];
     private const MONITORING_SORT_COLUMNS = ['name', 'invited', 'available', 'selected', 'completed', 'current', 'attended'];
 
     public function __construct(GroupReviewPlugin $plugin)
@@ -363,6 +363,77 @@ class GroupReviewHandler extends Handler
             'backUrl' => $this->participationListUrl($request, (int) $bundle['poll']['submission_id']),
         ]);
     }
+    public function overview($args, $request): void
+{
+    $contextId = (int) $request->getContext()->getId();
+    $year = $this->monitoringYear($request);
+
+    $stats = new ReviewerStatsService();
+    $yearOptions = $stats->getYears($contextId);
+
+    // ---- Sample data (remove once Martel's overview stats method is merged) ----
+    // Shape matches what ReviewerStatsService::getOverview() will return,
+    // and the 'labels' list the page operation builds from its label counts,
+    // per Reviewer-Monitoring-Definitions.md.
+    $live = [
+        'total' => 40,
+        'leaders' => 8,
+        'currentGroups' => 2,
+    ];
+
+    $activity = [
+        'invited' => 37,
+        'participated' => 26,
+        'notSelected' => 8,
+        'inactive' => 3,
+        'notInvited' => 3,
+        'reviewGroups' => 12,
+        'completed' => 10,
+    ];
+
+    $labels = [
+        [
+            'name' => __('plugins.generic.groupReview.labels.experienceLevel'),
+            'values' => [
+                ['label' => __('plugins.generic.groupReview.labels.novice'), 'total' => 15, 'active' => 13],
+                ['label' => __('plugins.generic.groupReview.labels.intermediate'), 'total' => 15, 'active' => 14],
+                ['label' => __('plugins.generic.groupReview.labels.experienced'), 'total' => 9, 'active' => 6],
+                ['label' => __('plugins.generic.groupReview.labels.notSet'), 'total' => 1, 'active' => 1],
+            ],
+        ],
+        [
+            'name' => __('plugins.generic.groupReview.labels.methodology'),
+            'values' => [
+                ['label' => __('plugins.generic.groupReview.labels.quantitative'), 'total' => 12, 'active' => 10],
+                ['label' => __('plugins.generic.groupReview.labels.qualitative'), 'total' => 18, 'active' => 16],
+                ['label' => __('plugins.generic.groupReview.labels.mixedMethods'), 'total' => 9, 'active' => 7],
+                ['label' => __('plugins.generic.groupReview.labels.notSet'), 'total' => 1, 'active' => 1],
+            ],
+        ],
+        [
+            'name' => __('plugins.generic.groupReview.labels.expertise'),
+            'values' => [
+                ['label' => __('plugins.generic.groupReview.labels.education'), 'total' => 22, 'active' => 19],
+                ['label' => __('plugins.generic.groupReview.labels.statistics'), 'total' => 8, 'active' => 6],
+                ['label' => __('plugins.generic.groupReview.labels.notSet'), 'total' => 11, 'active' => 9],
+            ],
+        ],
+    ];
+    // ---- End sample data --------------------------------------------------
+
+    $this->display($request, 'overview.tpl', [
+        'pageTitle' => __('plugins.generic.groupReview.monitoring.overview.title'),
+        'monitoringTabsResource' => $this->plugin->getTemplateResource('monitoringTabs.tpl'),
+        'activeTab' => 'overview',
+        'year' => $year,
+        'yearOptions' => $yearOptions,
+        'overviewUrl' => $request->getRouter()->url($request, null, 'groupReview', 'overview'),
+        'reviewersUrl' => $request->getRouter()->url($request, null, 'groupReview', 'reviewers'),
+        'live' => $live,
+        'activity' => $activity,
+        'labels' => $labels,
+    ]);
+}
 
     public function saveParticipation($args, $request): JSONMessage
     {
