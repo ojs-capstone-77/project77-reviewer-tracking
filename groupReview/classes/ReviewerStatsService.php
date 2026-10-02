@@ -151,6 +151,119 @@ class ReviewerStatsService
         return $years;
     }
 
+    public function getReviewerRow(int $contextId, int $userId, ?int $year): ?array
+    {
+        $data = $this->load($contextId);
+        if (!isset($data['reviewers'][$userId])) {
+            return null;
+        }
+
+        return $this->reviewerRow($data['polls'], $userId, $data['reviewers'][$userId], $year);
+    }
+
+    public function getAttendanceCounts(int $contextId, int $userId, ?int $year): array
+    {
+        $data = $this->load($contextId);
+        $counts = [];
+        foreach ($data['polls'] as $poll) {
+            if (!$this->inYear($poll, $year)) {
+                continue;
+            }
+            $answer = $poll['participation'][$userId]['attendance'] ?? null;
+            if ($answer === null || $answer === ParticipationService::ATTENDANCE_NOT_RECORDED) {
+                continue;
+            }
+            $counts[$answer] = ($counts[$answer] ?? 0) + 1;
+        }
+
+        return $counts;
+    }
+
+    public function getContributionCounts(int $contextId, int $userId, ?int $year): array
+    {
+        $data = $this->load($contextId);
+        $counts = [];
+        foreach ($data['polls'] as $poll) {
+            if (!$this->inYear($poll, $year)) {
+                continue;
+            }
+            foreach ($poll['participation'][$userId]['shapingFeedbackTypes'] ?? [] as $value) {
+                $counts[$value] = ($counts[$value] ?? 0) + 1;
+            }
+        }
+
+        return $counts;
+    }
+
+    public function getHistory(int $contextId, int $userId, ?int $year): array
+    {
+        $data = $this->load($contextId);
+
+        $entries = [];
+        foreach ($data['polls'] as $poll) {
+            if (!$poll['finalized'] || !$this->inYear($poll, $year)) {
+                continue;
+            }
+            $isLeader = $poll['leaderId'] === $userId;
+            $member = $poll['members'][$userId] ?? null;
+            if (!$isLeader && !($member && $member['selected'])) {
+                continue;
+            }
+            $entries[] = ['poll' => $poll, 'isLeader' => $isLeader];
+        }
+        usort($entries, fn (array $a, array $b): int => strcmp($b['poll']['date'], $a['poll']['date']));
+
+        $rounds = $this->rounds(array_values(array_unique(array_map(
+            fn (array $entry): int => $entry['poll']['reviewRoundId'],
+            $entries
+        ))));
+        $leaderNames = $this->userNames(array_values(array_unique(array_map(
+            fn (array $entry): int => $entry['poll']['leaderId'],
+            $entries
+        ))));
+
+        $history = [];
+        foreach ($entries as $entry) {
+            $poll = $entry['poll'];
+            $history[] = [
+                'submissionId' => $poll['submissionId'],
+                'round' => $rounds[$poll['reviewRoundId']] ?? null,
+                'date' => $poll['date'],
+                'timezone' => $poll['timezone'],
+                'leaderName' => $leaderNames[$poll['leaderId']] ?? '',
+                'isLeader' => $entry['isLeader'],
+                'participation' => $entry['isLeader'] ? null : ($poll['participation'][$userId] ?? null),
+                'generalComments' => $entry['isLeader'] ? $poll['generalComments'] : null,
+            ];
+        }
+
+        return $history;
+    }
+
+    private function rounds(array $roundIds): array
+    {
+        if (!$roundIds) {
+            return [];
+        }
+
+        $rounds = [];
+        foreach (DB::table('review_rounds')->whereIn('review_round_id', $roundIds)->get(['review_round_id', 'round']) as $row) {
+            $rounds[(int) $row->review_round_id] = (int) $row->round;
+        }
+
+        return $rounds;
+    }
+
+    private function userNames(array $userIds): array
+    {
+        $names = [];
+        foreach (Repo::user()->getCollector()->filterByUserIds(array_values(array_filter($userIds)))->getMany() as $user) {
+            $names[(int) $user->getId()] = $user->getFullName();
+        }
+
+        return $names;
+    }
+
     // Loading
 
     /**
@@ -203,15 +316,29 @@ class ReviewerStatsService
             ];
         }
 
-        $submittedForms = DB::table('group_review_participation_forms')
+        $submittedFormRows = DB::table('group_review_participation_forms')
             ->whereIn('session_id', $sessionIds)
             ->where('status', ParticipationService::STATUS_SUBMITTED)
-            ->pluck('session_id')
-            ->map(fn ($id): int => (int) $id)
-            ->all();
-        $attendance = [];
-        foreach (DB::table('group_review_participation')->whereIn('session_id', $submittedForms)->get(['session_id', 'reviewer_user_id', 'attendance']) as $row) {
-            $attendance[(int) $row->session_id][(int) $row->reviewer_user_id] = (string) $row->attendance;
+            ->get(['session_id', 'general_comments']);
+        $submittedForms = $submittedFormRows->pluck('session_id')->map(fn ($id): int => (int) $id)->all();
+        $generalComments = [];
+        foreach ($submittedFormRows as $row) {
+            $generalComments[(int) $row->session_id] = $row->general_comments === null ? null : (string) $row->general_comments;
+        }
+
+        $participation = [];
+        foreach (DB::table('group_review_participation')->whereIn('session_id', $submittedForms)->get([
+            'session_id', 'reviewer_user_id', 'attendance', 'attendance_other', 'contribution_comments',
+            'shaping_feedback_types', 'shaping_feedback_comments', 'other_contribution',
+        ]) as $row) {
+            $participation[(int) $row->session_id][(int) $row->reviewer_user_id] = [
+                'attendance' => (string) $row->attendance,
+                'attendanceOther' => $row->attendance_other === null ? null : (string) $row->attendance_other,
+                'contributionComments' => $row->contribution_comments === null ? null : (string) $row->contribution_comments,
+                'shapingFeedbackTypes' => json_decode((string) $row->shaping_feedback_types, true) ?: [],
+                'shapingFeedbackComments' => $row->shaping_feedback_comments === null ? null : (string) $row->shaping_feedback_comments,
+                'otherContribution' => $row->other_contribution === null ? null : (string) $row->other_contribution,
+            ];
         }
 
         $latestDecisions = $this->latestDecisions($sessions->pluck('review_round_id')->map(fn ($id): int => (int) $id)->all());
@@ -226,6 +353,9 @@ class ReviewerStatsService
                 : ($times ? max($times) : (string) $session->deadline_utc);
 
             $polls[$sessionId] = [
+                'submissionId' => (int) $session->submission_id,
+                'reviewRoundId' => (int) $session->review_round_id,
+                'timezone' => (string) $session->timezone,
                 'leaderId' => (int) $session->leader_user_id,
                 'finalized' => $finalized,
                 'date' => $date,
@@ -234,7 +364,8 @@ class ReviewerStatsService
                 'decided' => in_array($latestDecisions[(int) $session->review_round_id] ?? null, self::ROUND_ENDING_DECISIONS, true),
                 'cancelled' => ($latestDecisions[(int) $session->review_round_id] ?? null) === Decision::CANCEL_REVIEW_ROUND,
                 'members' => $members[$sessionId] ?? [],
-                'attendance' => $attendance[$sessionId] ?? [],
+                'generalComments' => $generalComments[$sessionId] ?? null,
+                'participation' => $participation[$sessionId] ?? [],
             ];
         }
 
@@ -368,7 +499,7 @@ class ReviewerStatsService
             if ($inGroup && $poll['decided'] && !$poll['cancelled']) {
                 $row['completed']++;
             }
-            $answer = $poll['attendance'][$userId] ?? null;
+            $answer = $poll['participation'][$userId]['attendance'] ?? null;
             if ($answer !== null && in_array($answer, self::RECORDED_ATTENDANCE, true)) {
                 $row['attendanceRecorded']++;
                 if ($answer === ParticipationService::ATTENDANCE_ATTENDED) {

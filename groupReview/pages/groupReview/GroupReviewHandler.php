@@ -57,7 +57,7 @@ class GroupReviewHandler extends Handler
     ];
     private const PARTICIPATION_READ_OPERATIONS = ['getParticipation'];
     private const PARTICIPATION_DATE_FORMAT = 'j F Y, H:i';
-    private const MONITORING_OPERATIONS = ['reviewers', 'overview'];
+    private const MONITORING_OPERATIONS = ['reviewers', 'reviewer', 'saveLabels'];
     private const MONITORING_SORT_COLUMNS = ['name', 'invited', 'available', 'selected', 'completed', 'current', 'attended'];
 
     public function __construct(GroupReviewPlugin $plugin)
@@ -158,6 +158,91 @@ class GroupReviewHandler extends Handler
             'dir' => $dir,
             'sortUrls' => $this->monitoringSortUrls($request, $year, $sort, $dir),
             'reviewers' => $reviewers,
+        ]);
+    }
+
+    public function reviewer($args, $request): void
+    {
+        $contextId = (int) $request->getContext()->getId();
+        $reviewerId = (int) $request->getUserVar('reviewerId');
+        $year = $this->monitoringYear($request);
+
+        $stats = new ReviewerStatsService();
+        $row = $stats->getReviewerRow($contextId, $reviewerId, $year);
+        if (!$row) {
+            $this->displayMessage($request, 'plugins.generic.groupReview.error.reviewerNotFound');
+            return;
+        }
+
+        $labelService = new ReviewerLabelService();
+        $labels = $labelService->getLabels($contextId, [$reviewerId])[$reviewerId]
+            ?? array_fill_keys(array_keys(ReviewerLabelService::TYPES), []);
+
+        $this->display($request, 'reviewer.tpl', [
+            'pageTitle' => $row['name'],
+            'year' => $year,
+            'yearOptions' => $stats->getYears($contextId),
+            'reviewerUrl' => $request->getRouter()->url($request, null, 'groupReview', 'reviewer', null, ['reviewerId' => $reviewerId]),
+            'reviewer' => [
+                'userId' => $row['userId'],
+                'name' => $row['name'],
+                'reviewerSince' => $row['reviewerSince'],
+                'lastActivity' => $row['lastActivity'],
+                'labels' => $this->reviewerLabelsList($labels),
+            ],
+            'stats' => $row,
+            'attendanceCounts' => $this->monitoringCounts($stats->getAttendanceCounts($contextId, $reviewerId, $year), ParticipationService::ATTENDANCE_OPTIONS),
+            'contributionCounts' => $this->monitoringCounts($stats->getContributionCounts($contextId, $reviewerId, $year), ParticipationService::CONTRIBUTION_OPTIONS),
+            'history' => $this->reviewerHistory($stats->getHistory($contextId, $reviewerId, $year), $request),
+            'labelOptions' => $this->reviewerLabelOptions(),
+            'labelValues' => $labels,
+            'labelHistory' => $labelService->getHistory($contextId, $reviewerId),
+            'labelSaveError' => (bool) $request->getUserVar('labelSaveError'),
+            'saveLabelsUrl' => $request->getRouter()->url($request, null, 'groupReview', 'saveLabels'),
+            'backUrl' => $request->getRouter()->url($request, null, 'groupReview', 'reviewers'),
+        ]);
+    }
+
+    public function saveLabels($args, $request): void
+    {
+        if (!$request->isPost() || !$request->checkCSRF()) {
+            $this->displayMessage($request, 'plugins.generic.groupReview.error.invalidRequest');
+            return;
+        }
+
+        $contextId = (int) $request->getContext()->getId();
+        $reviewerId = (int) $request->getUserVar('reviewerId');
+        $year = $request->getUserVar('year');
+
+        $values = [];
+        foreach (ReviewerLabelService::TYPES as $type => $definition) {
+            $posted = $request->getUserVar($type);
+            $values[$type] = $definition['multiple']
+                ? (array) ($posted ?? [])
+                : array_filter([(string) ($posted ?? '')], fn ($value) => $value !== '');
+        }
+
+        try {
+            (new ReviewerLabelService())->setLabels(
+                $contextId,
+                $reviewerId,
+                $values,
+                $request->getUserVar('note'),
+                (int) $request->getUser()->getId()
+            );
+        } catch (Throwable $e) {
+            error_log('Group Review label save failed: ' . $e->getMessage());
+            $request->redirect(null, 'groupReview', 'reviewer', null, [
+                'reviewerId' => $reviewerId,
+                'year' => $year,
+                'labelSaveError' => 1,
+            ]);
+            return;
+        }
+
+        $request->redirect(null, 'groupReview', 'reviewer', null, [
+            'reviewerId' => $reviewerId,
+            'year' => $year,
         ]);
     }
 
@@ -797,26 +882,12 @@ class GroupReviewHandler extends Handler
 
     private function participationAttendanceOptions(): array
     {
-        return [
-            ParticipationService::ATTENDANCE_NOT_RECORDED => 'Not recorded',
-            ParticipationService::ATTENDANCE_ATTENDED => 'Attended',
-            ParticipationService::ATTENDANCE_APOLOGY => 'Did not attend, prior apology',
-            ParticipationService::ATTENDANCE_NO_APOLOGY => 'Did not attend, no prior apology',
-            ParticipationService::ATTENDANCE_NOT_APPLICABLE => 'N/A',
-            ParticipationService::ATTENDANCE_OTHER => 'Other',
-        ];
+        return ParticipationService::ATTENDANCE_OPTIONS;
     }
 
     private function participationContributionOptions(): array
     {
-        return [
-            'uploaded_notes' => 'Uploaded their notes or comments',
-            'commented_on_draft' => 'Commented on the feedback draft',
-            'offered_creating_draft' => 'Offered to create the draft',
-            'created_draft' => 'Created the draft',
-            'did_not_contribute' => 'Did not contribute to shaping the response',
-            'other' => 'Other',
-        ];
+        return ParticipationService::CONTRIBUTION_OPTIONS;
     }
 
     public function create($args, $request): void
@@ -1744,6 +1815,110 @@ class GroupReviewHandler extends Handler
         }
 
         return implode(', ', $names);
+    }
+
+    private function reviewerLabelsList(array $labels): array
+    {
+        $service = new ReviewerLabelService();
+        $list = [];
+        foreach (ReviewerLabelService::TYPES as $type => $definition) {
+            $values = $labels[$type] ?? [];
+            $list[] = [
+                'name' => $service->name($type),
+                'valuesText' => $values
+                    ? implode(', ', array_map(fn ($value) => $service->name($type, $value), $values))
+                    : __('plugins.generic.groupReview.labels.notSet'),
+            ];
+        }
+
+        return $list;
+    }
+
+    private function reviewerLabelOptions(): array
+    {
+        $service = new ReviewerLabelService();
+        $options = [];
+        foreach (ReviewerLabelService::TYPES as $type => $definition) {
+            $options[$type] = [
+                'name' => $service->name($type),
+                'multiple' => $definition['multiple'],
+                'options' => array_map(
+                    fn ($value) => ['value' => $value, 'label' => $service->name($type, $value)],
+                    array_keys($definition['values'])
+                ),
+            ];
+        }
+
+        return $options;
+    }
+
+    private function monitoringCounts(array $counts, array $optionLabels): array
+    {
+        $list = [];
+        foreach ($optionLabels as $value => $label) {
+            if (!empty($counts[$value])) {
+                $list[] = ['label' => $label, 'count' => $counts[$value]];
+            }
+        }
+
+        return $list;
+    }
+
+    private function reviewerHistory(array $entries, $request): array
+    {
+        $history = [];
+        foreach ($entries as $entry) {
+            $history[] = [
+                'submissionId' => $entry['submissionId'],
+                'submissionUrl' => $request->getRouter()->url($request, null, 'workflow', 'access', $entry['submissionId']),
+                'round' => $entry['round'],
+                'date' => $this->service->formatUtc($entry['date'], $entry['timezone'], self::PARTICIPATION_DATE_FORMAT),
+                'leaderName' => $entry['leaderName'],
+                'isLeader' => $entry['isLeader'],
+                'sections' => $this->historyAnswers($entry['participation']),
+                'generalComments' => $entry['generalComments'],
+            ];
+        }
+
+        return $history;
+    }
+
+    private function historyAnswers(?array $record): array
+    {
+        if (!$record) {
+            return [];
+        }
+
+        $sections = [];
+        $add = function (string $section, string $label, ?string $value) use (&$sections) {
+            if ($value === null || $value === '') {
+                return;
+            }
+            $sections[$section][] = ['label' => $label, 'value' => $value];
+        };
+
+        if ($record['attendance'] !== ParticipationService::ATTENDANCE_NOT_RECORDED) {
+            $value = ParticipationService::ATTENDANCE_OPTIONS[$record['attendance']] ?? $record['attendance'];
+            if ($record['attendance'] === ParticipationService::ATTENDANCE_OTHER && $record['attendanceOther']) {
+                $value .= ': ' . $record['attendanceOther'];
+            }
+            $add('Review meeting', 'Meeting attendance', $value);
+        }
+        $add('Review meeting', 'Comments on contributions', $record['contributionComments']);
+
+        if ($record['shapingFeedbackTypes']) {
+            $labels = array_map(fn ($value) => ParticipationService::CONTRIBUTION_OPTIONS[$value] ?? $value, $record['shapingFeedbackTypes']);
+            $add('Feedback response', 'Contributions', implode(', ', $labels));
+        }
+        $add('Feedback response', 'Comments on contributions', $record['shapingFeedbackComments']);
+        $add('Other', 'Other comments', $record['otherContribution']);
+
+        $result = [];
+        foreach ($sections as $section => $rows) {
+            $result[] = ['section' => $section, 'rows' => $rows];
+        }
+
+        return $result;
     }
 
     private function monitoringPercent(int $numerator, int $denominator): ?int

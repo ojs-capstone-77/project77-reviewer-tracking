@@ -148,8 +148,98 @@ msgstr "Available"
 msgid "plugins.generic.groupReview.monitoring.selected"
 msgstr "Selected"
 
-msgid "plugins.generic.groupReview.monitoring.viewComingSoon"
-msgstr "The reviewer detail page hasn't been built yet."
+msgid "plugins.generic.groupReview.monitoring.notSelected"
+msgstr "Not selected"
+
+msgid "plugins.generic.groupReview.monitoring.notAvailable"
+msgstr "Not available"
+
+msgid "plugins.generic.groupReview.monitoring.noResponse"
+msgstr "No response"
+
+msgid "plugins.generic.groupReview.monitoring.timesLed"
+msgstr "Times led"
+
+msgid "plugins.generic.groupReview.monitoring.activity"
+msgstr "Activity"
+
+msgid "plugins.generic.groupReview.monitoring.backToReviewers"
+msgstr "Back"
+
+msgid "plugins.generic.groupReview.monitoring.reviewerSince"
+msgstr "Reviewer since"
+
+msgid "plugins.generic.groupReview.monitoring.lastActivity"
+msgstr "Last activity"
+
+msgid "plugins.generic.groupReview.monitoring.labels"
+msgstr "Labels"
+
+msgid "plugins.generic.groupReview.monitoring.editLabels"
+msgstr "Edit Labels"
+
+msgid "plugins.generic.groupReview.monitoring.attendanceCounts"
+msgstr "Meeting attendance"
+
+msgid "plugins.generic.groupReview.monitoring.contributionCounts"
+msgstr "Contributions"
+
+msgid "plugins.generic.groupReview.monitoring.noCounts"
+msgstr "Nothing recorded for this period."
+
+msgid "plugins.generic.groupReview.monitoring.history"
+msgstr "History"
+
+msgid "plugins.generic.groupReview.monitoring.history.empty"
+msgstr "No review groups in this period."
+
+msgid "plugins.generic.groupReview.monitoring.history.round"
+msgstr "Round"
+
+msgid "plugins.generic.groupReview.monitoring.history.ledBy"
+msgstr "Led by"
+
+msgid "plugins.generic.groupReview.monitoring.history.groupLeader"
+msgstr "Group leader"
+
+msgid "plugins.generic.groupReview.monitoring.history.submission"
+msgstr "Submission #"
+
+msgid "plugins.generic.groupReview.monitoring.history.groupReviewLabel"
+msgstr "group review"
+
+msgid "plugins.generic.groupReview.monitoring.history.generalComments"
+msgstr "General comments"
+
+msgid "plugins.generic.groupReview.monitoring.history.noAnswers"
+msgstr "No form answers recorded."
+
+msgid "plugins.generic.groupReview.labels.editTitle"
+msgstr "Edit Labels"
+
+msgid "plugins.generic.groupReview.labels.notSetOption"
+msgstr "Not set"
+
+msgid "plugins.generic.groupReview.labels.note"
+msgstr "Note"
+
+msgid "plugins.generic.groupReview.labels.saveError"
+msgstr "Couldn't save your changes. Please check the values and try again."
+
+msgid "plugins.generic.groupReview.labels.changeHistory"
+msgstr "History"
+
+msgid "plugins.generic.groupReview.labels.changeHistory.empty"
+msgstr "No label changes recorded yet."
+
+msgid "plugins.generic.groupReview.labels.changeHistory.date"
+msgstr "Date"
+
+msgid "plugins.generic.groupReview.labels.changeHistory.user"
+msgstr "User"
+
+msgid "plugins.generic.groupReview.labels.changeHistory.change"
+msgstr "Change"
 
 msgid "plugins.generic.groupReview.participation.saved"
 msgstr "The participation record was saved."
@@ -375,6 +465,9 @@ msgstr "An open poll already exists for this submission and review round."
 
 msgid "plugins.generic.groupReview.error.pollNotFound"
 msgstr "The requested poll was not found in this journal."
+
+msgid "plugins.generic.groupReview.error.reviewerNotFound"
+msgstr "The requested reviewer was not found in this journal."
 
 msgid "plugins.generic.groupReview.error.pollNotOpen"
 msgstr "This poll is no longer open."
