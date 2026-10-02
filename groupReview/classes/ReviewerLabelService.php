@@ -187,6 +187,11 @@ class ReviewerLabelService
             if (!is_array($typeValues)) {
                 throw new InvalidArgumentException("The {$type} values must be a list.");
             }
+            foreach ($typeValues as $value) {
+                if (!is_string($value)) {
+                    throw new InvalidArgumentException("The {$type} values must be strings.");
+                }
+            }
             $typeValues = array_values(array_unique(array_filter(array_map('strval', $typeValues), fn ($v) => $v !== '')));
             foreach ($typeValues as $value) {
                 if (!isset($definition['values'][$value])) {

@@ -17,6 +17,7 @@ use APP\plugins\generic\groupReview\classes\mail\GroupReviewPollThankInvitees;
 use APP\plugins\generic\groupReview\classes\mail\GroupReviewPollThankRgms;
 use APP\plugins\generic\groupReview\classes\notification\Notification as GroupReviewNotification;
 use APP\plugins\generic\groupReview\pages\groupReview\GroupReviewHandler;
+use APP\template\TemplateManager;
 use PKP\components\forms\FieldOptions;
 use PKP\components\forms\FieldText;
 use PKP\decision\Decision;
@@ -50,6 +51,7 @@ class GroupReviewPlugin extends GenericPlugin
         Hook::add('Schema::get::context', [$this, 'addToContextSchema']);
         Hook::add('Template::Workflow', [$this, 'addWorkflowTab']);
         Hook::add('TemplateManager::display', [$this, 'loadAssets']);
+        Hook::add('TemplateManager::setupBackendPage', [$this, 'addMonitoringMenuItem']);
         Hook::add('AcronPlugin::parseCronTab', [$this, 'addScheduledTasks']);
         Hook::add('Mailer::Mailables', [$this, 'addMailables']);
         Hook::add('NotificationManager::getNotificationMessage', [$this, 'notificationMessage']);
@@ -293,6 +295,32 @@ class GroupReviewPlugin extends GenericPlugin
         ]);
         $output .= $templateMgr->fetch($this->getTemplateResource('workflow/groupReviewTab.tpl'));
         return false;
+    }
+
+    /** Add the reviewer monitoring dashboard to the editorial sidebar. */
+    public function addMonitoringMenuItem($hookName, $args): void
+    {
+        $request = Application::get()->getRequest();
+        $context = $request->getContext();
+        $user = $request->getUser();
+        $service = new GroupReviewService();
+        if (!$context
+            || !$user
+            || !$this->getEnabled((int) $context->getId())
+            || !$service->isEnabled($context)
+            || !$service->isJournalEditorUser((int) $context->getId(), (int) $user->getId())) {
+            return;
+        }
+
+        $templateManager = TemplateManager::getManager($request);
+        $menu = (array) $templateManager->getState('menu');
+        $menu['groupReview'] = [
+            'name' => __('plugins.generic.groupReview.displayName'),
+            'url' => $request->getRouter()->url($request, null, 'groupReview', 'overview'),
+            'isCurrent' => $request->getRequestedPage() === 'groupReview',
+            'icon' => 'Dashboard',
+        ];
+        $templateManager->setState(['menu' => $menu]);
     }
 
     /** Load one small, namespaced stylesheet on the backend. */

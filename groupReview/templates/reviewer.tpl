@@ -2,9 +2,12 @@
 
 {block name="page"}
 	<div class="grp">
-		<h1 class="app__pageHeading">{translate key="plugins.generic.groupReview.monitoring.dashboardTitle"}</h1>
+		{include file=$monitoringTabsResource activeTab="reviewers" overviewUrl=$overviewUrl reviewersUrl=$reviewersUrl}
 
 		<div class="grpMon__page">
+			{if $labelSaveError}
+				<div class="grp__notice grp__notice--error">{translate key="plugins.generic.groupReview.labels.saveError"}</div>
+			{/if}
 			<div class="grpMon__reviewerHeader">
 				<h2 class="grpMon__reviewerName">{$reviewer.name|escape}</h2>
 				<button type="button" class="pkpButton pkpButton--isPrimary" @click="$modal.show('grpEditLabels')">{translate key="plugins.generic.groupReview.monitoring.editLabels"}</button>
@@ -23,9 +26,8 @@
 				<form class="grpMon__filters" method="get" action="{$reviewerUrl|escape}">
 					<input type="hidden" name="reviewerId" value="{$reviewer.userId|intval}">
 					<select name="year" id="grpMonYear" aria-label="{translate key="plugins.generic.groupReview.monitoring.year"}" onchange="this.form.submit()">
-						<option value=""{if $year === null} selected{/if}>{translate key="plugins.generic.groupReview.monitoring.year.allTime"}</option>
 						{foreach from=$yearOptions item=yearOption}
-							<option value="{$yearOption|escape}"{if $year == $yearOption} selected{/if}>{$yearOption|escape}</option>
+							<option value="{$yearOption.value|escape}"{if $year == $yearOption.value} selected{/if}>{$yearOption.label|escape}</option>
 						{/foreach}
 					</select>
 				</form>

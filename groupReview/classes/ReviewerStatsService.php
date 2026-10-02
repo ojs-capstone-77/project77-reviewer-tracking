@@ -142,6 +142,7 @@ class ReviewerStatsService
         ];
     }
 
+    /** @return int[] */
     public function getYears(int $contextId): array
     {
         $data = $this->load($contextId);
@@ -256,8 +257,12 @@ class ReviewerStatsService
 
     private function userNames(array $userIds): array
     {
+        $userIds = array_values(array_filter($userIds));
+        if (!$userIds) {
+            return [];
+        }
         $names = [];
-        foreach (Repo::user()->getCollector()->filterByUserIds(array_values(array_filter($userIds)))->getMany() as $user) {
+        foreach (Repo::user()->getCollector()->filterByUserIds($userIds)->getMany() as $user) {
             $names[(int) $user->getId()] = $user->getFullName();
         }
 
@@ -424,6 +429,9 @@ class ReviewerStatsService
             $userIds = array_merge($userIds, array_keys($poll['members']), [$poll['leaderId']]);
         }
         $userIds = array_values(array_unique(array_filter($userIds)));
+        if (!$userIds) {
+            return [[], []];
+        }
 
         // The collector only returns active accounts, which leaves out disabled ones.
         $reviewers = [];
