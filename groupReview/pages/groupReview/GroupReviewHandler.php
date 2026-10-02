@@ -435,7 +435,6 @@ class GroupReviewHandler extends Handler
             'backUrl' => $this->participationListUrl($request, (int) $bundle['poll']['submission_id']),
         ]);
     }
-   
 
     public function saveParticipation($args, $request): JSONMessage
     {
