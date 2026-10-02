@@ -534,3 +534,45 @@ msgstr "removed {$values}"
 
 msgid "plugins.generic.groupReview.labels.history.noteOnly"
 msgstr "Note added, no label changes."
+msgid "plugins.generic.groupReview.monitoring.overview.title"
+msgstr "Overview"
+
+msgid "plugins.generic.groupReview.monitoring.overview.reviewers"
+msgstr "Reviewers"
+
+msgid "plugins.generic.groupReview.monitoring.overview.total"
+msgstr "Total"
+
+msgid "plugins.generic.groupReview.monitoring.overview.leaders"
+msgstr "Review Group Leader"
+
+msgid "plugins.generic.groupReview.monitoring.overview.currentGroups"
+msgstr "Current review groups"
+
+msgid "plugins.generic.groupReview.monitoring.overview.activity"
+msgstr "Activity"
+
+msgid "plugins.generic.groupReview.monitoring.overview.participated"
+msgstr "Participated"
+
+msgid "plugins.generic.groupReview.monitoring.overview.notSelected"
+msgstr "Not selected"
+
+msgid "plugins.generic.groupReview.monitoring.overview.inactive"
+msgstr "Inactive"
+
+msgid "plugins.generic.groupReview.monitoring.overview.notInvited"
+msgstr "Not invited"
+
+msgid "plugins.generic.groupReview.monitoring.overview.reviewGroups"
+msgstr "Review groups"
+
+msgid "plugins.generic.groupReview.monitoring.overview.labels"
+msgstr "Labels"
+
+msgid "plugins.generic.groupReview.monitoring.overview.labelTotal"
+msgstr "Total"
+
+msgid "plugins.generic.groupReview.monitoring.overview.labelActive"
+msgstr "Active"
+
