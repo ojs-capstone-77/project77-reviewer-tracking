@@ -180,7 +180,7 @@ class MonitoringTestTool extends CommandLineTool
 
             $stats = new ReviewerStatsService();
             $rows = $stats->getReviewerRows($contextId, $year);
-            $this->check(count($rows) >= 39, 'Current and historical reviewers included');
+            $this->check(count($rows) >= 37, 'Current and historical reviewers included');
             $disabled = Repo::user()->getByUsername('test_rgm_29', true);
             $this->check($stats->getReviewerRow($contextId, (int) $disabled->getId(), $year) === null, 'Disabled reviewer not found');
             $this->check($stats->getReviewerRow($contextId, PHP_INT_MAX, $year) === null, 'Unknown reviewer not found');

@@ -626,17 +626,25 @@
 
 .grpMon__sectionRow {
 	display: flex;
-	align-items: center;
+	align-items: flex-end;
 	justify-content: space-between;
 	flex-wrap: wrap;
 	gap: 0.75rem;
-	margin: 1.5rem 0 1rem;
+	margin: 2.5rem 0 0.5rem;
+}
+
+.grpMon__sectionRow .grpMon__filters {
+	margin: 0;
 }
 
 .grpMon__sectionHeading {
 	margin: 0;
 	font-size: 1.125rem;
 	font-weight: 700;
+}
+
+.grpMon__page {
+	font-size: 0.875rem;
 }
 
 .grpMon__table {
@@ -654,6 +662,7 @@
 }
 
 .grpMon__table thead th {
+	font-size: 0.75rem;
 	color: #637381;
 	font-weight: 600;
 	border-bottom: 1px solid #d8dee3;
@@ -661,11 +670,29 @@
 }
 
 .grpMon__table--labels {
+	width: calc(220px + 0.5rem + 12rem);
+	max-width: 100%;
 	table-layout: fixed;
 }
 
-.grpMon__table--labels th:first-child {
-	width: 50%;
+.grpMon__table--labels th,
+.grpMon__table--labels td {
+	padding: 0.35rem 0.5rem 0.35rem 0;
+}
+
+.grpMon__table--labels thead th:first-child {
+	width: calc(220px + 0.5rem);
+}
+
+.grpMon__table--labels th.grpMon__labelType {
+	padding-top: 1rem;
+	color: #222;
+	font-weight: 700;
+}
+
+.grpMon__table--labels td.grpMon__labelValue {
+	padding-left: 1rem;
+	color: #637381;
 }
 
 .grpMon__labels {
@@ -729,7 +756,7 @@
 }
 
 .grpMon__kv--gap {
-	margin-top: 0.75rem;
+	margin-top: 1.5rem;
 }
 
 .grpMon__kvRow {
@@ -758,6 +785,11 @@
 	flex: 0 0 220px;
 }
 
+.grpMon__kvRow--indent dt {
+	box-sizing: border-box;
+	padding-left: 1rem;
+}
+
 .grpMon__caps {
 	margin: 0;
 	font-size: 0.75rem;
@@ -777,7 +809,11 @@
 	display: grid;
 	grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
 	gap: 1.5rem;
-	margin: 1rem 0 1.5rem;
+	margin: 0 0 2.5rem;
+}
+
+.grpMon__statsColumns .grpMon__kv {
+	margin-bottom: 0;
 }
 
 .grpMon__twoCol {
