@@ -86,3 +86,7 @@ LEFT JOIN group_review_slots sl ON sl.slot_id = s.selected_slot_id
 WHERE s.status = 1
   AND YEAR(sl.start_time_utc) = 2026
 ORDER BY status, s.submission_id;
+```
+
+---
+![Test results](images/dashboard-values/test.png)
