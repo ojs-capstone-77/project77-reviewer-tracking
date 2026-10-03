@@ -117,6 +117,39 @@ msgstr "Overview"
 msgid "plugins.generic.groupReview.monitoring.tabs.reviewers"
 msgstr "Reviewers"
 
+msgid "plugins.generic.groupReview.monitoring.live"
+msgstr "Live"
+
+msgid "plugins.generic.groupReview.monitoring.totalReviewers"
+msgstr "Total reviewers"
+
+msgid "plugins.generic.groupReview.monitoring.leaders"
+msgstr "Review Group Leaders"
+
+msgid "plugins.generic.groupReview.monitoring.currentGroups"
+msgstr "Current review groups"
+
+msgid "plugins.generic.groupReview.monitoring.participated"
+msgstr "Participated"
+
+msgid "plugins.generic.groupReview.monitoring.inactive"
+msgstr "Inactive"
+
+msgid "plugins.generic.groupReview.monitoring.notInvited"
+msgstr "Not invited"
+
+msgid "plugins.generic.groupReview.monitoring.reviewGroups"
+msgstr "Review groups"
+
+msgid "plugins.generic.groupReview.monitoring.labelValue"
+msgstr "Label"
+
+msgid "plugins.generic.groupReview.monitoring.labelTotal"
+msgstr "Total"
+
+msgid "plugins.generic.groupReview.monitoring.labelActive"
+msgstr "Active"
+
 msgid "plugins.generic.groupReview.monitoring.reviewers.title"
 msgstr "Reviewers"
 

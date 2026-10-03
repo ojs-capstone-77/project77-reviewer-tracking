@@ -66,7 +66,7 @@ use PKP\security\Role;
 use PKP\security\Validation;
 use PKP\submission\PKPSubmission;
 
-require dirname(__FILE__, 5) . '/tools/bootstrap.php';
+require_once dirname(__FILE__, 5) . '/tools/bootstrap.php';
 
 class GroupReviewTestDataTool extends CommandLineTool
 {
@@ -927,5 +927,7 @@ class GroupReviewTestDataTool extends CommandLineTool
     }
 }
 
-$tool = new GroupReviewTestDataTool($argv ?? []);
-$tool->execute();
+if (realpath($_SERVER['SCRIPT_FILENAME'] ?? '') === __FILE__) {
+    $tool = new GroupReviewTestDataTool($argv ?? []);
+    $tool->execute();
+}
