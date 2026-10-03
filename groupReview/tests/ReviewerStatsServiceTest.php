@@ -20,6 +20,9 @@ class ReviewerStatsServiceTestTool extends CommandLineTool
 {
     private int $checks = 0;
 
+    /** @var string[] */
+    private array $mismatches = [];
+
     private function same($expected, $actual, string $path): void
     {
         if (is_array($expected) && is_array($actual)) {
@@ -30,15 +33,21 @@ class ReviewerStatsServiceTestTool extends CommandLineTool
                 sort($actualKeys);
             }
             if ($expectedKeys !== $actualKeys) {
-                throw new RuntimeException("{$path}: expected keys " . json_encode($expectedKeys)
-                    . ', got ' . json_encode($actualKeys));
+                foreach (array_diff($expectedKeys, $actualKeys) as $key) {
+                    $this->mismatches[] = "{$path}.{$key}: expected " . var_export($expected[$key], true) . ', got <missing>';
+                }
+                foreach (array_diff($actualKeys, $expectedKeys) as $key) {
+                    $this->mismatches[] = "{$path}.{$key}: unexpected value " . var_export($actual[$key], true);
+                }
             }
             foreach ($expected as $key => $value) {
-                $this->same($value, $actual[$key], "{$path}.{$key}");
+                if (array_key_exists($key, $actual)) {
+                    $this->same($value, $actual[$key], "{$path}.{$key}");
+                }
             }
         } elseif ($expected !== $actual) {
-            throw new RuntimeException("{$path}: expected " . var_export($expected, true)
-                . ', got ' . var_export($actual, true));
+            $this->mismatches[] = "{$path}: expected " . var_export($expected, true)
+                . ', got ' . var_export($actual, true);
         }
         $this->checks++;
     }
@@ -103,11 +112,18 @@ class ReviewerStatsServiceTestTool extends CommandLineTool
                 $this->same([], $stats->getHistory($contextId, PHP_INT_MAX, $filter), "{$scope}.unknownHistory");
             }
             $this->edgeCases($contextId, $fixture, $year);
-            echo "Passed {$this->checks} reviewer statistics checks (current year and all time).\n";
         } finally {
             DB::rollBack();
-            echo "Reviewer statistics fixtures rolled back.\n";
         }
+        echo "Reviewer statistics fixtures rolled back.\n";
+        foreach ($this->mismatches as $mismatch) {
+            echo "MISMATCH {$mismatch}\n";
+        }
+        if ($this->mismatches) {
+            echo "OVERALL: FAIL ({$this->checks} checks; " . count($this->mismatches) . " mismatches).\n";
+            exit(1);
+        }
+        echo "OVERALL: PASS ({$this->checks} reviewer statistics checks; current year and all time).\n";
     }
 
     private function edgeCases(int $contextId, array $fixture, int $year): void

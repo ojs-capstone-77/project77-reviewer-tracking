@@ -83,6 +83,8 @@ Statistics expectations come from fixture inputs, not the service's output,
 and include hand-counted checks for the fixed cases. Every returned value is
 compared for the current year and all time: reviewer rows and single-row lookup,
 Overview including labels, years, attendance/contribution counts and history.
+The script reports each differing value with its full path, expected value and
+actual value, then finishes with an `OVERALL: PASS` or `OVERALL: FAIL` summary.
 Additional cases cover an empty journal, overdue open polls, timezone year
 boundaries, recommendations and reverted declines.
 
