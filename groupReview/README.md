@@ -27,6 +27,38 @@ compliance still requires staging verification on the target OJS build.
 
 It does **not** create ordinary OJS reviewer assignments, reviewer file grants or reviewer task records.
 
+## Reviewer monitoring
+
+Journal editors and managers (OJS's Manager permission level) can open **Group Review**
+from the backend sidebar, then switch between **Overview** and **Reviewers**, or use
+**View** to open a reviewer. RGL/RGM membership and author access do not grant
+dashboard access. The existing **My Group Review Polls** page remains separate.
+
+The pages follow [Reviewer Monitoring Definitions](../docs/Reviewer-Monitoring-Definitions.md).
+The `year` URL parameter accepts a year in the selector or `all`; missing or invalid
+values use the current year. Reviewers defaults to `sort=completed&dir=desc`.
+Column links reverse the current direction; another numeric column starts highest
+first, and names start alphabetically. The selected year is preserved across tabs,
+View, Back, and label saves.
+
+Edit Labels requires POST and a valid CSRF token. An unknown reviewer cannot be
+updated; malformed or invalid label values are rejected without changing labels or
+their history. A failed save returns to the reviewer page with an error notice.
+
+For an existing installation, run the plugin's Upgrade action before using the
+dashboard: copying the plugin directory alone does not create its new database
+tables. Back up the database first; the upgrade preserves the legacy poll tables.
+
+Run the integration checks inside an installed OJS 3.4 environment:
+
+```bash
+php plugins/generic/groupReview/tests/MonitoringTest.php <journal path>
+```
+
+The checks use the existing fixture generator inside a database transaction, cover
+page rendering, access policies, URL defaults, data contracts, statistics and label
+saves, and roll back test records afterward. Use a development or staging journal.
+
 ## Compatibility
 
 - OJS **3.4.x only**

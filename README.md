@@ -139,6 +139,12 @@ All recommended via `.vscode/extensions.json`.
 
 XDebug is installed in both VSCode and the app container, so it needs setup on both sides. Breakpoints work inside `groupReview/` and `ojs-src/`.
 
+To debug:
+
+1. Install the Xdebug Helper browser extension.
+2. Start "Listen for PHP Xdebug" in VSCode.
+3. Click the extension's icon on the OJS tab, choose **Debug**, then reload the page.
+
 Extension: `xdebug.php-debug`
 
 Relevant files: `.vscode/launch.json`, `Dockerfile` (installs Xdebug into the app container), `config/xdebug.ini`

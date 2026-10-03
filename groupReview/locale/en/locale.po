@@ -117,6 +117,39 @@ msgstr "Overview"
 msgid "plugins.generic.groupReview.monitoring.tabs.reviewers"
 msgstr "Reviewers"
 
+msgid "plugins.generic.groupReview.monitoring.totalReviewers"
+msgstr "Total"
+
+msgid "plugins.generic.groupReview.monitoring.leaders"
+msgstr "Review Group Leader"
+
+msgid "plugins.generic.groupReview.monitoring.currentGroups"
+msgstr "Current review groups"
+
+msgid "plugins.generic.groupReview.monitoring.participated"
+msgstr "Participated"
+
+msgid "plugins.generic.groupReview.monitoring.inactive"
+msgstr "Inactive"
+
+msgid "plugins.generic.groupReview.monitoring.notInvited"
+msgstr "Not invited"
+
+msgid "plugins.generic.groupReview.monitoring.reviewGroups"
+msgstr "Review groups"
+
+msgid "plugins.generic.groupReview.monitoring.notApplicable"
+msgstr "Not applicable"
+
+msgid "plugins.generic.groupReview.monitoring.labelValue"
+msgstr "Label"
+
+msgid "plugins.generic.groupReview.monitoring.labelTotal"
+msgstr "Total"
+
+msgid "plugins.generic.groupReview.monitoring.labelActive"
+msgstr "Active"
+
 msgid "plugins.generic.groupReview.monitoring.reviewers.title"
 msgstr "Reviewers"
 
@@ -627,45 +660,3 @@ msgstr "removed {$values}"
 
 msgid "plugins.generic.groupReview.labels.history.noteOnly"
 msgstr "Note added, no label changes."
-msgid "plugins.generic.groupReview.monitoring.overview.title"
-msgstr "Overview"
-
-msgid "plugins.generic.groupReview.monitoring.overview.reviewers"
-msgstr "Reviewers"
-
-msgid "plugins.generic.groupReview.monitoring.overview.total"
-msgstr "Total"
-
-msgid "plugins.generic.groupReview.monitoring.overview.leaders"
-msgstr "Review Group Leader"
-
-msgid "plugins.generic.groupReview.monitoring.overview.currentGroups"
-msgstr "Current review groups"
-
-msgid "plugins.generic.groupReview.monitoring.overview.activity"
-msgstr "Activity"
-
-msgid "plugins.generic.groupReview.monitoring.overview.participated"
-msgstr "Participated"
-
-msgid "plugins.generic.groupReview.monitoring.overview.notSelected"
-msgstr "Not selected"
-
-msgid "plugins.generic.groupReview.monitoring.overview.inactive"
-msgstr "Inactive"
-
-msgid "plugins.generic.groupReview.monitoring.overview.notInvited"
-msgstr "Not invited"
-
-msgid "plugins.generic.groupReview.monitoring.overview.reviewGroups"
-msgstr "Review groups"
-
-msgid "plugins.generic.groupReview.monitoring.overview.labels"
-msgstr "Labels"
-
-msgid "plugins.generic.groupReview.monitoring.overview.labelTotal"
-msgstr "Total"
-
-msgid "plugins.generic.groupReview.monitoring.overview.labelActive"
-msgstr "Active"
-

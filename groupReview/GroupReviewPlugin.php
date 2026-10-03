@@ -17,6 +17,7 @@ use APP\plugins\generic\groupReview\classes\mail\GroupReviewPollThankInvitees;
 use APP\plugins\generic\groupReview\classes\mail\GroupReviewPollThankRgms;
 use APP\plugins\generic\groupReview\classes\notification\Notification as GroupReviewNotification;
 use APP\plugins\generic\groupReview\pages\groupReview\GroupReviewHandler;
+use APP\template\TemplateManager;
 use PKP\components\forms\FieldOptions;
 use PKP\components\forms\FieldText;
 use PKP\decision\Decision;
@@ -50,6 +51,7 @@ class GroupReviewPlugin extends GenericPlugin
         Hook::add('Schema::get::context', [$this, 'addToContextSchema']);
         Hook::add('Template::Workflow', [$this, 'addWorkflowTab']);
         Hook::add('TemplateManager::display', [$this, 'loadAssets']);
+        Hook::add('TemplateManager::setupBackendPage', [$this, 'addMonitoringMenuItem']);
         Hook::add('AcronPlugin::parseCronTab', [$this, 'addScheduledTasks']);
         Hook::add('Mailer::Mailables', [$this, 'addMailables']);
         Hook::add('NotificationManager::getNotificationMessage', [$this, 'notificationMessage']);
@@ -295,6 +297,36 @@ class GroupReviewPlugin extends GenericPlugin
         return false;
     }
 
+    /** Add the reviewer monitoring dashboard to the editorial sidebar. */
+    public function addMonitoringMenuItem($hookName, $args): void
+    {
+        $request = Application::get()->getRequest();
+        $context = $request->getContext();
+        $user = $request->getUser();
+        $service = new GroupReviewService();
+        if (!$context
+            || !$user
+            || !$this->getEnabled((int) $context->getId())
+            || !$service->isEnabled($context)
+            || !$service->isJournalEditorUser((int) $context->getId(), (int) $user->getId())) {
+            return;
+        }
+
+        $templateManager = TemplateManager::getManager($request);
+        $menu = (array) $templateManager->getState('menu');
+        $item = ['groupReview' => [
+            'name' => __('plugins.generic.groupReview.displayName'),
+            'url' => $request->getRouter()->url($request, null, 'groupReview', 'overview'),
+            'isCurrent' => $request->getRequestedPage() === 'groupReview'
+                && in_array($request->getRequestedOp(), ['overview', 'reviewers', 'reviewer'], true),
+        ]];
+        $index = array_search('submissions', array_keys($menu), true);
+        $menu = $index === false
+            ? $menu + $item
+            : array_slice($menu, 0, $index + 1, true) + $item + array_slice($menu, $index + 1, null, true);
+        $templateManager->setState(['menu' => $menu]);
+    }
+
     /** Load one small, namespaced stylesheet on the backend. */
     public function loadAssets($hookName, $args): bool
     {
@@ -307,11 +339,6 @@ class GroupReviewPlugin extends GenericPlugin
         $templateMgr->addStyleSheet(
             'groupReview',
             $this->assetUrl($request, 'css/app.css'),
-            ['contexts' => ['backend']]
-        );
-        $templateMgr->addJavaScript(
-            'groupReviewParticipationForm',
-            $this->assetUrl($request, 'js/participationForm.js'),
             ['contexts' => ['backend']]
         );
         return false;
@@ -362,7 +389,8 @@ class GroupReviewPlugin extends GenericPlugin
             // Who submitted and the round are saved with the notification;
             // older notifications without them keep the general wording.
             $notificationSettingsDao = \PKP\db\DAORegistry::getDAO('NotificationSettingsDAO');  /** @var \PKP\notification\NotificationSettingsDAO $notificationSettingsDao */
-            $settings = $notificationSettingsDao->getNotificationSettings($notification->getId());
+            // Cast because OJS's docblock gives a malformed return type.
+            $settings = (array) $notificationSettingsDao->getNotificationSettings($notification->getId());
             $message = isset($settings['submitterName'], $settings['round'])
                 ? __('plugins.generic.groupReview.tasks.participationSubmitted.detail', [
                     'submitterName' => htmlspecialchars((string) $settings['submitterName']),

@@ -582,32 +582,24 @@
 }
 
 .grpMon__tabs {
-	display: flex;
-	gap: 0.25rem;
 	margin-top: 0.5rem;
 }
 
-.grpMon__tab {
-	padding: 0.75rem 1.25rem;
-	color: #006798;
-	font-weight: 700;
-	text-decoration: none;
-	border-radius: 6px 6px 0 0;
+.grpMon__tabs .pkpTabs__button[aria-current='page'] {
+	color: #777;
 }
 
-.grpMon__tab:hover {
-	text-decoration: underline;
+.grpMon__tabs .pkpTabs__button[aria-current='page']:before {
+	background: #008acb;
+	width: 100%;
 }
 
-.grpMon__tab--active {
-	color: #1a1a1a;
-	background: #ffffff;
-	border-top: 3px solid #006798;
-	padding-top: calc(0.75rem - 3px);
-}
-
-.grpMon__tab--active:hover {
-	text-decoration: none;
+@media (min-width: 767px) {
+	.grpMon__tabs .pkpTabs__button[aria-current='page'] {
+		border: 1px solid #ddd;
+		border-bottom-color: transparent;
+		background: #fff;
+	}
 }
 
 .grpMon__filters {
@@ -615,6 +607,10 @@
 	align-items: center;
 	gap: 0.5rem;
 	margin: 1rem 0;
+}
+
+.grpMon__filters .pkpFormField--select__input {
+	width: auto;
 }
 
 .grpMon__sortLink {
@@ -630,17 +626,25 @@
 
 .grpMon__sectionRow {
 	display: flex;
-	align-items: center;
+	align-items: flex-end;
 	justify-content: space-between;
 	flex-wrap: wrap;
 	gap: 0.75rem;
-	margin: 1.5rem 0 1rem;
+	margin: 2.5rem 0 0.5rem;
+}
+
+.grpMon__sectionRow .grpMon__filters {
+	margin: 0;
 }
 
 .grpMon__sectionHeading {
 	margin: 0;
 	font-size: 1.125rem;
 	font-weight: 700;
+}
+
+.grpMon__page {
+	font-size: 0.875rem;
 }
 
 .grpMon__table {
@@ -658,10 +662,37 @@
 }
 
 .grpMon__table thead th {
+	font-size: 0.75rem;
 	color: #637381;
 	font-weight: 600;
 	border-bottom: 1px solid #d8dee3;
 	white-space: nowrap;
+}
+
+.grpMon__table--labels {
+	width: calc(220px + 0.5rem + 12rem);
+	max-width: 100%;
+	table-layout: fixed;
+}
+
+.grpMon__table--labels th,
+.grpMon__table--labels td {
+	padding: 0.35rem 0.5rem 0.35rem 0;
+}
+
+.grpMon__table--labels thead th:first-child {
+	width: calc(220px + 0.5rem);
+}
+
+.grpMon__table--labels th.grpMon__labelType {
+	padding-top: 1rem;
+	color: #222;
+	font-weight: 700;
+}
+
+.grpMon__table--labels td.grpMon__labelValue {
+	padding-left: 1rem;
+	color: #637381;
 }
 
 .grpMon__labels {
@@ -682,13 +713,6 @@
 
 .grpMon__viewLink:hover {
 	text-decoration: underline;
-}
-
-.grpMon__page {
-	padding: 1.5rem;
-	margin-top: 0;
-	background: #ffffff;
-	border-radius: 0 4px 4px 4px;
 }
 
 .grpMon__percent {
@@ -732,7 +756,7 @@
 }
 
 .grpMon__kv--gap {
-	margin-top: 0.75rem;
+	margin-top: 1.5rem;
 }
 
 .grpMon__kvRow {
@@ -753,8 +777,17 @@
 	text-align: left;
 }
 
+.grpMon__kv--counts .grpMon__kvRow dt {
+	flex: 0 1 340px;
+}
+
 .grpMon__kv--aligned .grpMon__kvRow dt {
 	flex: 0 0 220px;
+}
+
+.grpMon__kvRow--indent dt {
+	box-sizing: border-box;
+	padding-left: 1rem;
 }
 
 .grpMon__caps {
@@ -776,7 +809,11 @@
 	display: grid;
 	grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
 	gap: 1.5rem;
-	margin: 1rem 0 1.5rem;
+	margin: 0 0 2.5rem;
+}
+
+.grpMon__statsColumns .grpMon__kv {
+	margin-bottom: 0;
 }
 
 .grpMon__twoCol {
