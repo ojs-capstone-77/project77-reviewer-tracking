@@ -25,8 +25,6 @@ Editors can manage the list of shaping feedback options available in the form.
 
 Editors can manage reviewer labels including experience level, methodology background, and expertise.
 
-Requirements document is written and committed to the team repo.
-
 ---
 
 ## [CONFIGURATION] Wireframes for configuring participation form and labels
@@ -44,8 +42,6 @@ Wireframes show how editors manage reviewer labels for each label type.
 
 Wireframes follow OJS design patterns.
 
-Wireframes are shared with the team and committed to the team repo.
-
 ---
 
 ## [CONFIGURATION] Validation of configuration wireframes
@@ -61,7 +57,7 @@ Every required configuration option is represented in the wireframes.
 
 Any gaps or missing items are reported to UX with clear notes.
 
-Validation result is documented and shared with the team.
+Validation result is documented.
 
 ---
 
@@ -120,7 +116,7 @@ Requirements cover filtering by label values, review load, and any other filter 
 
 Each filter has a clear purpose and a defined expected result.
 
-Requirements document is written and committed to the team repo.
+Requirements documented.
 
 ---
 
@@ -137,7 +133,7 @@ Wireframes show how filters combine with the year selector and existing filters.
 
 Wireframes follow OJS design patterns.
 
-Wireframes are shared with the team and committed to the team repo.
+Wireframes documented.
 
 ---
 
@@ -154,7 +150,7 @@ Every required filter is represented in the wireframes.
 
 Any gaps or missing items are reported to UX with clear notes.
 
-Validation result is documented and shared with the team.
+Validation result is documented.
 
 ---
 
@@ -173,8 +169,6 @@ Wireframes show how the RGL confirms their selection.
 
 Wireframes follow OJS design patterns.
 
-Wireframes are shared with the team and committed to the team repo.
-
 ---
 
 ## [POLL SELECTION] Validation of poll selection wireframes
@@ -192,7 +186,7 @@ The selection flow matches how the client described the process.
 
 Any gaps or missing items are reported to UX with clear notes.
 
-Validation result is documented and shared with the team.
+Validation result is documented.
 
 ---
 
@@ -228,4 +222,4 @@ The Sprint 3 Week 1 bucket exists and contains all completed tasks.
 
 Any incomplete tasks are flagged and reported to the Capstone Support Manager if needed.
 
-Final signoff is recorded in Planner.
+All Sprint 3 week 1 tasks are compiled and submitted.
