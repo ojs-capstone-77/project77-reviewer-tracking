@@ -94,6 +94,14 @@ class GroupReviewTestDataTool extends CommandLineTool
     /** @var array<string, int> username => user ID */
     private array $users = [];
 
+    private array $fixture = ['users' => [], 'polls' => [], 'labels' => []];
+
+    /** Fixture inputs, not statistics results, for independent expected-value tests. */
+    public function getFixture(): array
+    {
+        return $this->fixture;
+    }
+
     private int $submissionNumber = 0;
 
     /** @var array<int, string> submission ID => assigned editor's username */
@@ -261,6 +269,9 @@ class GroupReviewTestDataTool extends CommandLineTool
             Repo::user()->add($user);
             $userId = (int) Repo::user()->getByUsername($username, true)->getId();
             $this->users[$username] = $userId;
+            $this->fixture['users'][$username] = [
+                'id' => $userId, 'name' => 'Test ' . $familyName, 'roles' => $roles,
+            ];
 
             foreach ($roles as $role) {
                 Repo::userGroup()->assignUserToGroup($userId, $this->groups[$role]);
@@ -725,6 +736,13 @@ class GroupReviewTestDataTool extends CommandLineTool
         if (!empty($spec['decision'])) {
             $this->decision($submissionId, $roundId, $spec['decision'], max($spec['slots']) + 21 * self::DAY);
         }
+        $this->fixture['polls'][$sessionId] = $spec + [
+            'sessionId' => $sessionId,
+            'submissionId' => $submissionId,
+            'round' => (int) DB::table('review_rounds')->where('review_round_id', $roundId)->value('round'),
+            'leader' => $leader,
+            'timezone' => 'UTC',
+        ];
     }
 
     /**
@@ -753,11 +771,13 @@ class GroupReviewTestDataTool extends CommandLineTool
     private function form(int $sessionId, int $submissionId, int $roundId, int $leaderId, array $form, int $at): void
     {
         $submitted = $form['submitted'];
+        $generalComments = $this->chance(0.3) ? 'Test general comment.' : null;
+        $this->fixture['generalComments'][$sessionId] = $generalComments;
         DB::table('group_review_participation_forms')->insert([
             'context_id' => $this->contextId,
             'session_id' => $sessionId,
             'status' => $submitted ? 'submitted' : 'draft',
-            'general_comments' => $this->chance(0.3) ? 'Test general comment.' : null,
+            'general_comments' => $generalComments,
             'submission_comment' => null,
             'created_at' => $this->date($at),
             'updated_at' => $this->date($at),
@@ -768,6 +788,15 @@ class GroupReviewTestDataTool extends CommandLineTool
 
         foreach ($form['records'] as $username => $record) {
             [$attendance, $contributions] = $record;
+            $contributionComments = $this->chance(0.3) ? 'Test comment on contributions.' : null;
+            $this->fixture['answers'][$sessionId][$username] = [
+                'attendance' => $attendance,
+                'attendanceOther' => $record[2] ?? null,
+                'contributionComments' => $contributionComments,
+                'shapingFeedbackTypes' => $contributions,
+                'shapingFeedbackComments' => null,
+                'otherContribution' => null,
+            ];
             DB::table('group_review_participation')->insert([
                 'context_id' => $this->contextId,
                 'session_id' => $sessionId,
@@ -777,7 +806,7 @@ class GroupReviewTestDataTool extends CommandLineTool
                 'leader_user_id' => $leaderId,
                 'attendance' => $attendance,
                 'attendance_other' => $record[2] ?? null,
-                'contribution_comments' => $this->chance(0.3) ? 'Test comment on contributions.' : null,
+                'contribution_comments' => $contributionComments,
                 'shaping_feedback_types' => json_encode($contributions),
                 'shaping_feedback_comments' => null,
                 'other_contribution' => null,
@@ -825,6 +854,7 @@ class GroupReviewTestDataTool extends CommandLineTool
                 'methodology' => $count % 6 === 3 ? [] : [['quantitative', 'qualitative', 'mixed_methods'][mt_rand(0, 2)]],
                 'expertise' => array_values(array_filter(['education', 'statistics'], fn () => $this->chance(0.4))),
             ];
+            $this->fixture['labels'][$username] = $values;
             foreach ($values as $type => $list) {
                 foreach ($list as $value) {
                     DB::table('group_review_reviewer_labels')->insert([
@@ -843,6 +873,8 @@ class GroupReviewTestDataTool extends CommandLineTool
     /** test_rgm_28 has since lost the RGM role; test_rgm_29 is disabled. */
     private function finalUserStates(): void
     {
+        $this->fixture['users']['test_rgm_28']['roles'] = [];
+        $this->fixture['users']['test_rgm_29']['disabled'] = true;
         DB::table('user_user_groups')
             ->where('user_group_id', $this->groups['rgm'])
             ->where('user_id', $this->users['test_rgm_28'])

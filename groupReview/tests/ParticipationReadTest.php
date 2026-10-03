@@ -220,8 +220,12 @@ namespace {
             'submission_id' => $submission,
             'reviewer_user_id' => $reviewer,
             'participation_id' => $id,
-            'contribution_types' => '["analysis"]',
             'shaping_feedback_types' => '["created_draft"]',
+            'attendance' => 'attended',
+            'attendance_other' => null,
+            'contribution_comments' => 'Participation comment',
+            'shaping_feedback_comments' => 'Feedback comment',
+            'other_contribution' => null,
         ];
     }
 
@@ -241,9 +245,15 @@ namespace {
     $service = new ParticipationService();
     $all = $service->getForSubmission(10, 20);
     check(array_column($all, 'participation_id') === [1, 2], 'Submission and journal filters or sorting failed');
-    check($all[0]['contribution_types'] === ['analysis'], 'Records were not hydrated');
+    check($all[0]['shaping_feedback_types'] === ['created_draft'], 'Feedback contributions were not hydrated');
+    check($all[0]['contribution_comments'] === 'Participation comment', 'Contribution comments were lost');
+    check($all[0]['attendance'] === 'attended' && $all[0]['attendance_other'] === null, 'Attendance fields were lost');
     check(array_column($service->getForSubmission(10, 20, 4), 'participation_id') === [2], 'Reviewer filter failed');
     check($service->getForSubmission(10, 22) === [], 'Empty result should be an array');
+    check($service->getForSubmission(12, 20) === [], 'Another journal must not expose records');
+    check($service->getForSubmission(10, 20, 99) === [], 'Unknown reviewer should return no records');
+    check($service->readableReviewerId(null, 3, true) === null, 'Privileged readers may request all reviewers');
+    check($service->readableReviewerId(3, 3, false) === 3, 'Own explicit reviewer filter must be allowed');
     check($service->readableReviewerId(null, 3, false) === 3, 'Own records must be enforced');
     check($service->readableReviewerId(4, 3, true) === 4, 'Managers can select a reviewer');
     try {
@@ -346,6 +356,8 @@ namespace {
     foreach ([
         [request(['submissionId' => 20, 'reviewerUserId' => 4]), 'forbidden'],
         [request(['submissionId' => '20x']), 'invalid_request'],
+        [request(['submissionId' => []]), 'invalid_request'],
+        [request(['submissionId' => 20, 'reviewerUserId' => []]), 'invalid_request'],
         [request(['submissionId' => 20, 'reviewerUserId' => 0]), 'invalid_request'],
         [request(['submissionId' => 20], false, true), 'invalid_request'],
         [request(['submissionId' => 20], true, false, 11), 'not_found'],

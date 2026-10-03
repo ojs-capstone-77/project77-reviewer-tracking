@@ -59,6 +59,44 @@ The checks use the existing fixture generator inside a database transaction, cov
 page rendering, access policies, URL defaults, data contracts, statistics and label
 saves, and roll back test records afterward. Use a development or staging journal.
 
+## Participation and statistics tests
+
+The participation unit scripts use the current per-reviewer fields and the
+form-level submission status, rather than the removed `contribution_types` and
+per-reviewer `status` fields:
+
+```bash
+php plugins/generic/groupReview/tests/ParticipationServiceTest.php
+php plugins/generic/groupReview/tests/ParticipationReadTest.php
+php plugins/generic/groupReview/tests/ParticipationFormTest.php <journal path>
+php plugins/generic/groupReview/tests/ReviewerStatsServiceTest.php <journal path>
+```
+
+The form and statistics integration scripts copy the supplied journal's
+configuration into a temporary journal, freshly seed the existing test data,
+and roll back the entire transaction on success or failure. No users or
+submissions from the source journal are copied into that journal. As with the
+fixture generator, run on development/staging from mid-February onwards, when
+there is enough current-year history to generate the fixtures.
+
+Statistics expectations come from fixture inputs, not the service's output,
+and include hand-counted checks for the fixed cases. Every returned value is
+compared for the current year and all time: reviewer rows and single-row lookup,
+Overview including labels, years, attendance/contribution counts and history.
+Additional cases cover an empty journal, overdue open polls, timezone year
+boundaries, recommendations and reverted declines.
+
+To verify that changing an expected count is caught:
+
+```bash
+php plugins/generic/groupReview/tests/ReviewerStatsServiceTest.php <journal path> --mutate-expected
+```
+
+This command **must exit with code 1**, reporting
+`currentYear.reviewers.test_rgm_21.invited: expected 5, got 4`.
+The temporary records are still rolled back. The flag changes only an in-memory
+expectation; it does not modify the fixture generator or saved counts.
+
 ## Compatibility
 
 - OJS **3.4.x only**
