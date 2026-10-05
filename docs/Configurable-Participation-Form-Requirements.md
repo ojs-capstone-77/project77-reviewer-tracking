@@ -37,14 +37,23 @@ Editors can add, edit, or remove attendance options. The default options are Att
 Editors can add, edit, or remove shaping feedback options. The default options are Uploaded notes or comments, Commented on the feedback draft, Offered creating the draft, and Created the draft.
 
 ### 2.5 Reviewer Labels
+Editors can manage the label types themselves as well as the values inside them.
 
-Editors can manage the values for each label type.
+Editors can add a new label type, rename an existing one, or remove a label type they no longer need.
+
+Editors can also add, edit, or remove the values inside each label type.
+
+Each label type is set as either single choice or multiple choice when it is created.
+
+The default label types that ship with the plugin are experience level, methodology background, and expertise.
 
 | Label type | Values | Multiple |
 |------------|--------|----------|
 | Experience level | Novice, Intermediate, Experienced | No |
 | Methodology background | Quantitative, Qualitative, Mixed methods | No |
 | Expertise | Education, Statistics | Yes |
+
+Editors can replace these defaults or add new label types on top of them.
 
 ---
 
@@ -59,7 +68,7 @@ The following fields are always present and cannot be removed or made optional.
 | Reviewer name | Required to link the record to a reviewer |
 | Attendance recorded | Used for calculating participation and attendance percentages |
 
-Editors cannot add new field types beyond the ones listed in section 2.
+Editors cannot add new form field types beyond the ones listed in section 2. Label types are separate from form fields and can be added freely.
 
 ---
 
@@ -73,6 +82,7 @@ If an editor removes a contribution type or attendance option, any existing reco
 
 If an editor renames an option, the old name is preserved for existing records so the history stays accurate.
 
+If a label type is removed, reviewers who already have a value for it keep their value in the database, but the label type no longer appears in the editor settings or on new reviewer pages.
 ---
 
 ## 5. How This Affects the Monitoring Dashboard
@@ -85,6 +95,7 @@ The dashboard does not need to know which fields are currently active. It reads 
 
 Label values that are removed from the settings stay attached to reviewers who already had them. New values can be assigned going forward.
 
+The label counts section on the Overview page is generated from whatever label types currently exist. If an editor adds a new label type, the dashboard shows it automatically. If a label type is removed, the dashboard stops showing it, but the historical values stay in the database.
 ---
 
 ## 6. Storing Old Fields for History
@@ -95,7 +106,7 @@ The dashboard shows the historical value as it was recorded.
 
 The settings page only controls what appears in new forms, not what is shown in history.
 
-Label changes are tracked in a history log with the date, the person who made the change, and a summary of what changed.
+Label changes are tracked in a history log with the date, the person who made the change, and a summary of what changed. This applies to changes to label types as well as changes to the values inside them.
 
 ---
 
@@ -107,6 +118,8 @@ Label changes are tracked in a history log with the date, the person who made th
 | Contribution type list | Yes |
 | Attendance option list | Yes |
 | Shaping feedback option list | Yes |
+| Label types themselves | Yes |
+| Single or multiple choice setting per label type | Yes |
 | Experience level values | Yes |
 | Methodology background values | Yes |
 | Expertise values | Yes |
@@ -129,4 +142,7 @@ Should the general comments field for the editors ever be hidden in special case
 
 Can editors bulk assign label values to many reviewers at once, or only one at a time?
 
+When a label type is removed, should the dashboard hide it completely, or keep it visible in history for reviewers who already had a value?
+
+Is there a maximum number of label types or values per label type, or no limit?
 ---
