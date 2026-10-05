@@ -145,4 +145,5 @@ Can editors bulk assign label values to many reviewers at once, or only one at a
 When a label type is removed, should the dashboard hide it completely, or keep it visible in history for reviewers who already had a value?
 
 Is there a maximum number of label types or values per label type, or no limit?
+
 ---
