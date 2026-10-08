@@ -18,7 +18,7 @@ The filters help editors find specific groups of reviewers quickly. For example,
 
 ## 2. Where the Filters Live
 
-The filters appear at the top of the Reviewers page.
+The filters appear in a side panel on the Reviewers page.
 
 Filters work alongside the existing search box and the year selector.
 
@@ -26,8 +26,7 @@ Multiple filters can be applied at the same time.
 
 Each filter can be cleared individually.
 
-A Clear all button resets every filter at once.
-
+Each filter can be cleared individually using the X icon next to it.
 The filtered count of reviewers is shown so the editor knows how many results they are looking at.
 
 ---
@@ -68,45 +67,34 @@ If a value is removed from a label type, it no longer appears as a filter option
 
 ---
 
-## 4. Number Filters
+### 4. Number Filters
+Numbers are filtered by setting a value range on a column, the same way native OJS filtering works.
 
-Editors can filter reviewers by their activity numbers.
+Each activity column in the reviewer table can have a minimum and maximum value set.
 
-### 4.1 No Reviews Done
+Only reviewers whose value falls within the range are shown.
 
-Shows reviewers with zero completed reviews.
+The columns that can have a range set are Invited, Available, Available %, Selected, Selected %, Attended, Attended %, Completed, and Current.
 
-Useful for finding new reviewers or people who have not contributed recently.
+Examples:
 
-### 4.2 No Reviews In Progress
+Reviewers with no completed reviews
+Set the Completed column range to min 0, max 0.
 
-Shows reviewers with zero current reviews.
+Reviewers with no current reviews
+Set the Current column range to min 0, max 0.
 
-Useful for finding reviewers who could take on new work.
+Reviewers who were never invited
+Set the Invited column range to min 0, max 0.
 
-### 4.3 Never Invited
+Reviewers who were never selected
+Set the Selected column range to min 0, max 0.
 
-Shows reviewers who have never been invited to a poll.
+Reviewers who never attended
+Set the Attended column range to min 0, max 0.
 
-### 4.4 Never Responded
-
-Shows reviewers who have been invited but never responded to a poll.
-
-### 4.5 Never Selected
-
-Shows reviewers who have responded to polls but were never selected for a review group.
-
-This is the group the client specifically mentioned. These reviewers are engaged but overlooked.
-
-### 4.6 Never Attended
-
-Shows reviewers who were selected for a review group but never recorded as attending.
-
-### 4.7 Attendance Below Threshold
-
-Editors can enter a percentage. Shows reviewers whose attendance percentage is below that number.
-
-For example, entering 50 shows reviewers who attend fewer than half of the meetings they are recorded for.
+Reviewers with fewer than 3 completed reviews
+Set the Completed column range to min 0, max 2.
 
 ---
 
@@ -130,18 +118,16 @@ The sort choice is kept when the year selector changes.
 
 ---
 
-## 7. Filter Options Considered But Not Included
+### 7. Available in an Open Poll Filter
+Editors can filter reviewers by whether they responded as available in a specific poll.
 
-These were discussed but left out for now.
+The editor enters a Submission ID.
 
-Filter by last activity date. Useful, but the client has not asked for it and it adds complexity to the interface.
+Only reviewers who responded as available in the poll for that submission are shown.
 
-Filter by reviewer since date. Same reason as above.
+This helps the Review Group Leader see which reviewers said they were available for a specific review.
 
-Filter by number of invitations. The No reviews done and Never selected filters cover the common cases.
-
-Filter by submission. This belongs on the submission review page, not the Reviewers page.
-
+This filter applies regardless of the year selector.
 ---
 
 ## 8. User Stories
@@ -197,16 +183,9 @@ The filtered list still supports sorting by any column.
 
 ---
 
-## 11. Open Questions for the Client
-
-Should the Never Selected filter use All time or the selected year by default?
-
-Should the attendance below threshold filter use a slider or a number input?
-
+### 11. Open Questions for the Client
 Should the filter choices persist when the editor navigates away and comes back, or reset each time?
 
-Should there be a way to save a filter combination for reuse?
-
-Should label filters show the number of reviewers with each value before the editor selects it?
+Should the Available in an open poll filter also show reviewers who said they were not available, or only those who said they were available?
 
 ---
