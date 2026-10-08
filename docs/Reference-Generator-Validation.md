@@ -22,25 +22,25 @@ The validation checks whether each requirement is met and identifies any gaps or
 
 The template configuration screen where editors set up the reference letter template.
 
-![Workflow Settings Reviewer Reference](images/Picture2.png)
+![Workflow Settings Reviewer Reference](images/Reference-Validated/Picture2.png)
 
 ### 2.2 Configure Template
 
 The template editor showing how editors configure the reference letter content using placeholders.
 
-![Configure Template](images/Picture1.png)
+![Configure Template](images/Reference-Validated/Picture1.png)
 
 ### 2.3 Reviewer Page with Generate Reference Button
 
 The reviewer page in the Editor Monitoring Dashboard with the Generate Reference button visible in the top right.
 
-![Reviewer Page with Generate Reference Button](images/Picture3.png)
+![Reviewer Page with Generate Reference Button](images/Reference-Validated/Picture3.png)
 
 ### 2.4 Generate Reference Screen
 
 The generation screen with a year selector, Generate PDF button, and a preview area.
 
-![Generate Reference Screen](images/Picture4.png)
+![Generate Reference Screen](images/Reference-Validated/Picture4.png)
 
 ---
 
