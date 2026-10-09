@@ -17,6 +17,9 @@ use APP\plugins\generic\groupReview\classes\mail\GroupReviewPollThankInvitees;
 use APP\plugins\generic\groupReview\classes\mail\GroupReviewPollThankRgms;
 use APP\plugins\generic\groupReview\classes\notification\Notification as GroupReviewNotification;
 use APP\plugins\generic\groupReview\classes\ParticipationService;
+use APP\plugins\generic\groupReview\classes\ReviewerLabelService;
+use APP\plugins\generic\groupReview\classes\ReviewerStatsService;
+use APP\plugins\generic\groupReview\classes\security\authorization\EditorRequiredPolicy;
 use APP\plugins\generic\groupReview\classes\security\authorization\InviteeRequiredPolicy;
 use APP\plugins\generic\groupReview\classes\security\authorization\LeaderRequiredPolicy;
 use APP\plugins\generic\groupReview\classes\security\authorization\ParticipationAccessPolicy;
@@ -49,9 +52,14 @@ class GroupReviewHandler extends Handler
         'saveParticipation',
     ];
     private const INVITEE_OPERATIONS = ['availability', 'saveAvailability'];
-    private const PARTICIPATION_OPERATIONS = ['participation', 'participationForm', 'participationRecorded'];
+    private const PARTICIPATION_OPERATIONS = [
+        'participation', 'participationForm', 'saveParticipationForm', 'participationRecorded',
+    ];
     private const PARTICIPATION_READ_OPERATIONS = ['getParticipation'];
     private const PARTICIPATION_DATE_FORMAT = 'j F Y, H:i';
+    private const MONITORING_DATE_FORMAT = 'j F Y';
+    private const MONITORING_OPERATIONS = ['overview', 'reviewers', 'reviewer', 'saveLabels'];
+    private const MONITORING_SORT_COLUMNS = ['name', 'invited', 'available', 'selected', 'completed', 'current', 'attended'];
 
     public function __construct(GroupReviewPlugin $plugin)
     {
@@ -72,6 +80,7 @@ class GroupReviewHandler extends Handler
             [Role::ROLE_ID_MANAGER, Role::ROLE_ID_SUB_EDITOR, Role::ROLE_ID_REVIEWER],
             self::PARTICIPATION_READ_OPERATIONS
         );
+        $this->addRoleAssignment(Role::ROLE_ID_MANAGER, self::MONITORING_OPERATIONS);
     }
 
     public function authorize($request, &$args, $roleAssignments)
@@ -87,6 +96,8 @@ class GroupReviewHandler extends Handler
             $this->addPolicy(new InviteeRequiredPolicy($request));
         } elseif (in_array($operation, self::PARTICIPATION_OPERATIONS, true)) {
             $this->addPolicy(new ParticipationAccessPolicy($request));
+        } elseif (in_array($operation, self::MONITORING_OPERATIONS, true)) {
+            $this->addPolicy(new EditorRequiredPolicy($request));
         }
 
         return parent::authorize($request, $args, $roleAssignments);
@@ -120,12 +131,202 @@ class GroupReviewHandler extends Handler
         ]);
     }
 
+    public function reviewers($args, $request): void
+    {
+        $contextId = (int) $request->getContext()->getId();
+        $stats = new ReviewerStatsService();
+        $years = $stats->getYears($contextId);
+        $year = $this->monitoringYear($request, $years);
+        [$sort, $dir] = $this->monitoringSortAndDir($request);
+
+        $rows = $stats->getReviewerRows($contextId, $year);
+        $labels = (new ReviewerLabelService())->getLabels($contextId, array_column($rows, 'userId'));
+
+        $reviewers = [];
+        foreach ($rows as $row) {
+            $reviewers[] = $this->reviewerTableRow($row, $labels[$row['userId']] ?? [], $request, $year);
+        }
+        $reviewers = $this->sortReviewerRows($reviewers, $sort, $dir);
+
+        $this->display($request, 'reviewers.tpl', [
+            'pageTitle' => __('plugins.generic.groupReview.monitoring.reviewers.title'),
+            'monitoringTabsResource' => $this->plugin->getTemplateResource('monitoringTabs.tpl'),
+            'year' => $year ?? 'all',
+            'yearOptions' => $this->monitoringYearOptions($years),
+            'overviewUrl' => $request->getRouter()->url($request, null, 'groupReview', 'overview', null, ['year' => $year ?? 'all']),
+            'reviewersUrl' => $request->getRouter()->url($request, null, 'groupReview', 'reviewers', null, ['year' => $year ?? 'all']),
+            'reviewersActionUrl' => $request->getRouter()->url($request, null, 'groupReview', 'reviewers'),
+            'sort' => $sort,
+            'dir' => $dir,
+            'sortUrls' => $this->monitoringSortUrls($request, $year, $sort, $dir),
+            'reviewers' => $reviewers,
+        ]);
+    }
+
+    public function overview($args, $request): void
+    {
+        $contextId = (int) $request->getContext()->getId();
+        $stats = new ReviewerStatsService();
+        $years = $stats->getYears($contextId);
+        $year = $this->monitoringYear($request, $years);
+        $overview = $stats->getOverview($contextId, $year);
+        $labelService = new ReviewerLabelService();
+        $labels = [];
+
+        foreach (ReviewerLabelService::TYPES as $type => $definition) {
+            $counts = $overview['labels'][$type];
+            $values = [];
+            foreach (array_keys($definition['values']) as $value) {
+                $values[] = [
+                    'label' => $labelService->name($type, $value),
+                    'total' => $counts['values'][$value]['total'],
+                    'active' => $counts['values'][$value]['active'],
+                ];
+            }
+            $values[] = [
+                'label' => __('plugins.generic.groupReview.labels.notSet'),
+                'total' => $counts['notSet']['total'],
+                'active' => $counts['notSet']['active'],
+            ];
+            $labels[] = [
+                'name' => $labelService->name($type),
+                'values' => $values,
+            ];
+        }
+
+        $this->display($request, 'overview.tpl', [
+            'pageTitle' => __('plugins.generic.groupReview.monitoring.dashboardTitle'),
+            'monitoringTabsResource' => $this->plugin->getTemplateResource('monitoringTabs.tpl'),
+            'year' => $year ?? 'all',
+            'yearOptions' => $this->monitoringYearOptions($years),
+            'overviewUrl' => $request->getRouter()->url($request, null, 'groupReview', 'overview', null, ['year' => $year ?? 'all']),
+            'reviewersUrl' => $request->getRouter()->url($request, null, 'groupReview', 'reviewers', null, ['year' => $year ?? 'all']),
+            'overviewActionUrl' => $request->getRouter()->url($request, null, 'groupReview', 'overview'),
+            'live' => $overview['live'],
+            'activity' => $overview['activity'],
+            'labels' => $labels,
+        ]);
+    }
+
+    public function reviewer($args, $request): void
+    {
+        $contextId = (int) $request->getContext()->getId();
+        $reviewerId = $this->monitoringReviewerId($request);
+        $stats = new ReviewerStatsService();
+        $years = $stats->getYears($contextId);
+        $year = $this->monitoringYear($request, $years);
+        $row = $stats->getReviewerRow($contextId, $reviewerId, $year);
+        if (!$row) {
+            $this->displayMessage($request, 'plugins.generic.groupReview.error.reviewerNotFound');
+            return;
+        }
+
+        $labelService = new ReviewerLabelService();
+        $labels = $labelService->getLabels($contextId, [$reviewerId])[$reviewerId]
+            ?? array_fill_keys(array_keys(ReviewerLabelService::TYPES), []);
+        $reviewerStats = array_merge(
+            $row,
+            $this->reviewerTableRow($row, $labels, $request, $year)
+        );
+
+        $this->display($request, 'reviewer.tpl', [
+            'pageTitle' => $row['name'],
+            'monitoringTabsResource' => $this->plugin->getTemplateResource('monitoringTabs.tpl'),
+            'year' => $year ?? 'all',
+            'yearOptions' => $this->monitoringYearOptions($years),
+            'overviewUrl' => $request->getRouter()->url($request, null, 'groupReview', 'overview', null, ['year' => $year ?? 'all']),
+            'reviewersUrl' => $request->getRouter()->url($request, null, 'groupReview', 'reviewers', null, ['year' => $year ?? 'all']),
+            'reviewerUrl' => $request->getRouter()->url($request, null, 'groupReview', 'reviewer'),
+            'reviewer' => [
+                'userId' => $row['userId'],
+                'name' => $row['name'],
+                'reviewerSince' => $row['reviewerSince'] === null ? null : $this->service->formatUtc($row['reviewerSince'], 'UTC', self::MONITORING_DATE_FORMAT),
+                'lastActivity' => $row['lastActivity'] === null ? null : $this->service->formatUtc($row['lastActivity'], 'UTC', self::MONITORING_DATE_FORMAT),
+                'labels' => $this->reviewerLabelsList($labels),
+            ],
+            'stats' => $reviewerStats,
+            'attendanceCounts' => $this->monitoringCounts($stats->getAttendanceCounts($contextId, $reviewerId, $year), ParticipationService::ATTENDANCE_OPTIONS),
+            'contributionCounts' => $this->monitoringCounts($stats->getContributionCounts($contextId, $reviewerId, $year), ParticipationService::CONTRIBUTION_OPTIONS),
+            'history' => $this->reviewerHistory($stats->getHistory($contextId, $reviewerId, $year), $request),
+            'labelOptions' => $this->reviewerLabelOptions(),
+            'labelValues' => $labels,
+            'labelHistory' => $labelService->getHistory($contextId, $reviewerId),
+            'labelSaveError' => (bool) $request->getUserVar('labelSaveError'),
+            'saveLabelsUrl' => $request->getRouter()->url($request, null, 'groupReview', 'saveLabels'),
+            'backUrl' => $request->getRouter()->url($request, null, 'groupReview', 'reviewers', null, ['year' => $year ?? 'all']),
+        ]);
+    }
+
+    public function saveLabels($args, $request): void
+    {
+        if (!$request->isPost() || !$request->checkCSRF()) {
+            $this->displayMessage($request, 'plugins.generic.groupReview.error.invalidRequest');
+            return;
+        }
+
+        $contextId = (int) $request->getContext()->getId();
+        $reviewerId = $this->monitoringReviewerId($request);
+        $stats = new ReviewerStatsService();
+        $year = $this->monitoringYear($request, $stats->getYears($contextId));
+
+        try {
+            if ($reviewerId < 1 || !$stats->getReviewerRow($contextId, $reviewerId, null)) {
+                $this->displayMessage($request, 'plugins.generic.groupReview.error.reviewerNotFound');
+                return;
+            }
+
+            $values = [];
+            foreach (ReviewerLabelService::TYPES as $type => $definition) {
+                $posted = $request->getUserVar($type);
+                if ($definition['multiple']) {
+                    if ($posted !== null && !is_array($posted)) {
+                        throw new InvalidArgumentException("The {$type} values must be a list.");
+                    }
+                    $values[$type] = $posted ?? [];
+                } else {
+                    if ($posted !== null && !is_scalar($posted)) {
+                        throw new InvalidArgumentException("The {$type} value must be a scalar.");
+                    }
+                    $value = (string) ($posted ?? '');
+                    $values[$type] = $value === '' ? [] : [$value];
+                }
+            }
+
+            (new ReviewerLabelService())->setLabels(
+                $contextId,
+                $reviewerId,
+                $values,
+                $request->getUserVar('note'),
+                (int) $request->getUser()->getId()
+            );
+        } catch (Throwable $e) {
+            error_log('Group Review label save failed: ' . $e->getMessage());
+            $request->redirect(null, 'groupReview', 'reviewer', null, [
+                'reviewerId' => $reviewerId,
+                'year' => $year ?? 'all',
+                'labelSaveError' => 1,
+            ]);
+            return;
+        }
+
+        $request->redirect(null, 'groupReview', 'reviewer', null, [
+            'reviewerId' => $reviewerId,
+            'year' => $year ?? 'all',
+        ]);
+    }
+
     public function participation($args, $request): void
     {
         $contextId = (int) $request->getContext()->getId();
+        $submissionId = (int) $request->getUserVar('submissionId');
+        $userId = (int) $request->getUser()->getId();
+        // Journal editors see every form; an RGL only the forms they lead.
+        $leaderUserId = $this->service->isJournalEditor($contextId, $submissionId, $userId) ? null : $userId;
+        $submission = $submissionId ? Repo::submission()->get($submissionId) : null;
+        $publication = $submission ? $submission->getCurrentPublication() : null;
         $participation = new ParticipationService();
         $sessions = [];
-        foreach ($participation->getFormSessionIds($contextId) as $sessionId) {
+        foreach ($participation->getFormSessionIds($contextId, $submissionId, $leaderUserId) as $sessionId) {
             $bundle = $this->service->getBundle($contextId, $sessionId);
             if (!$bundle) {
                 continue;
@@ -147,8 +348,10 @@ class GroupReviewHandler extends Handler
 
         $this->display($request, 'participation.tpl', [
             'pageTitle' => 'Reviewer Participation Recording',
+            'submissionTitle' => $submission ? $submission->getLocalizedTitle() : '',
+            'firstAuthor' => $publication ? $publication->getShortAuthorString() : '',
             'sessions' => $sessions,
-            'backUrl' => $this->participationBackUrl($request, (int) $request->getUserVar('submissionId')),
+            'backUrl' => $this->participationBackUrl($request, $submissionId),
         ]);
     }
 
@@ -177,7 +380,7 @@ class GroupReviewHandler extends Handler
             $record = $saved['reviewers'][$reviewer['id']] ?? null;
             $formReviewers[] = array_merge($reviewer, [
                 'page' => intdiv($index, $pageSize),
-                'attendance' => $record['attendance'] ?? ParticipationService::ATTENDANCE_ATTENDED,
+                'attendance' => $record['attendance'] ?? ParticipationService::ATTENDANCE_NOT_RECORDED,
                 'attendanceNote' => $record['attendance_other'] ?? '',
                 'meetingComments' => $record['contribution_comments'] ?? '',
                 'contributionChecked' => array_fill_keys($record['shaping_feedback_types'] ?? [], true),
@@ -205,7 +408,6 @@ class GroupReviewHandler extends Handler
             'generalComments' => $saved['form']['general_comments'] ?? '',
             'saveError' => (bool) $request->getUserVar('saveError'),
             'isSubmitted' => $isSubmitted,
-            'submitLabel' => $isSubmitted ? 'Resubmit' : 'Submit',
             'reviewers' => $formReviewers,
             'pages' => $pages,
             'page' => $page,
@@ -482,9 +684,14 @@ class GroupReviewHandler extends Handler
             ? $this->service->formatUtc($value, $timezone, self::PARTICIPATION_DATE_FORMAT)
             : null;
 
+        $submission = $bundle['submission'] ?? null;
+        $publication = $submission ? $submission->getCurrentPublication() : null;
+
         return [
             'id' => (int) $poll['session_id'],
             'submissionId' => (int) $poll['submission_id'],
+            'submissionTitle' => $submission ? $submission->getLocalizedTitle() : '',
+            'firstAuthor' => $publication ? $publication->getShortAuthorString() : '',
             'round' => $this->participationRound($poll),
             'leaderName' => $bundle['leader'] ? $bundle['leader']->getFullName() : '',
             'meetingLabel' => $meetingLabel,
@@ -494,6 +701,7 @@ class GroupReviewHandler extends Handler
             'lastSavedBy' => $this->participationUserName($form['updated_by'] ?? null),
             'submittedAt' => $format($form['submitted_at'] ?? null),
             'submittedBy' => $this->participationUserName($form['submitted_by'] ?? null),
+            'submissionComment' => (string) ($form['submission_comment'] ?? ''),
         ];
     }
 
@@ -593,6 +801,7 @@ class GroupReviewHandler extends Handler
             ['sessionId' => (int) $bundle['poll']['session_id']]
         );
         $notificationManager = new NotificationManager();
+        $round = $this->participationRound($bundle['poll']);
 
         foreach ($this->participationEditors($contextId, $submissionId, (int) $submitter->getId()) as $editor) {
             try {
@@ -603,7 +812,8 @@ class GroupReviewHandler extends Handler
                     $contextId,
                     Application::ASSOC_TYPE_SUBMISSION,
                     $submissionId,
-                    GroupReviewNotification::NOTIFICATION_LEVEL_TASK
+                    GroupReviewNotification::NOTIFICATION_LEVEL_TASK,
+                    ['submitterName' => $submitter->getFullName(), 'round' => $round]
                 );
             } catch (Throwable $e) {
                 error_log('Group Review participation notification failed: ' . $e->getMessage());
@@ -613,7 +823,7 @@ class GroupReviewHandler extends Handler
                 $context,
                 $editor->getFullName(),
                 $bundle['submission'] ? $bundle['submission']->getLocalizedTitle() : '',
-                $this->participationRound($bundle['poll']),
+                $round,
                 $submitter->getFullName(),
                 $comment !== '' ? $comment : __('plugins.generic.groupReview.participation.noComment'),
                 $formUrl
@@ -669,25 +879,12 @@ class GroupReviewHandler extends Handler
 
     private function participationAttendanceOptions(): array
     {
-        return [
-            ParticipationService::ATTENDANCE_ATTENDED => 'Attended',
-            ParticipationService::ATTENDANCE_APOLOGY => 'Did not attend, prior apology',
-            ParticipationService::ATTENDANCE_NO_APOLOGY => 'Did not attend, no prior apology',
-            ParticipationService::ATTENDANCE_NOT_APPLICABLE => 'N/A',
-            ParticipationService::ATTENDANCE_OTHER => 'Other',
-        ];
+        return ParticipationService::ATTENDANCE_OPTIONS;
     }
 
     private function participationContributionOptions(): array
     {
-        return [
-            'uploaded_notes' => 'Uploaded their notes or comments',
-            'commented_on_draft' => 'Commented on the feedback draft',
-            'offered_creating_draft' => 'Offered to create the draft',
-            'created_draft' => 'Created the draft',
-            'did_not_contribute' => 'Did not contribute to shaping the response',
-            'other' => 'Other',
-        ];
+        return ParticipationService::CONTRIBUTION_OPTIONS;
     }
 
     public function create($args, $request): void
@@ -1524,6 +1721,268 @@ class GroupReviewHandler extends Handler
             return false;
         }
         return in_array(strtolower((string) parse_url($url, PHP_URL_SCHEME)), ['https', 'http'], true);
+    }
+
+    /** @param int[] $availableYears */
+    private function monitoringYear($request, array $availableYears): ?int
+    {
+        $year = $request->getUserVar('year');
+        $currentYear = (int) gmdate('Y');
+        if ($year === null) {
+            return $currentYear;
+        }
+        if ($year === 'all') {
+            return null;
+        }
+
+        if ((!is_string($year) && !is_int($year))
+            || !preg_match('/^\d{4}$/', (string) $year)) {
+            return $currentYear;
+        }
+
+        $year = (int) $year;
+
+        return in_array($year, array_merge($availableYears, [$currentYear]), true)
+            ? $year
+            : $currentYear;
+    }
+
+    private function monitoringReviewerId($request): int
+    {
+        $reviewerId = $request->getUserVar('reviewerId');
+        if (!is_string($reviewerId) && !is_int($reviewerId)) {
+            return 0;
+        }
+
+        $reviewerId = filter_var($reviewerId, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+
+        return $reviewerId === false ? 0 : (int) $reviewerId;
+    }
+
+    /**
+     * @param int[] $availableYears
+     *
+     * @return array<int, array{value:int|string, label:string}>
+     */
+    private function monitoringYearOptions(array $availableYears): array
+    {
+        $years = array_values(array_unique(array_merge($availableYears, [(int) gmdate('Y')])));
+        rsort($years);
+
+        return array_merge(
+            [[
+                'value' => 'all',
+                'label' => __('plugins.generic.groupReview.monitoring.year.allTime'),
+            ]],
+            array_map(fn (int $year): array => ['value' => $year, 'label' => (string) $year], $years)
+        );
+    }
+
+    /** @return array{string, string} */
+    private function monitoringSortAndDir($request): array
+    {
+        $requestedSort = $request->getUserVar('sort');
+        $requestedDir = $request->getUserVar('dir');
+        $sort = $this->scalarString($requestedSort);
+        $dir = $this->scalarString($requestedDir);
+        if (($requestedSort !== null && ($sort === '' || !in_array($sort, self::MONITORING_SORT_COLUMNS, true)))
+            || ($requestedDir !== null && ($dir === '' || !in_array($dir, ['asc', 'desc'], true)))) {
+            return ['completed', 'desc'];
+        }
+
+        return [
+            $sort !== '' ? $sort : 'completed',
+            $dir !== '' ? $dir : 'desc',
+        ];
+    }
+
+    private function monitoringSortUrls($request, ?int $year, string $sort, string $dir): array
+    {
+        $urls = [];
+        foreach (self::MONITORING_SORT_COLUMNS as $column) {
+            $nextDir = $sort === $column
+                ? ($dir === 'asc' ? 'desc' : 'asc')
+                : ($column === 'name' ? 'asc' : 'desc');
+            $urls[$column] = $request->getRouter()->url(
+                $request,
+                null,
+                'groupReview',
+                'reviewers',
+                null,
+                ['year' => $year ?? 'all', 'sort' => $column, 'dir' => $nextDir]
+            );
+        }
+
+        return $urls;
+    }
+
+    private function sortReviewerRows(array $reviewers, string $sort, string $dir): array
+    {
+        $factor = $dir === 'desc' ? -1 : 1;
+        usort($reviewers, function (array $a, array $b) use ($sort, $factor): int {
+            $result = is_string($a[$sort]) ? strcasecmp($a[$sort], $b[$sort]) : $a[$sort] <=> $b[$sort];
+
+            return $result * $factor;
+        });
+
+        return $reviewers;
+    }
+
+    private function reviewerTableRow(array $row, array $labels, $request, ?int $year): array
+    {
+        return [
+            'userId' => $row['userId'],
+            'name' => $row['name'],
+            'labelsText' => $this->reviewerLabelsText($labels),
+            'completed' => $row['completed'],
+            'current' => $row['current'],
+            'attended' => $row['attended'],
+            'attendedPercent' => $this->monitoringPercent($row['attended'], $row['attendanceRecorded']),
+            'invited' => $row['invited'],
+            'available' => $row['available'],
+            'availablePercent' => $this->monitoringPercent($row['available'], $row['invited']),
+            'selected' => $row['selected'],
+            'selectedPercent' => $this->monitoringPercent($row['selected'], $row['available']),
+            'url' => $request->getRouter()->url(
+                $request,
+                null,
+                'groupReview',
+                'reviewer',
+                null,
+                ['reviewerId' => $row['userId'], 'year' => $year ?? 'all']
+            ),
+        ];
+    }
+
+    private function reviewerLabelsText(array $labels): string
+    {
+        $service = new ReviewerLabelService();
+        $names = [];
+        foreach (ReviewerLabelService::TYPES as $type => $definition) {
+            foreach ($labels[$type] ?? [] as $value) {
+                $names[] = $service->name($type, $value);
+            }
+        }
+
+        return implode(', ', $names);
+    }
+
+    private function reviewerLabelsList(array $labels): array
+    {
+        $service = new ReviewerLabelService();
+        $list = [];
+        foreach (ReviewerLabelService::TYPES as $type => $definition) {
+            $values = $labels[$type] ?? [];
+            $list[] = [
+                'name' => $service->name($type),
+                'valuesText' => $values
+                    ? implode(', ', array_map(fn ($value) => $service->name($type, $value), $values))
+                    : __('plugins.generic.groupReview.labels.notSet'),
+            ];
+        }
+
+        return $list;
+    }
+
+    private function reviewerLabelOptions(): array
+    {
+        $service = new ReviewerLabelService();
+        $options = [];
+        foreach (ReviewerLabelService::TYPES as $type => $definition) {
+            $options[$type] = [
+                'name' => $service->name($type),
+                'multiple' => $definition['multiple'],
+                'options' => array_map(
+                    fn ($value) => ['value' => $value, 'label' => $service->name($type, $value)],
+                    array_keys($definition['values'])
+                ),
+            ];
+        }
+
+        return $options;
+    }
+
+    private function monitoringCounts(array $counts, array $optionLabels): array
+    {
+        $list = [];
+        foreach ($optionLabels as $value => $label) {
+            if (!empty($counts[$value])) {
+                $list[] = ['label' => $label, 'count' => $counts[$value]];
+            }
+        }
+
+        return $list;
+    }
+
+    private function reviewerHistory(array $entries, $request): array
+    {
+        $history = [];
+        foreach ($entries as $entry) {
+            $answers = $this->historyAnswers($entry['participation']);
+            $sections = [];
+            foreach ($answers as $answer) {
+                $sections[$answer['section']][] = [
+                    'label' => $answer['label'],
+                    'value' => $answer['value'],
+                ];
+            }
+            $history[] = [
+                'submissionId' => $entry['submissionId'],
+                'submissionUrl' => $request->getRouter()->url($request, null, 'workflow', 'access', $entry['submissionId']),
+                'round' => $entry['round'],
+                'date' => $this->service->formatUtc($entry['date'], $entry['timezone'], self::PARTICIPATION_DATE_FORMAT),
+                'leaderName' => $entry['leaderName'],
+                'isLeader' => $entry['isLeader'],
+                'answers' => $answers,
+                'sections' => array_map(
+                    fn (string $section, array $rows): array => ['section' => $section, 'rows' => $rows],
+                    array_keys($sections),
+                    array_values($sections)
+                ),
+                'generalComments' => $entry['generalComments'],
+            ];
+        }
+
+        return $history;
+    }
+
+    /** @return array<int, array{section:string, label:string, value:string}> */
+    private function historyAnswers(?array $record): array
+    {
+        if (!$record) {
+            return [];
+        }
+
+        $answers = [];
+        $add = function (string $section, string $label, ?string $value) use (&$answers) {
+            if ($value === null || $value === '') {
+                return;
+            }
+            $answers[] = ['section' => $section, 'label' => $label, 'value' => $value];
+        };
+
+        if ($record['attendance'] !== ParticipationService::ATTENDANCE_NOT_RECORDED) {
+            $value = ParticipationService::ATTENDANCE_OPTIONS[$record['attendance']] ?? $record['attendance'];
+            if ($record['attendance'] === ParticipationService::ATTENDANCE_OTHER && $record['attendanceOther']) {
+                $value .= ': ' . $record['attendanceOther'];
+            }
+            $add('Review meeting', 'Meeting attendance', $value);
+        }
+        $add('Review meeting', 'Comments on contributions', $record['contributionComments']);
+
+        if ($record['shapingFeedbackTypes']) {
+            $labels = array_map(fn ($value) => ParticipationService::CONTRIBUTION_OPTIONS[$value] ?? $value, $record['shapingFeedbackTypes']);
+            $add('Feedback response', 'Contributions', implode(', ', $labels));
+        }
+        $add('Feedback response', 'Comments on contributions', $record['shapingFeedbackComments']);
+        $add('Other', 'Other comments', $record['otherContribution']);
+
+        return $answers;
+    }
+
+    private function monitoringPercent(int $numerator, int $denominator): ?int
+    {
+        return $denominator > 0 ? (int) round($numerator / $denominator * 100) : null;
     }
 
     private function display($request, string $template, array $vars): void

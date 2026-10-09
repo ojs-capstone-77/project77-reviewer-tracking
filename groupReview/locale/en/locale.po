@@ -99,6 +99,181 @@ msgstr "Only a Review Group Member invited to this journal's poll may access it.
 msgid "plugins.generic.groupReview.authorization.participation"
 msgstr "Only the journal's Manager, an assigned Journal editor, or the assigned Review Group Leader for this submission may view or record participation."
 
+msgid "plugins.generic.groupReview.authorization.editor"
+msgstr "Only the journal's Manager or an assigned Journal editor may view the reviewer monitoring dashboard."
+
+msgid "plugins.generic.groupReview.monitoring.dashboardTitle"
+msgstr "Editor Monitoring Dashboard"
+
+msgid "plugins.generic.groupReview.monitoring.reviewer"
+msgstr "Reviewer"
+
+msgid "plugins.generic.groupReview.monitoring.action"
+msgstr "Action"
+
+msgid "plugins.generic.groupReview.monitoring.tabs.overview"
+msgstr "Overview"
+
+msgid "plugins.generic.groupReview.monitoring.tabs.reviewers"
+msgstr "Reviewers"
+
+msgid "plugins.generic.groupReview.monitoring.totalReviewers"
+msgstr "Total"
+
+msgid "plugins.generic.groupReview.monitoring.leaders"
+msgstr "Review Group Leader"
+
+msgid "plugins.generic.groupReview.monitoring.currentGroups"
+msgstr "Current review groups"
+
+msgid "plugins.generic.groupReview.monitoring.participated"
+msgstr "Participated"
+
+msgid "plugins.generic.groupReview.monitoring.inactive"
+msgstr "Inactive"
+
+msgid "plugins.generic.groupReview.monitoring.notInvited"
+msgstr "Not invited"
+
+msgid "plugins.generic.groupReview.monitoring.reviewGroups"
+msgstr "Review groups"
+
+msgid "plugins.generic.groupReview.monitoring.notApplicable"
+msgstr "Not applicable"
+
+msgid "plugins.generic.groupReview.monitoring.labelValue"
+msgstr "Label"
+
+msgid "plugins.generic.groupReview.monitoring.labelTotal"
+msgstr "Total"
+
+msgid "plugins.generic.groupReview.monitoring.labelActive"
+msgstr "Active"
+
+msgid "plugins.generic.groupReview.monitoring.reviewers.title"
+msgstr "Reviewers"
+
+msgid "plugins.generic.groupReview.monitoring.reviewers.empty"
+msgstr "No reviewers found for this journal yet."
+
+msgid "plugins.generic.groupReview.monitoring.year"
+msgstr "Year"
+
+msgid "plugins.generic.groupReview.monitoring.year.allTime"
+msgstr "All time"
+
+
+msgid "plugins.generic.groupReview.monitoring.completed"
+msgstr "Completed"
+
+msgid "plugins.generic.groupReview.monitoring.current"
+msgstr "Current"
+
+msgid "plugins.generic.groupReview.monitoring.attended"
+msgstr "Attended"
+
+msgid "plugins.generic.groupReview.monitoring.invited"
+msgstr "Invited"
+
+msgid "plugins.generic.groupReview.monitoring.available"
+msgstr "Available"
+
+msgid "plugins.generic.groupReview.monitoring.selected"
+msgstr "Selected"
+
+msgid "plugins.generic.groupReview.monitoring.notSelected"
+msgstr "Not selected"
+
+msgid "plugins.generic.groupReview.monitoring.notAvailable"
+msgstr "Not available"
+
+msgid "plugins.generic.groupReview.monitoring.noResponse"
+msgstr "No response"
+
+msgid "plugins.generic.groupReview.monitoring.timesLed"
+msgstr "Times led"
+
+msgid "plugins.generic.groupReview.monitoring.activity"
+msgstr "Activity"
+
+msgid "plugins.generic.groupReview.monitoring.backToReviewers"
+msgstr "Back"
+
+msgid "plugins.generic.groupReview.monitoring.reviewerSince"
+msgstr "Reviewer since"
+
+msgid "plugins.generic.groupReview.monitoring.lastActivity"
+msgstr "Last activity"
+
+msgid "plugins.generic.groupReview.monitoring.labels"
+msgstr "Labels"
+
+msgid "plugins.generic.groupReview.monitoring.editLabels"
+msgstr "Edit Labels"
+
+msgid "plugins.generic.groupReview.monitoring.attendanceCounts"
+msgstr "Meeting attendance"
+
+msgid "plugins.generic.groupReview.monitoring.contributionCounts"
+msgstr "Contributions"
+
+msgid "plugins.generic.groupReview.monitoring.noCounts"
+msgstr "Nothing recorded for this period."
+
+msgid "plugins.generic.groupReview.monitoring.history"
+msgstr "History"
+
+msgid "plugins.generic.groupReview.monitoring.history.empty"
+msgstr "No review groups in this period."
+
+msgid "plugins.generic.groupReview.monitoring.history.round"
+msgstr "Round"
+
+msgid "plugins.generic.groupReview.monitoring.history.ledBy"
+msgstr "Led by"
+
+msgid "plugins.generic.groupReview.monitoring.history.groupLeader"
+msgstr "Group leader"
+
+msgid "plugins.generic.groupReview.monitoring.history.submission"
+msgstr "Submission #"
+
+msgid "plugins.generic.groupReview.monitoring.history.groupReviewLabel"
+msgstr "group review"
+
+msgid "plugins.generic.groupReview.monitoring.history.generalComments"
+msgstr "General comments"
+
+msgid "plugins.generic.groupReview.monitoring.history.noAnswers"
+msgstr "No form answers recorded."
+
+msgid "plugins.generic.groupReview.labels.editTitle"
+msgstr "Edit Labels"
+
+msgid "plugins.generic.groupReview.labels.notSetOption"
+msgstr "Not set"
+
+msgid "plugins.generic.groupReview.labels.note"
+msgstr "Note"
+
+msgid "plugins.generic.groupReview.labels.saveError"
+msgstr "Couldn't save your changes. Please check the values and try again."
+
+msgid "plugins.generic.groupReview.labels.changeHistory"
+msgstr "History"
+
+msgid "plugins.generic.groupReview.labels.changeHistory.empty"
+msgstr "No label changes recorded yet."
+
+msgid "plugins.generic.groupReview.labels.changeHistory.date"
+msgstr "Date"
+
+msgid "plugins.generic.groupReview.labels.changeHistory.user"
+msgstr "User"
+
+msgid "plugins.generic.groupReview.labels.changeHistory.change"
+msgstr "Change"
+
 msgid "plugins.generic.groupReview.participation.saved"
 msgstr "The participation record was saved."
 
@@ -324,6 +499,9 @@ msgstr "An open poll already exists for this submission and review round."
 msgid "plugins.generic.groupReview.error.pollNotFound"
 msgstr "The requested poll was not found in this journal."
 
+msgid "plugins.generic.groupReview.error.reviewerNotFound"
+msgstr "The requested reviewer was not found in this journal."
+
 msgid "plugins.generic.groupReview.error.pollNotOpen"
 msgstr "This poll is no longer open."
 
@@ -403,13 +581,16 @@ msgid "plugins.generic.groupReview.participation.log.submitted"
 msgstr "Participation form for round {$round} submitted."
 
 msgid "plugins.generic.groupReview.participation.log.submittedWithComment"
-msgstr "Participation form for round {$round} submitted: \"{$comment}\""
+msgstr "Participation form for round {$round} submitted. Comment: {$comment}"
 
 msgid "plugins.generic.groupReview.participation.noComment"
 msgstr "No comment was added."
 
 msgid "plugins.generic.groupReview.tasks.participationSubmitted.label"
 msgstr "A reviewer participation form has been submitted."
+
+msgid "plugins.generic.groupReview.tasks.participationSubmitted.detail"
+msgstr "{$submitterName} submitted the participation form for round {$round}."
 
 msgid "plugins.generic.groupReview.emailVariable.round"
 msgstr "Review round number"
@@ -422,3 +603,60 @@ msgstr "Comment added when submitting the form"
 
 msgid "plugins.generic.groupReview.emailVariable.formUrl"
 msgstr "Participation form URL"
+
+msgid "plugins.generic.groupReview.labels.experienceLevel"
+msgstr "Experience level"
+
+msgid "plugins.generic.groupReview.labels.novice"
+msgstr "Novice"
+
+msgid "plugins.generic.groupReview.labels.intermediate"
+msgstr "Intermediate"
+
+msgid "plugins.generic.groupReview.labels.experienced"
+msgstr "Experienced"
+
+msgid "plugins.generic.groupReview.labels.methodology"
+msgstr "Methodology background"
+
+msgid "plugins.generic.groupReview.labels.quantitative"
+msgstr "Quantitative"
+
+msgid "plugins.generic.groupReview.labels.qualitative"
+msgstr "Qualitative"
+
+msgid "plugins.generic.groupReview.labels.mixedMethods"
+msgstr "Mixed methods"
+
+msgid "plugins.generic.groupReview.labels.expertise"
+msgstr "Expertise"
+
+msgid "plugins.generic.groupReview.labels.education"
+msgstr "Education"
+
+msgid "plugins.generic.groupReview.labels.statistics"
+msgstr "Statistics"
+
+msgid "plugins.generic.groupReview.labels.notSet"
+msgstr "Not set"
+
+msgid "plugins.generic.groupReview.labels.history.set"
+msgstr "{$label} set to {$to}."
+
+msgid "plugins.generic.groupReview.labels.history.changed"
+msgstr "{$label} changed from {$from} to {$to}."
+
+msgid "plugins.generic.groupReview.labels.history.cleared"
+msgstr "{$label} cleared (was {$from})."
+
+msgid "plugins.generic.groupReview.labels.history.multiple"
+msgstr "{$label}: {$changes}."
+
+msgid "plugins.generic.groupReview.labels.history.added"
+msgstr "added {$values}"
+
+msgid "plugins.generic.groupReview.labels.history.removed"
+msgstr "removed {$values}"
+
+msgid "plugins.generic.groupReview.labels.history.noteOnly"
+msgstr "Note added, no label changes."

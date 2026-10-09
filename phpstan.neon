@@ -3,7 +3,7 @@ parameters:
     paths:
         - groupReview
     excludePaths:
-        - groupReview/tests
+        - */groupReview/tests/*
     scanDirectories:
         - ojs-src
     stubFiles:

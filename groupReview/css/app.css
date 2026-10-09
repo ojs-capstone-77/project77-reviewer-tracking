@@ -65,6 +65,7 @@
 
 .grp__field input,
 .grp__field textarea,
+.grp__field select,
 .grp__search,
 .grp__slotInput input {
 	box-sizing: border-box;
@@ -75,6 +76,12 @@
 	font: inherit;
 	background: #fff;
 	color: #222;
+}
+
+/* Full width, so only let them grow taller, and not shrink below a few lines. */
+.grp__field textarea {
+	min-height: 4rem;
+	resize: vertical;
 }
 
 .grp__field small,
@@ -393,18 +400,7 @@
 	gap: 0.6rem;
 }
 
-.grpTool__pageNav {
-	display: inline-flex;
-	align-items: center;
-	padding: 0.3rem 0.65rem;
-	border: 1px solid #b8c4cf;
-	border-radius: 3px;
-	color: #006798;
-	font-weight: 700;
-	font-size: 0.8125rem;
-	text-decoration: none;
-}
-
+/* Previous/Next are OJS pkpButtons; Next keeps the width of "Previous". */
 .grpTool__pageNav--next {
 	display: inline-grid;
 	justify-items: center;
@@ -418,16 +414,6 @@
 .grpTool__pageNav--next::after {
 	content: "Previous";
 	visibility: hidden;
-}
-
-.grpTool__pageNav:hover {
-	background: #f5f8fa;
-	text-decoration: none;
-}
-
-.grpTool__pageNav--disabled {
-	color: #b8c4cf;
-	border-color: #e5eaee;
 }
 
 .grpTool__pageRange {
@@ -497,8 +483,15 @@
 	margin-top: 0.25rem;
 }
 
-.grpTool__matrix td:has(> .grpTool__matrixTextarea) {
+/* Let the textareas fill their row: percentage heights inside table cells
+   only resolve when the table, row and cell heights are set too. */
+.grpTool__matrix {
 	height: 1px;
+}
+
+.grpTool__matrix tr,
+.grpTool__matrix td {
+	height: 100%;
 }
 
 .grpTool__matrixTextarea {
@@ -513,23 +506,15 @@
 	resize: vertical;
 }
 
-.grpTool__attendanceSelect {
+/* Styled by OJS's pkpFormField__input; only fit them to the column. */
+.grpTool__matrix .grpTool__attendanceSelect,
+.grpTool__matrix .grpTool__attendanceNote {
 	box-sizing: border-box;
 	width: 100%;
-	padding: 0.5rem;
-	border: 1px solid #b8c4cf;
-	border-radius: 2px;
-	font: inherit;
-	margin-bottom: 0.5rem;
 }
 
-.grpTool__attendanceNote {
-	box-sizing: border-box;
-	width: 100%;
-	padding: 0.5rem;
-	border: 1px solid #b8c4cf;
-	border-radius: 2px;
-	font: inherit;
+.grpTool__matrix .grpTool__attendanceSelect {
+	margin-bottom: 0.5rem;
 }
 
 .grpTool__checks--stacked {
@@ -591,24 +576,362 @@
 	margin-top: 0.2rem;
 }
 
-.grpTool__formActions button[disabled] {
-	opacity: 0.5;
-	cursor: not-allowed;
-}
-
-
-button.grpTool__pageNav {
-	margin: 0;
-	background: #fff;
-	font-family: inherit;
-	line-height: inherit;
-	cursor: pointer;
-}
-
-button.grpTool__pageNav:disabled {
-	cursor: default;
-}
 
 .grpTool__participationForm [hidden] {
 	display: none !important;
+}
+
+.grpMon__tabs {
+	margin-top: 0.5rem;
+}
+
+.grpMon__tabs .pkpTabs__button[aria-current='page'] {
+	color: #777;
+}
+
+.grpMon__tabs .pkpTabs__button[aria-current='page']:before {
+	background: #008acb;
+	width: 100%;
+}
+
+@media (min-width: 767px) {
+	.grpMon__tabs .pkpTabs__button[aria-current='page'] {
+		border: 1px solid #ddd;
+		border-bottom-color: transparent;
+		background: #fff;
+	}
+}
+
+.grpMon__filters {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	margin: 1rem 0;
+}
+
+.grpMon__filters .pkpFormField--select__input {
+	width: auto;
+}
+
+.grpMon__sortLink {
+	color: inherit;
+	font-weight: inherit;
+	text-decoration: none;
+}
+
+.grpMon__sortLink:hover {
+	color: #006798;
+	text-decoration: underline;
+}
+
+.grpMon__sectionRow {
+	display: flex;
+	align-items: flex-end;
+	justify-content: space-between;
+	flex-wrap: wrap;
+	gap: 0.75rem;
+	margin: 2.5rem 0 0.5rem;
+}
+
+.grpMon__sectionRow .grpMon__filters {
+	margin: 0;
+}
+
+.grpMon__sectionHeading {
+	margin: 0;
+	font-size: 1.125rem;
+	font-weight: 700;
+}
+
+.grpMon__page {
+	font-size: 0.875rem;
+}
+
+.grpMon__table {
+	width: 100%;
+	border-collapse: collapse;
+	margin: 0;
+}
+
+.grpMon__table th,
+.grpMon__table td {
+	padding: 0.75rem 1rem;
+	text-align: left;
+	vertical-align: top;
+	border-bottom: 1px solid #e3e7ea;
+}
+
+.grpMon__table thead th {
+	font-size: 0.75rem;
+	color: #637381;
+	font-weight: 600;
+	border-bottom: 1px solid #d8dee3;
+	white-space: nowrap;
+}
+
+.grpMon__table--labels {
+	width: calc(220px + 0.5rem + 12rem);
+	max-width: 100%;
+	table-layout: fixed;
+}
+
+.grpMon__table--labels th,
+.grpMon__table--labels td {
+	padding: 0.35rem 0.5rem 0.35rem 0;
+}
+
+.grpMon__table--labels thead th:first-child {
+	width: calc(220px + 0.5rem);
+}
+
+.grpMon__table--labels th.grpMon__labelType {
+	padding-top: 1rem;
+	color: #222;
+	font-weight: 700;
+}
+
+.grpMon__table--labels td.grpMon__labelValue {
+	padding-left: 1rem;
+	color: #637381;
+}
+
+.grpMon__labels {
+	margin-top: 0.15rem;
+	color: #637381;
+	font-size: 0.8125rem;
+}
+
+.grpMon__sortArrow {
+	margin-left: 0.25rem;
+	font-size: 0.65rem;
+	color: #637381;
+}
+
+.grpMon__viewLink {
+	color: #006798;
+}
+
+.grpMon__viewLink:hover {
+	text-decoration: underline;
+}
+
+.grpMon__percent {
+	color: #637381;
+	font-size: 0.8125rem;
+}
+
+.grpMon__backLink {
+	display: inline-block;
+	margin-top: 1.5rem;
+	padding: 0.5rem 1.25rem;
+	border: 1px solid #d8dee3;
+	border-radius: 4px;
+	color: #006798;
+	font-weight: 700;
+	text-decoration: none;
+	background: #fff;
+}
+
+.grpMon__backLink:hover {
+	background: #f5f8fa;
+}
+
+.grpMon__reviewerHeader {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	flex-wrap: wrap;
+	gap: 0.75rem;
+	margin-bottom: 1rem;
+}
+
+.grpMon__reviewerName {
+	margin: 0;
+	font-size: 1.375rem;
+	font-weight: 700;
+}
+
+.grpMon__kv {
+	margin: 0 0 1.5rem;
+}
+
+.grpMon__kv--gap {
+	margin-top: 1.5rem;
+}
+
+.grpMon__kvRow {
+	display: flex;
+	align-items: baseline;
+	gap: 0.5rem;
+	padding: 0.35rem 0;
+	border-bottom: 1px solid #e3e7ea;
+}
+
+.grpMon__kvRow dt {
+	color: #637381;
+}
+
+.grpMon__kvRow dd {
+	margin: 0;
+	font-weight: 400;
+	text-align: left;
+}
+
+.grpMon__kv--counts .grpMon__kvRow dt {
+	flex: 0 1 340px;
+}
+
+.grpMon__kv--aligned .grpMon__kvRow dt {
+	flex: 0 0 220px;
+}
+
+.grpMon__kvRow--indent dt {
+	box-sizing: border-box;
+	padding-left: 1rem;
+}
+
+.grpMon__caps {
+	margin: 0;
+	font-size: 0.75rem;
+	font-weight: 700;
+	letter-spacing: 0.06em;
+	text-transform: uppercase;
+	color: #637381;
+}
+
+.grpMon__subheading {
+	margin: 0 0 0.5rem;
+	font-size: 0.9375rem;
+	font-weight: 700;
+}
+
+.grpMon__statsColumns {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+	gap: 1.5rem;
+	margin: 0 0 2.5rem;
+}
+
+.grpMon__statsColumns .grpMon__kv {
+	margin-bottom: 0;
+}
+
+.grpMon__twoCol {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+	gap: 1.5rem;
+	margin-bottom: 1.5rem;
+}
+
+.grpMon__historyList {
+	display: flex;
+	flex-direction: column;
+	gap: 0.5rem;
+}
+
+.grpMon__historyRow {
+	border-bottom: 1px solid #e3e7ea;
+	padding-bottom: 0.5rem;
+}
+
+.grpMon__historyRow summary {
+	list-style: none;
+	cursor: pointer;
+}
+
+.grpMon__historyRow summary::-webkit-details-marker {
+	display: none;
+}
+
+.grpMon__historySummary {
+	display: flex;
+	align-items: center;
+	gap: 0.75rem;
+	padding: 0.5rem 0;
+}
+
+.grpMon__historySummary::before {
+	content: "\25B8";
+	display: inline-block;
+	color: #637381;
+	transition: transform 0.15s ease;
+}
+
+.grpMon__historyRow[open] .grpMon__historySummary::before {
+	transform: rotate(90deg);
+}
+
+.grpMon__historyLink {
+	color: #006798;
+	font-weight: 600;
+	text-decoration: none;
+}
+
+.grpMon__historyLink:hover {
+	text-decoration: underline;
+}
+
+.grpMon__historyRound {
+	color: #637381;
+}
+
+.grpMon__pill {
+	padding: 0.15rem 0.6rem;
+	border-radius: 999px;
+	background: #d9f7e5;
+	color: #006b2f;
+	font-size: 0.75rem;
+	font-weight: 700;
+}
+
+.grpMon__historyLed {
+	color: #637381;
+	font-size: 0.875rem;
+}
+
+.grpMon__historyDate {
+	margin-left: auto;
+	color: #637381;
+	font-size: 0.8125rem;
+}
+
+.grpMon__historyBody {
+	padding: 0 0 0.75rem 1.5rem;
+}
+
+.grpMon__historySection {
+	margin: 1rem 0 0.25rem;
+	font-size: 0.8125rem;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+	color: #637381;
+}
+
+.grpMon__historySection:first-child {
+	margin-top: 0;
+}
+
+.grpMon__labelChoice {
+	display: flex;
+	align-items: center;
+	gap: 0.4rem;
+	padding: 0.25rem 0;
+}
+
+.grpMon__labelChecks {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5rem 1.5rem;
+}
+
+.grpMon__labelHistoryList {
+	list-style: none;
+	margin: 0.5rem 0 0;
+	padding: 0;
+}
+
+.grpMon__labelHistoryList li {
+	padding: 0.5rem 0;
+	border-bottom: 1px solid #e3e7ea;
 }

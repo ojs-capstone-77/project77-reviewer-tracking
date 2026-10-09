@@ -27,6 +27,78 @@ compliance still requires staging verification on the target OJS build.
 
 It does **not** create ordinary OJS reviewer assignments, reviewer file grants or reviewer task records.
 
+## Reviewer monitoring
+
+Journal editors and managers (OJS's Manager permission level) can open **Group Review**
+from the backend sidebar, then switch between **Overview** and **Reviewers**, or use
+**View** to open a reviewer. RGL/RGM membership and author access do not grant
+dashboard access. The existing **My Group Review Polls** page remains separate.
+
+The pages follow [Reviewer Monitoring Definitions](../docs/Reviewer-Monitoring-Definitions.md).
+The `year` URL parameter accepts a year in the selector or `all`; missing or invalid
+values use the current year. Reviewers defaults to `sort=completed&dir=desc`.
+Column links reverse the current direction; another numeric column starts highest
+first, and names start alphabetically. The selected year is preserved across tabs,
+View, Back, and label saves.
+
+Edit Labels requires POST and a valid CSRF token. An unknown reviewer cannot be
+updated; malformed or invalid label values are rejected without changing labels or
+their history. A failed save returns to the reviewer page with an error notice.
+
+For an existing installation, run the plugin's Upgrade action before using the
+dashboard: copying the plugin directory alone does not create its new database
+tables. Back up the database first; the upgrade preserves the legacy poll tables.
+
+Run the integration checks inside an installed OJS 3.4 environment:
+
+```bash
+php plugins/generic/groupReview/tests/MonitoringTest.php <journal path>
+```
+
+The checks use the existing fixture generator inside a database transaction, cover
+page rendering, access policies, URL defaults, data contracts, statistics and label
+saves, and roll back test records afterward. Use a development or staging journal.
+
+## Participation and statistics tests
+
+The participation unit scripts use the current per-reviewer fields and the
+form-level submission status, rather than the removed `contribution_types` and
+per-reviewer `status` fields:
+
+```bash
+php plugins/generic/groupReview/tests/ParticipationServiceTest.php
+php plugins/generic/groupReview/tests/ParticipationReadTest.php
+php plugins/generic/groupReview/tests/ParticipationFormTest.php <journal path>
+php plugins/generic/groupReview/tests/ReviewerStatsServiceTest.php <journal path>
+```
+
+The form and statistics integration scripts copy the supplied journal's
+configuration into a temporary journal, freshly seed the existing test data,
+and roll back the entire transaction on success or failure. No users or
+submissions from the source journal are copied into that journal. As with the
+fixture generator, run on development/staging from mid-February onwards, when
+there is enough current-year history to generate the fixtures.
+
+Statistics expectations come from fixture inputs, not the service's output,
+and include hand-counted checks for the fixed cases. Every returned value is
+compared for the current year and all time: reviewer rows and single-row lookup,
+Overview including labels, years, attendance/contribution counts and history.
+The script reports each differing value with its full path, expected value and
+actual value, then finishes with an `OVERALL: PASS` or `OVERALL: FAIL` summary.
+Additional cases cover an empty journal, overdue open polls, timezone year
+boundaries, recommendations and reverted declines.
+
+To verify that changing an expected count is caught:
+
+```bash
+php plugins/generic/groupReview/tests/ReviewerStatsServiceTest.php <journal path> --mutate-expected
+```
+
+This command **must exit with code 1**, reporting
+`currentYear.reviewers.test_rgm_21.invited: expected 5, got 4`.
+The temporary records are still rolled back. The flag changes only an in-memory
+expectation; it does not modify the fixture generator or saved counts.
+
 ## Compatibility
 
 - OJS **3.4.x only**

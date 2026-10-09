@@ -29,6 +29,11 @@ jobs:
             -not -path "./node_modules/*" \
             | xargs -I{} php -l {}
 
+      - name: Run participation unit tests
+        run: |
+          php groupReview/tests/ParticipationServiceTest.php
+          php groupReview/tests/ParticipationReadTest.php
+
   code-style:
     name: Code Style
     runs-on: ubuntu-latest
