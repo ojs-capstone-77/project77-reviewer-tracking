@@ -341,6 +341,13 @@ class GroupReviewPlugin extends GenericPlugin
             $this->assetUrl($request, 'css/app.css'),
             ['contexts' => ['backend']]
         );
+        if ($request->getRequestedPage() === 'groupReview' && $request->getRequestedOp() === 'reviewers') {
+            $templateMgr->addJavaScript(
+                'groupReviewFilters',
+                $this->assetUrl($request, 'js/reviewerFilters.js'),
+                ['contexts' => ['backend']]
+            );
+        }
         return false;
     }
 

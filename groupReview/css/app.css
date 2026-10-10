@@ -653,6 +653,123 @@
 	margin: 0;
 }
 
+.grpMon__toolbar {
+	display: flex;
+	align-items: flex-start;
+	flex-wrap: wrap;
+	gap: 0.75rem;
+	margin: 1rem 0;
+}
+
+.grpMon__search {
+	flex: 1 1 16rem;
+}
+
+.grpMon__gridForm .pkpFormField__input {
+	box-sizing: border-box;
+	width: 100%;
+	max-width: 100%;
+}
+
+.grpMon__gridForm .grpMon__table tbody th {
+	min-width: 9rem;
+	line-height: 1.5;
+}
+
+.grpMon__gridForm .grpMon__labels {
+	line-height: 1.5;
+}
+
+.grpMon__columns {
+	position: relative;
+}
+
+.grpMon__columnOptions {
+	position: absolute;
+	right: 0;
+	z-index: 2;
+	min-width: 12rem;
+	padding: 1rem;
+	background: #fff;
+	border: 1px solid #d8dee3;
+	box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+.grpMon__columnOptions label,
+.grpMon__choice {
+	display: block;
+	margin: 0.5rem 0;
+}
+
+.grpMon__gridLayout {
+	display: flex;
+	align-items: flex-start;
+	gap: 1.5rem;
+}
+
+.grpMon__filterPanel[open] {
+	flex: 0 0 16rem;
+	min-width: 0;
+	width: 16rem;
+}
+
+.grpMon__filterBody {
+	padding: 1rem;
+	margin-top: 0.5rem;
+	background: #f7f9fa;
+	border: 1px solid #d8dee3;
+}
+
+.grpMon__filterBody fieldset {
+	position: relative;
+	min-width: 0;
+	border: 0;
+	padding: 0 0 1rem;
+	margin: 1.25rem 0 0;
+}
+
+.grpMon__filterBody legend {
+	font-weight: 600;
+	max-width: calc(100% - 2rem);
+	margin-bottom: 0.5rem;
+}
+
+.grpMon__range {
+	display: flex;
+	gap: 0.5rem;
+}
+
+.grpMon__range label {
+	flex: 1;
+	min-width: 0;
+}
+
+.grpMon__clear {
+	position: absolute;
+	right: 0;
+	top: -1.75rem;
+	padding: 0 0.35rem;
+}
+
+.grpMon__results {
+	flex: 1;
+	min-width: 0;
+}
+
+@media (max-width: 800px) {
+	.grpMon__gridLayout {
+		display: block;
+	}
+
+	.grpMon__filterPanel {
+		margin-bottom: 1rem;
+	}
+
+	.grpMon__filterPanel[open] {
+		width: 100%;
+	}
+}
+
 .grpMon__table th,
 .grpMon__table td {
 	padding: 0.75rem 1rem;

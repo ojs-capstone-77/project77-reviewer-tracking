@@ -114,6 +114,69 @@ msgstr "Action"
 msgid "plugins.generic.groupReview.monitoring.tabs.overview"
 msgstr "Overview"
 
+msgid "plugins.generic.groupReview.filtering.search"
+msgstr "Search by reviewer name"
+
+msgid "plugins.generic.groupReview.filtering.columns"
+msgstr "Columns"
+
+msgid "plugins.generic.groupReview.filtering.filters"
+msgstr "Filters"
+
+msgid "plugins.generic.groupReview.filtering.apply"
+msgstr "Apply"
+
+msgid "plugins.generic.groupReview.filtering.clearAll"
+msgstr "Clear all filters"
+
+msgid "plugins.generic.groupReview.filtering.clear"
+msgstr "Clear this filter"
+
+msgid "plugins.generic.groupReview.filtering.openPoll"
+msgstr "Available in an open poll"
+
+msgid "plugins.generic.groupReview.filtering.submissionId"
+msgstr "Submission ID"
+
+msgid "plugins.generic.groupReview.filtering.matchAll"
+msgstr "Reviewers must have all selected values."
+
+msgid "plugins.generic.groupReview.filtering.min"
+msgstr "Minimum"
+
+msgid "plugins.generic.groupReview.filtering.max"
+msgstr "Maximum"
+
+msgid "plugins.generic.groupReview.filtering.availablePercent"
+msgstr "Available %"
+
+msgid "plugins.generic.groupReview.filtering.selectedPercent"
+msgstr "Selected %"
+
+msgid "plugins.generic.groupReview.filtering.attendedPercent"
+msgstr "Attended %"
+
+msgid "plugins.generic.groupReview.filtering.results"
+msgstr "{$resultCount} of {$total} reviewers"
+
+msgid "plugins.generic.groupReview.filtering.empty"
+msgstr "No reviewers match these filters."
+
+msgid "plugins.generic.groupReview.filtering.invalidSearch"
+msgstr "Enter a reviewer name of no more than 100 characters."
+
+msgid "plugins.generic.groupReview.filtering.invalidLabels"
+msgstr "Select valid reviewer label values."
+
+msgid "plugins.generic.groupReview.filtering.invalidRange"
+msgstr "Enter a valid range: nonnegative whole numbers, minimum no greater than maximum, and percentages no greater than 100."
+
+msgid "plugins.generic.groupReview.filtering.invalidColumns"
+msgstr "Select valid reviewer columns."
+
+msgid "plugins.generic.groupReview.filtering.invalidSubmission"
+msgstr "Enter a positive submission ID."
+
 msgid "plugins.generic.groupReview.monitoring.tabs.reviewers"
 msgstr "Reviewers"
 

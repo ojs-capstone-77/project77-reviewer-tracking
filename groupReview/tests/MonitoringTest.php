@@ -287,7 +287,7 @@ class MonitoringTestTool extends CommandLineTool
                 'note' => 'Saved through handler',
             ];
             $pageHandler->saveLabels([], $pageRequest);
-            $this->check($pageRequest->redirectParams === ['reviewerId' => $reviewerId, 'year' => 'all'], 'Successful save redirects to same reviewer/year');
+            $this->check($pageRequest->redirectParams['reviewerId'] === $reviewerId && $pageRequest->redirectParams['year'] === 'all', 'Successful save redirects to same reviewer/year');
             $afterSave = $labels->getLabels($contextId, [$reviewerId])[$reviewerId];
             $this->check($afterSave['experience_level'] === ['novice'], 'Handler persists labels');
             ob_start();
@@ -366,10 +366,15 @@ class MonitoringTestTool extends CommandLineTool
     }
 }
 
-$tool = new MonitoringTestTool($argv ?? []);
-try {
-    $tool->execute();
-} catch (Throwable $e) {
-    fwrite(STDERR, $e . "\n");
-    exit(1);
+if (realpath($_SERVER['SCRIPT_FILENAME'] ?? '') === __FILE__) {
+    $tool = new MonitoringTestTool($argv ?? []);
+    ob_start();
+    try {
+        $tool->execute();
+        ob_end_flush();
+    } catch (Throwable $e) {
+        ob_end_flush();
+        fwrite(STDERR, $e . "\n");
+        exit(1);
+    }
 }

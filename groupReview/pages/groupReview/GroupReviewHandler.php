@@ -17,6 +17,7 @@ use APP\plugins\generic\groupReview\classes\mail\GroupReviewPollThankInvitees;
 use APP\plugins\generic\groupReview\classes\mail\GroupReviewPollThankRgms;
 use APP\plugins\generic\groupReview\classes\notification\Notification as GroupReviewNotification;
 use APP\plugins\generic\groupReview\classes\ParticipationService;
+use APP\plugins\generic\groupReview\classes\ReviewerGridService;
 use APP\plugins\generic\groupReview\classes\ReviewerLabelService;
 use APP\plugins\generic\groupReview\classes\ReviewerStatsService;
 use APP\plugins\generic\groupReview\classes\security\authorization\EditorRequiredPolicy;
@@ -59,7 +60,7 @@ class GroupReviewHandler extends Handler
     private const PARTICIPATION_DATE_FORMAT = 'j F Y, H:i';
     private const MONITORING_DATE_FORMAT = 'j F Y';
     private const MONITORING_OPERATIONS = ['overview', 'reviewers', 'reviewer', 'saveLabels'];
-    private const MONITORING_SORT_COLUMNS = ['name', 'invited', 'available', 'selected', 'completed', 'current', 'attended'];
+    private const MONITORING_SORT_COLUMNS = ['name', 'invited', 'available', 'availablePercent', 'selected', 'selectedPercent', 'completed', 'current', 'attended', 'attendedPercent'];
 
     public function __construct(GroupReviewPlugin $plugin)
     {
@@ -141,11 +142,18 @@ class GroupReviewHandler extends Handler
 
         $rows = $stats->getReviewerRows($contextId, $year);
         $labels = (new ReviewerLabelService())->getLabels($contextId, array_column($rows, 'userId'));
+        $grid = new ReviewerGridService();
+        $filters = $grid->settings($request);
+        $filterParams = array_merge($grid->parameters($filters), ['sort' => $sort, 'dir' => $dir]);
 
         $reviewers = [];
         foreach ($rows as $row) {
-            $reviewers[] = $this->reviewerTableRow($row, $labels[$row['userId']] ?? [], $request, $year);
+            $reviewers[] = $this->reviewerTableRow($row, $labels[$row['userId']] ?? [], $request, $year, $filterParams);
         }
+        $totalReviewers = count($reviewers);
+        $availableIds = $filters['availableSubmissionId'] === '' ? null
+            : $grid->availableReviewerIds($contextId, $filters['availableSubmissionId']);
+        $reviewers = $grid->filter($reviewers, $labels, $filters, $availableIds);
         $reviewers = $this->sortReviewerRows($reviewers, $sort, $dir);
 
         $this->display($request, 'reviewers.tpl', [
@@ -153,13 +161,21 @@ class GroupReviewHandler extends Handler
             'monitoringTabsResource' => $this->plugin->getTemplateResource('monitoringTabs.tpl'),
             'year' => $year ?? 'all',
             'yearOptions' => $this->monitoringYearOptions($years),
-            'overviewUrl' => $request->getRouter()->url($request, null, 'groupReview', 'overview', null, ['year' => $year ?? 'all']),
-            'reviewersUrl' => $request->getRouter()->url($request, null, 'groupReview', 'reviewers', null, ['year' => $year ?? 'all']),
+            'overviewUrl' => $request->getRouter()->url($request, null, 'groupReview', 'overview', null, ReviewerGridService::urlParameters(array_merge($filterParams, ['year' => $year ?? 'all']))),
+            'reviewersUrl' => $request->getRouter()->url($request, null, 'groupReview', 'reviewers', null, ReviewerGridService::urlParameters(array_merge($filterParams, ['year' => $year ?? 'all']))),
             'reviewersActionUrl' => $request->getRouter()->url($request, null, 'groupReview', 'reviewers'),
             'sort' => $sort,
             'dir' => $dir,
-            'sortUrls' => $this->monitoringSortUrls($request, $year, $sort, $dir),
+            'sortUrls' => $this->monitoringSortUrls($request, $year, $sort, $dir, $filterParams),
             'reviewers' => $reviewers,
+            'gridFilters' => $filters,
+            'gridColumns' => ReviewerGridService::COLUMNS,
+            'labelFilters' => $this->reviewerLabelOptions(),
+            'totalReviewers' => $totalReviewers,
+            'resetFiltersUrl' => $request->getRouter()->url($request, null, 'groupReview', 'reviewers', null, ReviewerGridService::urlParameters([
+                'year' => $year ?? 'all', 'sort' => $sort, 'dir' => $dir, 'columns' => $filterParams['columns'],
+            ])),
+            'gridFilterParams' => $filterParams,
         ]);
     }
 
@@ -170,6 +186,7 @@ class GroupReviewHandler extends Handler
         $years = $stats->getYears($contextId);
         $year = $this->monitoringYear($request, $years);
         $overview = $stats->getOverview($contextId, $year);
+        $filterParams = $this->monitoringGridParams($request);
         $labelService = new ReviewerLabelService();
         $labels = [];
 
@@ -199,9 +216,11 @@ class GroupReviewHandler extends Handler
             'monitoringTabsResource' => $this->plugin->getTemplateResource('monitoringTabs.tpl'),
             'year' => $year ?? 'all',
             'yearOptions' => $this->monitoringYearOptions($years),
-            'overviewUrl' => $request->getRouter()->url($request, null, 'groupReview', 'overview', null, ['year' => $year ?? 'all']),
-            'reviewersUrl' => $request->getRouter()->url($request, null, 'groupReview', 'reviewers', null, ['year' => $year ?? 'all']),
+            'overviewUrl' => $request->getRouter()->url($request, null, 'groupReview', 'overview', null, ReviewerGridService::urlParameters(array_merge($filterParams, ['year' => $year ?? 'all']))),
+            'reviewersUrl' => $request->getRouter()->url($request, null, 'groupReview', 'reviewers', null, ReviewerGridService::urlParameters(array_merge($filterParams, ['year' => $year ?? 'all']))),
             'overviewActionUrl' => $request->getRouter()->url($request, null, 'groupReview', 'overview'),
+            'gridFilterParams' => $filterParams,
+            'gridStateResource' => $this->plugin->getTemplateResource('reviewerGridState.tpl'),
             'live' => $overview['live'],
             'activity' => $overview['activity'],
             'labels' => $labels,
@@ -228,14 +247,15 @@ class GroupReviewHandler extends Handler
             $row,
             $this->reviewerTableRow($row, $labels, $request, $year)
         );
+        $filterParams = $this->monitoringGridParams($request);
 
         $this->display($request, 'reviewer.tpl', [
             'pageTitle' => $row['name'],
             'monitoringTabsResource' => $this->plugin->getTemplateResource('monitoringTabs.tpl'),
             'year' => $year ?? 'all',
             'yearOptions' => $this->monitoringYearOptions($years),
-            'overviewUrl' => $request->getRouter()->url($request, null, 'groupReview', 'overview', null, ['year' => $year ?? 'all']),
-            'reviewersUrl' => $request->getRouter()->url($request, null, 'groupReview', 'reviewers', null, ['year' => $year ?? 'all']),
+            'overviewUrl' => $request->getRouter()->url($request, null, 'groupReview', 'overview', null, ReviewerGridService::urlParameters(array_merge($filterParams, ['year' => $year ?? 'all']))),
+            'reviewersUrl' => $request->getRouter()->url($request, null, 'groupReview', 'reviewers', null, ReviewerGridService::urlParameters(array_merge($filterParams, ['year' => $year ?? 'all']))),
             'reviewerUrl' => $request->getRouter()->url($request, null, 'groupReview', 'reviewer'),
             'reviewer' => [
                 'userId' => $row['userId'],
@@ -253,7 +273,12 @@ class GroupReviewHandler extends Handler
             'labelHistory' => $labelService->getHistory($contextId, $reviewerId),
             'labelSaveError' => (bool) $request->getUserVar('labelSaveError'),
             'saveLabelsUrl' => $request->getRouter()->url($request, null, 'groupReview', 'saveLabels'),
-            'backUrl' => $request->getRouter()->url($request, null, 'groupReview', 'reviewers', null, ['year' => $year ?? 'all']),
+            'gridFilterParams' => $filterParams,
+            'gridStateResource' => $this->plugin->getTemplateResource('reviewerGridState.tpl'),
+            'backUrl' => $request->getRouter()->url($request, null, 'groupReview', 'reviewers', null, ReviewerGridService::urlParameters(array_merge(
+                $filterParams,
+                ['year' => $year ?? 'all']
+            ))),
         ]);
     }
 
@@ -268,6 +293,7 @@ class GroupReviewHandler extends Handler
         $reviewerId = $this->monitoringReviewerId($request);
         $stats = new ReviewerStatsService();
         $year = $this->monitoringYear($request, $stats->getYears($contextId));
+        $filterParams = $this->monitoringGridParams($request);
 
         try {
             if ($reviewerId < 1 || !$stats->getReviewerRow($contextId, $reviewerId, null)) {
@@ -301,18 +327,18 @@ class GroupReviewHandler extends Handler
             );
         } catch (Throwable $e) {
             error_log('Group Review label save failed: ' . $e->getMessage());
-            $request->redirect(null, 'groupReview', 'reviewer', null, [
+            $request->redirect(null, 'groupReview', 'reviewer', null, ReviewerGridService::urlParameters(array_merge($filterParams, [
                 'reviewerId' => $reviewerId,
                 'year' => $year ?? 'all',
                 'labelSaveError' => 1,
-            ]);
+            ])));
             return;
         }
 
-        $request->redirect(null, 'groupReview', 'reviewer', null, [
+        $request->redirect(null, 'groupReview', 'reviewer', null, ReviewerGridService::urlParameters(array_merge($filterParams, [
             'reviewerId' => $reviewerId,
             'year' => $year ?? 'all',
-        ]);
+        ])));
     }
 
     public function participation($args, $request): void
@@ -1796,7 +1822,7 @@ class GroupReviewHandler extends Handler
         ];
     }
 
-    private function monitoringSortUrls($request, ?int $year, string $sort, string $dir): array
+    private function monitoringSortUrls($request, ?int $year, string $sort, string $dir, array $filterParams = []): array
     {
         $urls = [];
         foreach (self::MONITORING_SORT_COLUMNS as $column) {
@@ -1809,17 +1835,27 @@ class GroupReviewHandler extends Handler
                 'groupReview',
                 'reviewers',
                 null,
-                ['year' => $year ?? 'all', 'sort' => $column, 'dir' => $nextDir]
+                ReviewerGridService::urlParameters(array_merge($filterParams, ['year' => $year ?? 'all', 'sort' => $column, 'dir' => $nextDir]))
             );
         }
 
         return $urls;
     }
 
+    private function monitoringGridParams($request): array
+    {
+        $grid = new ReviewerGridService();
+        [$sort, $dir] = $this->monitoringSortAndDir($request);
+        return array_merge($grid->parameters($grid->settings($request)), ['sort' => $sort, 'dir' => $dir]);
+    }
+
     private function sortReviewerRows(array $reviewers, string $sort, string $dir): array
     {
         $factor = $dir === 'desc' ? -1 : 1;
         usort($reviewers, function (array $a, array $b) use ($sort, $factor): int {
+            if ($a[$sort] === null || $b[$sort] === null) {
+                return ($a[$sort] === null) <=> ($b[$sort] === null);
+            }
             $result = is_string($a[$sort]) ? strcasecmp($a[$sort], $b[$sort]) : $a[$sort] <=> $b[$sort];
 
             return $result * $factor;
@@ -1828,7 +1864,7 @@ class GroupReviewHandler extends Handler
         return $reviewers;
     }
 
-    private function reviewerTableRow(array $row, array $labels, $request, ?int $year): array
+    private function reviewerTableRow(array $row, array $labels, $request, ?int $year, array $filterParams = []): array
     {
         return [
             'userId' => $row['userId'],
@@ -1849,7 +1885,7 @@ class GroupReviewHandler extends Handler
                 'groupReview',
                 'reviewer',
                 null,
-                ['reviewerId' => $row['userId'], 'year' => $year ?? 'all']
+                ReviewerGridService::urlParameters(array_merge($filterParams, ['reviewerId' => $row['userId'], 'year' => $year ?? 'all']))
             ),
         ];
     }
