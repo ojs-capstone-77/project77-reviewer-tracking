@@ -47,14 +47,12 @@ their history. A failed save returns to the reviewer page with an error notice.
 
 ### Reviewer grid filtering
 
-The Reviewers toolbar provides name search, the year selector and a **Columns**
-menu. Name and View stay visible; each of the nine count/percentage columns can
-be shown or hidden independently. The **Filters** side panel contains label
-choices, inclusive minimum/maximum ranges and **Available in an open poll** by
-Submission ID. Use **Apply** for search/range edits. Label, column and year
-changes apply automatically when JavaScript is enabled; Apply also works without
-JavaScript. Each filter group has a clear button, and **Clear all filters** keeps
-the selected year, sort and column configuration.
+The Reviewers header provides name search, the year selector and a **Columns**
+menu. Name stays visible; each of the nine count/percentage columns can be shown
+or hidden independently, and the counts show by default. The **Filter** side panel contains label choices,
+inclusive range sliders and **Available in an open poll** by Submission ID.
+Changes apply as soon as they are made. Closing the panel clears all filters
+and keeps the selected year, sort and column configuration.
 
 Filters combine with AND. Experience level and methodology accept any selected
 value; expertise requires every selected value. Options come from the existing
@@ -84,8 +82,7 @@ php plugins/generic/groupReview/tests/ReviewerGridTest.php <journal path>
 This transactional integration script checks parsing, combined filters,
 inclusive bounds, zero/null percentages, visibility, URL state, page rendering
 and journal-scoped poll availability. Its temporary journal and fixtures are
-rolled back. Numeric text inputs are used instead of wireframe sliders, as agreed
-for this task, retaining OJS input/button classes and the plugin's existing styles.
+rolled back. The page is built from OJS's own list panel, filter and table components.
 
 For an existing installation, run the plugin's Upgrade action before using the
 dashboard: copying the plugin directory alone does not create its new database

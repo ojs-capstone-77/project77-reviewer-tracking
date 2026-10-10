@@ -120,32 +120,11 @@ msgstr "Search by reviewer name"
 msgid "plugins.generic.groupReview.filtering.columns"
 msgstr "Columns"
 
-msgid "plugins.generic.groupReview.filtering.filters"
-msgstr "Filters"
-
-msgid "plugins.generic.groupReview.filtering.apply"
-msgstr "Apply"
-
-msgid "plugins.generic.groupReview.filtering.clearAll"
-msgstr "Clear all filters"
-
-msgid "plugins.generic.groupReview.filtering.clear"
-msgstr "Clear this filter"
-
 msgid "plugins.generic.groupReview.filtering.openPoll"
 msgstr "Available in an open poll"
 
 msgid "plugins.generic.groupReview.filtering.submissionId"
 msgstr "Submission ID"
-
-msgid "plugins.generic.groupReview.filtering.matchAll"
-msgstr "Reviewers must have all selected values."
-
-msgid "plugins.generic.groupReview.filtering.min"
-msgstr "Minimum"
-
-msgid "plugins.generic.groupReview.filtering.max"
-msgstr "Maximum"
 
 msgid "plugins.generic.groupReview.filtering.availablePercent"
 msgstr "Available %"

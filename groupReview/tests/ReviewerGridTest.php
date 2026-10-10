@@ -62,7 +62,7 @@ class ReviewerGridTestTool extends CommandLineTool
             $manager = TemplateManager::getManager($request);
             $manager->unregisterPlugin('function', 'csrf');
             $manager->registerPlugin('function', 'csrf', fn () => '');
-            $this->check($grid->settings($request)['columns'] === array_keys(ReviewerGridService::COLUMNS), 'All columns visible by default');
+            $this->check($grid->settings($request)['columns'] === ReviewerGridService::DEFAULT_COLUMNS, 'Count columns visible by default');
             $request->vars = ['columns' => ['']];
             $this->check($grid->settings($request)['columns'] === [], 'No numeric columns is a valid choice');
             foreach ([
@@ -119,11 +119,10 @@ class ReviewerGridTestTool extends CommandLineTool
             $this->check(count($rows) === 1 && $rows[0]['userId'] === $fixture['users']['test_rgm_21']['id'], 'Handler applies combined search/year/range');
             $this->check($manager->getTemplateVars('totalReviewers') === 37, 'Unfiltered count excludes disabled and editor-only accounts');
             $this->check(str_contains($html, '1 of 37 reviewers'), 'Result count rendered: ' . substr($html, strpos($html, 'role="status"'), 200));
-            $this->check(!str_contains($html, '>Available %</a>') && str_contains($html, '>Completed</a>'), 'Column selection changes headers');
+            $this->check(!str_contains($html, 'value="availablePercent.') && str_contains($html, 'value="completed.'), 'Column selection changes headers');
             $params = $grid->parameters($grid->settings($request));
             $this->check($params['ranges']['invited']['min'] === 5, 'Normalized query keeps zero/nonzero boundaries');
-            parse_str(parse_url($manager->getTemplateVars('sortUrls')['name'], PHP_URL_QUERY), $query);
-            $this->check($query['search'] === 'test rgm 21' && $query['year'] === 'all' && $query['ranges']['invited']['max'] === '5', 'Sort links preserve every filter');
+            $this->check(str_contains($html, 'form="grpReviewerFilters" name="order" value="name.asc"'), 'Sorting submits the filter form, so it keeps every filter');
             $previous = $request->vars;
             parse_str(parse_url($manager->getTemplateVars('overviewUrl'), PHP_URL_QUERY), $overviewQuery);
             $request->vars = $overviewQuery;
@@ -146,7 +145,7 @@ class ReviewerGridTestTool extends CommandLineTool
             $request->post = false;
             $request->vars = ['year' => 'all', 'columns' => ['']];
             $html = $this->render($handler, $request, $manager);
-            $this->check(!str_contains($html, 'class="grpMon__sortLink" href="' . htmlspecialchars($manager->getTemplateVars('sortUrls')['completed'], ENT_QUOTES) . '"'), 'All numeric columns can be hidden');
+            $this->check(!str_contains($html, 'value="completed.'), 'All numeric columns can be hidden');
             $open = array_values($fixture['polls'])[6];
             $ids = $grid->availableReviewerIds($contextId, $open['submissionId']);
             $this->check($ids === [$fixture['users']['test_rgm_21']['id']], 'Only available respondents in current open poll');

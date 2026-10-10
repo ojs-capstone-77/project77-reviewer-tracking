@@ -17,6 +17,7 @@ class ReviewerGridService
         'completed' => 'plugins.generic.groupReview.monitoring.completed',
         'current' => 'plugins.generic.groupReview.monitoring.current',
     ];
+    public const DEFAULT_COLUMNS = ['invited', 'available', 'selected', 'attended', 'completed', 'current'];
 
     public function settings($request): array
     {
@@ -78,10 +79,10 @@ class ReviewerGridService
             }
         }
         if ($columns === null) {
-            $columns = array_keys(self::COLUMNS);
+            $columns = self::DEFAULT_COLUMNS;
         } elseif (!is_array($columns) || array_filter($columns, fn ($column): bool => !is_string($column) || ($column !== '' && !isset(self::COLUMNS[$column])))) {
             $errors[] = __('plugins.generic.groupReview.filtering.invalidColumns');
-            $columns = array_keys(self::COLUMNS);
+            $columns = self::DEFAULT_COLUMNS;
         }
         $submissionId = $request->getUserVar('availableSubmissionId') ?? '';
         if ($submissionId !== '') {

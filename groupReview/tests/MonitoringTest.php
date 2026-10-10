@@ -253,7 +253,7 @@ class MonitoringTestTool extends CommandLineTool
                 } finally {
                     ob_end_clean();
                 }
-                $this->check(str_contains($html, 'grpMon__page'), "{$op} template renders");
+                $this->check(str_contains($html, 'class="pkpTab'), "{$op} template renders");
                 foreach (['year', 'yearOptions', 'overviewUrl', 'reviewersUrl'] as $variable) {
                     $this->check($manager->getTemplateVars($variable) !== null, "{$op} assigns {$variable}");
                 }

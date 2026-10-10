@@ -153,8 +153,39 @@ class GroupReviewHandler extends Handler
         $totalReviewers = count($reviewers);
         $availableIds = $filters['availableSubmissionId'] === '' ? null
             : $grid->availableReviewerIds($contextId, $filters['availableSubmissionId']);
+        $maxima = [];
+        foreach (array_keys(ReviewerGridService::COLUMNS) as $column) {
+            $maxima[$column] = str_ends_with($column, 'Percent') ? 100 : max(1, (int) max([0, ...array_column($reviewers, $column)]));
+        }
         $reviewers = $grid->filter($reviewers, $labels, $filters, $availableIds);
         $reviewers = $this->sortReviewerRows($reviewers, $sort, $dir);
+
+        $activeRanges = [];
+        foreach ($filters['ranges'] as $column => $range) {
+            if ($range['min'] !== '' || $range['max'] !== '') {
+                $activeRanges[$column] = [
+                    min($range['min'] === '' ? 0 : $range['min'], $maxima[$column]),
+                    min($range['max'] === '' ? $maxima[$column] : $range['max'], $maxima[$column]),
+                ];
+            }
+        }
+        $hasFilters = $activeRanges || array_filter($filters['labels']) || $filters['availableSubmissionId'] !== '';
+        TemplateManager::getManager($request)->setState([
+            'grpFilters' => (object) $activeRanges,
+            'grpLabels' => $filters['labels'],
+            'grpColumns' => $filters['columns'],
+            'grpShowFilters' => $hasFilters || $request->getUserVar('showFilters'),
+        ]);
+        $columns = [];
+        foreach (ReviewerGridService::COLUMNS as $column => $label) {
+            $columns[] = [
+                'key' => $column,
+                'label' => __($label),
+                'isPercent' => str_ends_with($column, 'Percent'),
+                'max' => $maxima[$column],
+                'value' => $activeRanges[$column] ?? [0, $maxima[$column]],
+            ];
+        }
 
         $this->display($request, 'reviewers.tpl', [
             'pageTitle' => __('plugins.generic.groupReview.monitoring.reviewers.title'),
@@ -166,15 +197,12 @@ class GroupReviewHandler extends Handler
             'reviewersActionUrl' => $request->getRouter()->url($request, null, 'groupReview', 'reviewers'),
             'sort' => $sort,
             'dir' => $dir,
-            'sortUrls' => $this->monitoringSortUrls($request, $year, $sort, $dir, $filterParams),
+            'sortOrders' => $this->monitoringSortOrders($sort, $dir),
             'reviewers' => $reviewers,
             'gridFilters' => $filters,
-            'gridColumns' => ReviewerGridService::COLUMNS,
+            'columns' => $columns,
             'labelFilters' => $this->reviewerLabelOptions(),
             'totalReviewers' => $totalReviewers,
-            'resetFiltersUrl' => $request->getRouter()->url($request, null, 'groupReview', 'reviewers', null, ReviewerGridService::urlParameters([
-                'year' => $year ?? 'all', 'sort' => $sort, 'dir' => $dir, 'columns' => $filterParams['columns'],
-            ])),
             'gridFilterParams' => $filterParams,
         ]);
     }
@@ -1807,6 +1835,10 @@ class GroupReviewHandler extends Handler
     /** @return array{string, string} */
     private function monitoringSortAndDir($request): array
     {
+        $order = explode('.', $this->scalarString($request->getUserVar('order')));
+        if (count($order) === 2 && in_array($order[0], self::MONITORING_SORT_COLUMNS, true) && in_array($order[1], ['asc', 'desc'], true)) {
+            return $order;
+        }
         $requestedSort = $request->getUserVar('sort');
         $requestedDir = $request->getUserVar('dir');
         $sort = $this->scalarString($requestedSort);
@@ -1822,24 +1854,17 @@ class GroupReviewHandler extends Handler
         ];
     }
 
-    private function monitoringSortUrls($request, ?int $year, string $sort, string $dir, array $filterParams = []): array
+    private function monitoringSortOrders(string $sort, string $dir): array
     {
-        $urls = [];
+        $orders = [];
         foreach (self::MONITORING_SORT_COLUMNS as $column) {
             $nextDir = $sort === $column
                 ? ($dir === 'asc' ? 'desc' : 'asc')
                 : ($column === 'name' ? 'asc' : 'desc');
-            $urls[$column] = $request->getRouter()->url(
-                $request,
-                null,
-                'groupReview',
-                'reviewers',
-                null,
-                ReviewerGridService::urlParameters(array_merge($filterParams, ['year' => $year ?? 'all', 'sort' => $column, 'dir' => $nextDir]))
-            );
+            $orders[$column] = $column . '.' . $nextDir;
         }
 
-        return $urls;
+        return $orders;
     }
 
     private function monitoringGridParams($request): array
