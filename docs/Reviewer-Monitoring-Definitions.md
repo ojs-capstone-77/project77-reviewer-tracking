@@ -152,3 +152,27 @@ Each entry in `history`:
 | `labels` | Per label type: `name`, and `values` (list of `label`, `total`, `active`), with "Not set" last |
 
 `live` and `activity` come straight from `ReviewerStatsService::getOverview()`. Its label counts are keyed by label type and value, so the page operation turns them into the `labels` list above, adding the display names.
+
+## Reviewer grid filtering
+
+Filtering is applied by `ReviewerGridService` after the handler computes the
+table percentages, without changing the statistics definitions above.
+
+| URL setting | Meaning |
+|---|---|
+| `search` | Case-insensitive reviewer-name substring, at most 100 characters |
+| `labels[type][]` | Supported label values; OR within single-value types, AND within multi-value types |
+| `ranges[column][min]`, `ranges[column][max]` | Inclusive nonnegative integer bounds; blank means unlimited; percentages are bounded by 100 |
+| `columns[]` | Visible numeric columns; missing means all, an empty value means no numeric columns |
+| `availableSubmissionId` | Positive Submission ID; only reviewers available in an open, unexpired poll for this journal, regardless of year |
+
+Supported numeric columns are `invited`, `available`, `availablePercent`,
+`selected`, `selectedPercent`, `attended`, `attendedPercent`, `completed` and
+`current`. An undefined percentage never matches an active percentage range.
+Every active filter must match. The reviewer name and View link stay visible.
+
+The handler additionally supplies `gridFilters` (normalized settings and errors),
+`gridColumns` (column keys to translation keys), `labelFilters` (label options),
+`totalReviewers` (unfiltered count), `resetFiltersUrl`, and `gridFilterParams`.
+The existing `reviewers` variable contains only matching rows, sorted as requested.
+Overview counts are never filtered by these additional grid settings.

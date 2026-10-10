@@ -613,17 +613,6 @@
 	width: auto;
 }
 
-.grpMon__sortLink {
-	color: inherit;
-	font-weight: inherit;
-	text-decoration: none;
-}
-
-.grpMon__sortLink:hover {
-	color: #006798;
-	text-decoration: underline;
-}
-
 .grpMon__sectionRow {
 	display: flex;
 	align-items: flex-end;
@@ -651,6 +640,10 @@
 	width: 100%;
 	border-collapse: collapse;
 	margin: 0;
+}
+
+.grpMon__headerSelect {
+	width: auto;
 }
 
 .grpMon__table th,
@@ -697,25 +690,6 @@
 
 .grpMon__labels {
 	margin-top: 0.15rem;
-	color: #637381;
-	font-size: 0.8125rem;
-}
-
-.grpMon__sortArrow {
-	margin-left: 0.25rem;
-	font-size: 0.65rem;
-	color: #637381;
-}
-
-.grpMon__viewLink {
-	color: #006798;
-}
-
-.grpMon__viewLink:hover {
-	text-decoration: underline;
-}
-
-.grpMon__percent {
 	color: #637381;
 	font-size: 0.8125rem;
 }

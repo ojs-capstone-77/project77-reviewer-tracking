@@ -24,6 +24,7 @@
 			<div class="grpMon__sectionRow">
 				<h3 class="grpMon__caps">{translate key="plugins.generic.groupReview.monitoring.activity"}</h3>
 				<form class="grpMon__filters" method="get" action="{$reviewerUrl|escape}">
+					{include file=$gridStateResource}
 					<input type="hidden" name="reviewerId" value="{$reviewer.userId|intval}">
 					<select class="pkpFormField__input pkpFormField--select__input" name="year" id="grpMonYear" aria-label="{translate key="plugins.generic.groupReview.monitoring.year"}" onchange="this.form.submit()">
 						{foreach from=$yearOptions item=yearOption}
@@ -136,6 +137,7 @@
 					{csrf}
 					<input type="hidden" name="reviewerId" value="{$reviewer.userId|intval}">
 					<input type="hidden" name="year" value="{$year|escape}">
+					{include file=$gridStateResource}
 
 					<div class="grp__grid">
 						{foreach from=$labelOptions key=type item=definition}

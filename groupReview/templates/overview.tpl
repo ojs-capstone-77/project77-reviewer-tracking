@@ -23,6 +23,7 @@
 			<div class="grpMon__sectionRow">
 				<h3 class="grpMon__caps">{translate key="plugins.generic.groupReview.monitoring.activity"}</h3>
 				<form class="grpMon__filters" method="get" action="{$overviewActionUrl|escape}">
+					{include file=$gridStateResource}
 					<select class="pkpFormField__input pkpFormField--select__input" name="year" id="grpMonYear" aria-label="{translate key="plugins.generic.groupReview.monitoring.year"}" onchange="this.form.submit()">
 						{foreach from=$yearOptions item=yearOption}
 							<option value="{$yearOption.value|escape}"{if $year == $yearOption.value} selected{/if}>{$yearOption.label|escape}</option>

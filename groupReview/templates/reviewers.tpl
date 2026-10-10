@@ -1,74 +1,170 @@
 {extends file="layouts/backend.tpl"}
 
 {block name="page"}
+	{capture assign="grpApply"}$nextTick(() => document.getElementById('grpReviewerFilters').submit());{/capture}
 	<div class="grp">
 		{include file=$monitoringTabsResource activeTab="reviewers" overviewUrl=$overviewUrl reviewersUrl=$reviewersUrl}
 
-		<div class="pkpTab grpMon__page">
-			<div class="grpMon__sectionRow">
-				<h2 class="grpMon__sectionHeading">{translate key="plugins.generic.groupReview.monitoring.reviewers.title"}</h2>
-				<form class="grpMon__filters" method="get" action="{$reviewersActionUrl|escape}">
-					<input type="hidden" name="sort" value="{$sort|escape}">
-					<input type="hidden" name="dir" value="{$dir|escape}">
-					<select class="pkpFormField__input pkpFormField--select__input" name="year" id="grpMonYear" aria-label="{translate key="plugins.generic.groupReview.monitoring.year"}" onchange="this.form.submit()">
-						{foreach from=$yearOptions item=yearOption}
-							<option value="{$yearOption.value|escape}"{if $year == $yearOption.value} selected{/if}>{$yearOption.label|escape}</option>
-						{/foreach}
-					</select>
-				</form>
-			</div>
+		<div class="pkpTab">
+			{foreach from=$gridFilters.errors item=error}
+				<div class="grp__notice grp__notice--error" role="alert">{$error|escape}</div>
+			{/foreach}
 
-			{if empty($reviewers)}
-				<div class="grp__notice">{translate key="plugins.generic.groupReview.monitoring.reviewers.empty"}</div>
-			{else}
-				<div class="grp__tableWrap">
-					<table class="grpMon__table">
-						<thead>
-							<tr>
-								<th>
-									<a class="grpMon__sortLink" href="{$sortUrls.name|escape}">{translate key="plugins.generic.groupReview.monitoring.reviewer"}</a>{if $sort == 'name'}<span class="grpMon__sortArrow">{if $dir == 'asc'}▲{else}▼{/if}</span>{/if}
-								</th>
-								<th>
-									<a class="grpMon__sortLink" href="{$sortUrls.invited|escape}">{translate key="plugins.generic.groupReview.monitoring.invited"}</a>{if $sort == 'invited'}<span class="grpMon__sortArrow">{if $dir == 'asc'}▲{else}▼{/if}</span>{/if}
-								</th>
-								<th>
-									<a class="grpMon__sortLink" href="{$sortUrls.available|escape}">{translate key="plugins.generic.groupReview.monitoring.available"}</a>{if $sort == 'available'}<span class="grpMon__sortArrow">{if $dir == 'asc'}▲{else}▼{/if}</span>{/if}
-								</th>
-								<th>
-									<a class="grpMon__sortLink" href="{$sortUrls.selected|escape}">{translate key="plugins.generic.groupReview.monitoring.selected"}</a>{if $sort == 'selected'}<span class="grpMon__sortArrow">{if $dir == 'asc'}▲{else}▼{/if}</span>{/if}
-								</th>
-								<th>
-									<a class="grpMon__sortLink" href="{$sortUrls.attended|escape}">{translate key="plugins.generic.groupReview.monitoring.attended"}</a>{if $sort == 'attended'}<span class="grpMon__sortArrow">{if $dir == 'asc'}▲{else}▼{/if}</span>{/if}
-								</th>
-								<th>
-									<a class="grpMon__sortLink" href="{$sortUrls.completed|escape}">{translate key="plugins.generic.groupReview.monitoring.completed"}</a>{if $sort == 'completed'}<span class="grpMon__sortArrow">{if $dir == 'asc'}▲{else}▼{/if}</span>{/if}
-								</th>
-								<th>
-									<a class="grpMon__sortLink" href="{$sortUrls.current|escape}">{translate key="plugins.generic.groupReview.monitoring.current"}</a>{if $sort == 'current'}<span class="grpMon__sortArrow">{if $dir == 'asc'}▲{else}▼{/if}</span>{/if}
-								</th>
-								<th>{translate key="plugins.generic.groupReview.monitoring.action"}</th>
-							</tr>
-						</thead>
-						<tbody>
-							{foreach from=$reviewers item=reviewer}
-								<tr>
-									<td>
-										{$reviewer.name|escape}
-										{if $reviewer.labelsText}<div class="grpMon__labels">{$reviewer.labelsText|escape}</div>{/if}
-									</td>
-									<td>{$reviewer.invited|intval}</td>
-									<td>{if $reviewer.invited}{$reviewer.available|intval}{if $reviewer.availablePercent !== null} <span class="grpMon__percent">({$reviewer.availablePercent|intval}%)</span>{/if}{else}<span class="grp__muted" aria-hidden="true">–</span><span class="-screenReader">{translate key="plugins.generic.groupReview.monitoring.notApplicable"}</span>{/if}</td>
-									<td>{if $reviewer.available}{$reviewer.selected|intval}{if $reviewer.selectedPercent !== null} <span class="grpMon__percent">({$reviewer.selectedPercent|intval}%)</span>{/if}{else}<span class="grp__muted" aria-hidden="true">–</span><span class="-screenReader">{translate key="plugins.generic.groupReview.monitoring.notApplicable"}</span>{/if}</td>
-									<td>{if $reviewer.attendedPercent !== null}{$reviewer.attended|intval} <span class="grpMon__percent">({$reviewer.attendedPercent|intval}%)</span>{else}<span class="grp__muted" aria-hidden="true">–</span><span class="-screenReader">{translate key="plugins.generic.groupReview.monitoring.notApplicable"}</span>{/if}</td>
-									<td>{$reviewer.completed|intval}</td>
-									<td>{$reviewer.current|intval}</td>
-									<td><a class="grpMon__viewLink" href="{$reviewer.url|escape}">{translate key="common.view"}</a></td>
-								</tr>
+			<form id="grpReviewerFilters" method="get" action="{$reviewersActionUrl|escape}"></form>
+			<input type="hidden" form="grpReviewerFilters" name="sort" value="{$sort|escape}">
+			<input type="hidden" form="grpReviewerFilters" name="dir" value="{$dir|escape}">
+			<input type="hidden" form="grpReviewerFilters" name="showFilters" :value="grpShowFilters ? 1 : ''">
+			<input type="hidden" form="grpReviewerFilters" name="columns[]" value="">
+			<input v-for="column in grpColumns" :key="'column' + column" type="hidden" form="grpReviewerFilters" name="columns[]" :value="column">
+			{foreach from=$labelFilters key=type item=definition}
+				<input v-for="value in grpLabels.{$type}" :key="'{$type|escape}' + value" type="hidden" form="grpReviewerFilters" name="labels[{$type|escape}][]" :value="value">
+			{/foreach}
+			{foreach from=$columns item=column}
+				<input type="hidden" form="grpReviewerFilters" name="ranges[{$column.key|escape}][min]" :value="grpFilters.{$column.key} ? grpFilters.{$column.key}[0] : ''">
+				<input type="hidden" form="grpReviewerFilters" name="ranges[{$column.key|escape}][max]" :value="grpFilters.{$column.key} && grpFilters.{$column.key}[1] < {$column.max|intval} ? grpFilters.{$column.key}[1] : ''">
+			{/foreach}
+
+			<div class="pkpStats__panel">
+				<pkp-header>
+					<h2 id="grpReviewersLabel">{translate key="plugins.generic.groupReview.monitoring.reviewers.title"}</h2>
+					<template slot="actions">
+						<div class="pkpStats__itemsOfTotal">{translate key="plugins.generic.groupReview.filtering.results" resultCount=$reviewers|@count total=$totalReviewers}</div>
+						<div class="pkpSearch">
+							<label>
+								<span class="-screenReader">{translate key="plugins.generic.groupReview.filtering.search"}</span>
+								<input type="search" class="pkpSearch__input" form="grpReviewerFilters" name="search" value="{$gridFilters.search|escape}" maxlength="100" placeholder="{translate key="plugins.generic.groupReview.filtering.search"}" @keydown.enter.prevent="{$grpApply}">
+								<span class="pkpSearch__icons"><icon icon="search" class="pkpSearch__icons--search"></icon></span>
+							</label>
+						</div>
+						<select class="pkpFormField__input pkpFormField--select__input grpMon__headerSelect" form="grpReviewerFilters" name="year" aria-label="{translate key="plugins.generic.groupReview.monitoring.year"}" @change="{$grpApply}">
+							{foreach from=$yearOptions item=yearOption}
+								<option value="{$yearOption.value|escape}"{if $year == $yearOption.value} selected{/if}>{$yearOption.label|escape}</option>
 							{/foreach}
-						</tbody>
-					</table>
+						</select>
+						<pkp-dropdown label="{translate key="plugins.generic.groupReview.filtering.columns"}">
+							<ul>
+								{foreach from=$columns item=column}
+									{assign var="grpColumnKey" value=$column.key|json_encode|escape}
+									<li>
+										<button type="button" class="pkpDropdown__action" role="menuitemcheckbox" :aria-checked="grpColumns.includes({$grpColumnKey}) ? 'true' : 'false'" @click="grpColumns.includes({$grpColumnKey}) ? grpColumns.splice(grpColumns.indexOf({$grpColumnKey}), 1) : grpColumns.push({$grpColumnKey}); {$grpApply}">
+											<icon :icon="grpColumns.includes({$grpColumnKey}) ? 'check-square-o' : 'square-o'" :inline="true"></icon>
+											{$column.label|escape}
+										</button>
+									</li>
+								{/foreach}
+							</ul>
+						</pkp-dropdown>
+						<pkp-button :is-active="grpShowFilters" @click="grpShowFilters = !grpShowFilters; if (!grpShowFilters) {ldelim} {foreach from=$labelFilters key=type item=definition}grpLabels.{$type} = []; {/foreach}grpFilters = {ldelim}{rdelim}; document.getElementById('grpAvailableSubmission').value = ''; {$grpApply} {rdelim}">
+							<icon icon="filter" :inline="true"></icon>
+							{translate key="common.filter"}
+						</pkp-button>
+					</template>
+				</pkp-header>
+
+				<div class="listPanel__body">
+					<transition name="listPanel__sidebar">
+						<div v-show="grpShowFilters" class="listPanel__sidebar">
+							<pkp-header :is-one-line="false">
+								<h3><icon icon="filter" :inline="true"></icon> {translate key="common.filter"}</h3>
+							</pkp-header>
+							{foreach from=$labelFilters key=type item=definition}
+								<div class="listPanel__block">
+									<pkp-header><h4>{$definition.name|escape}</h4></pkp-header>
+									{foreach from=$definition.options item=option}
+										<pkp-filter
+											param="{$type|escape}"
+											title="{$option.label|escape}"
+											value="{$option.value|escape}"
+											:is-filter-active="grpLabels.{$type}.includes({$option.value|json_encode|escape})"
+											@add-filter="(param, value) => {ldelim} grpLabels[param].push(value); {$grpApply} {rdelim}"
+											@remove-filter="(param, value) => {ldelim} grpLabels[param].splice(grpLabels[param].indexOf(value), 1); {$grpApply} {rdelim}"
+										></pkp-filter>
+									{/foreach}
+								</div>
+							{/foreach}
+							<div class="listPanel__block">
+								<pkp-header><h4>{translate key="plugins.generic.groupReview.filtering.openPoll"}</h4></pkp-header>
+								<label class="-screenReader" for="grpAvailableSubmission">{translate key="plugins.generic.groupReview.filtering.submissionId"}</label>
+								<div class="pkpFormField--sizesmall"><input class="pkpFormField__input pkpFormField--text__input" id="grpAvailableSubmission" type="text" inputmode="numeric" form="grpReviewerFilters" name="availableSubmissionId" value="{$gridFilters.availableSubmissionId|escape}" placeholder="{translate key="plugins.generic.groupReview.filtering.submissionId"}" @change="{$grpApply}" @keydown.enter.prevent="{$grpApply}"></div>
+							</div>
+							<div class="listPanel__block">
+								<pkp-header><h4>{translate key="plugins.generic.groupReview.monitoring.activity"}</h4></pkp-header>
+								{foreach from=$columns item=column}
+									<pkp-filter-slider-multirange
+										param="{$column.key|escape}"
+										title="{$column.label|escape}"
+										:min="0"
+										:max="{$column.max|intval}"
+										:value="{$column.value|json_encode|escape}"
+										value-label="{translate key="common.range"}"
+										more-than-label="{translate key="common.moreThan"}"
+										less-than-label="{translate key="common.lessThan"}"
+										:is-filter-active="!!grpFilters.{$column.key}"
+										@add-filter="(param, value) => {ldelim} $set(grpFilters, param, value); {$grpApply} {rdelim}"
+										@update-filter="(param, value) => {ldelim} $set(grpFilters, param, value); {$grpApply} {rdelim}"
+										@remove-filter="(param) => {ldelim} $delete(grpFilters, param); {$grpApply} {rdelim}"
+									></pkp-filter-slider-multirange>
+								{/foreach}
+							</div>
+						</div>
+					</transition>
+
+					<div class="listPanel__items">
+						{if empty($reviewers)}
+							<div class="pkpStats__noRecords">{translate key="plugins.generic.groupReview.filtering.empty"}</div>
+						{else}
+							<div class="grp__tableWrap">
+								<table class="pkpTable" aria-labelledby="grpReviewersLabel">
+									<thead>
+										<tr>
+											<th scope="col" aria-sort="true"{if $sort == 'name'} class="-isActive"{/if}>
+												<button type="submit" form="grpReviewerFilters" name="order" value="{$sortOrders.name|escape}">
+													{translate key="plugins.generic.groupReview.monitoring.reviewer"}
+													<icon icon="{if $sort == 'name' && $dir == 'asc'}caret-up{else}caret-down{/if}" class="pkpTable__sortIcon"></icon>
+												</button>
+											</th>
+											{foreach from=$columns item=column}
+												{if in_array($column.key, $gridFilters.columns)}
+													<th scope="col" aria-sort="true"{if $sort == $column.key} class="-isActive"{/if}>
+														<button type="submit" form="grpReviewerFilters" name="order" value="{$sortOrders[$column.key]|escape}">
+															{$column.label|escape}
+															<icon icon="{if $sort == $column.key && $dir == 'asc'}caret-up{else}caret-down{/if}" class="pkpTable__sortIcon"></icon>
+														</button>
+													</th>
+												{/if}
+											{/foreach}
+										</tr>
+									</thead>
+									<tbody>
+										{foreach from=$reviewers item=reviewer}
+											<tr>
+												<td>
+													<a href="{$reviewer.url|escape}">{$reviewer.name|escape}</a>
+													{if $reviewer.labelsText}<div class="grpMon__labels">{$reviewer.labelsText|escape}</div>{/if}
+												</td>
+												{foreach from=$columns item=column}
+													{if in_array($column.key, $gridFilters.columns)}
+														{assign var="grpValue" value=$reviewer[$column.key]}
+														<td>
+															{if $grpValue === null}
+																<span aria-hidden="true">–</span><span class="-screenReader">{translate key="plugins.generic.groupReview.monitoring.notApplicable"}</span>
+															{elseif $column.isPercent}
+																{$grpValue|intval}%
+															{else}
+																{$grpValue|intval}
+															{/if}
+														</td>
+													{/if}
+												{/foreach}
+											</tr>
+										{/foreach}
+									</tbody>
+								</table>
+							</div>
+						{/if}
+					</div>
 				</div>
-			{/if}
+			</div>
 		</div>
 	</div>
 {/block}
