@@ -45,6 +45,48 @@ Edit Labels requires POST and a valid CSRF token. An unknown reviewer cannot be
 updated; malformed or invalid label values are rejected without changing labels or
 their history. A failed save returns to the reviewer page with an error notice.
 
+### Reviewer grid filtering
+
+The Reviewers toolbar provides name search, the year selector and a **Columns**
+menu. Name and View stay visible; each of the nine count/percentage columns can
+be shown or hidden independently. The **Filters** side panel contains label
+choices, inclusive minimum/maximum ranges and **Available in an open poll** by
+Submission ID. Use **Apply** for search/range edits. Label, column and year
+changes apply automatically when JavaScript is enabled; Apply also works without
+JavaScript. Each filter group has a clear button, and **Clear all filters** keeps
+the selected year, sort and column configuration.
+
+Filters combine with AND. Experience level and methodology accept any selected
+value; expertise requires every selected value. Options come from the existing
+label definitions used by the label service (label types/settings are currently
+fixed in code; this task does not introduce a label-settings editor).
+Numeric ranges use nonnegative whole numbers. Blank bounds impose no limit,
+equal bounds are valid (for example Completed 0-0), and percentage bounds are
+limited to 0-100. A percentage with no denominator is not applicable, not zero,
+so it does not match an active percentage range.
+
+The poll filter only matches invited reviewers with recorded availability in
+currently open, unexpired polls for that submission in the current journal.
+It ignores the year selector; the displayed statistics still use the selected
+year. Unknown submissions and submissions without such a poll return no matches.
+Disabled accounts remain excluded. Filtering does not expand dashboard access.
+
+The result count shows matching reviewers out of the unfiltered reviewer total.
+Filters, sorting and columns are kept in the URL across sorting, year changes,
+tabs, View/Back and label saves; no account preference or database schema is
+changed. Invalid URL filter shapes/ranges display an error rather than silently
+showing an unfiltered grid.
+
+```bash
+php plugins/generic/groupReview/tests/ReviewerGridTest.php <journal path>
+```
+
+This transactional integration script checks parsing, combined filters,
+inclusive bounds, zero/null percentages, visibility, URL state, page rendering
+and journal-scoped poll availability. Its temporary journal and fixtures are
+rolled back. Numeric text inputs are used instead of wireframe sliders, as agreed
+for this task, retaining OJS input/button classes and the plugin's existing styles.
+
 For an existing installation, run the plugin's Upgrade action before using the
 dashboard: copying the plugin directory alone does not create its new database
 tables. Back up the database first; the upgrade preserves the legacy poll tables.
