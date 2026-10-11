@@ -90,6 +90,54 @@ msgstr "Default Review Group Meeting Day Offset"
 msgid "plugins.generic.groupReview.settings.leadDays.description"
 msgstr "Minimum number of days from poll creation to any proposed meeting slot (0–365)."
 
+msgid "plugins.generic.groupReview.reference.tab"
+msgstr "Reviewer Reference"
+
+msgid "plugins.generic.groupReview.reference.template.label"
+msgstr "Reference Letter Template"
+
+msgid "plugins.generic.groupReview.reference.template.description"
+msgstr "Edit the wording used when generating a reviewer's reference letter. Use Insert Content to add reviewer details."
+
+msgid "plugins.generic.groupReview.reference.variable.reviewerName"
+msgstr "Reviewer's name"
+
+msgid "plugins.generic.groupReview.reference.variable.journalName"
+msgstr "Journal name"
+
+msgid "plugins.generic.groupReview.reference.variable.letterDate"
+msgstr "Letter date"
+
+msgid "plugins.generic.groupReview.reference.variable.reviewerSince"
+msgstr "Year the reviewer joined"
+
+msgid "plugins.generic.groupReview.reference.variable.year"
+msgstr "Reporting year"
+
+msgid "plugins.generic.groupReview.reference.variable.completedCount"
+msgstr "Reviews completed in the year"
+
+msgid "plugins.generic.groupReview.reference.variable.ledCount"
+msgstr "Reviews led in the year"
+
+msgid "plugins.generic.groupReview.reference.variable.leaderCountForYear"
+msgstr "Reviewers who led a group in the year"
+
+msgid "plugins.generic.groupReview.reference.variable.contributionsList"
+msgstr "List of ways the reviewer contributed"
+
+msgid "plugins.generic.groupReview.reference.generate"
+msgstr "Generate Reference"
+
+msgid "plugins.generic.groupReview.reference.pageTitle"
+msgstr "Reference Letter"
+
+msgid "plugins.generic.groupReview.reference.generatePdf"
+msgstr "Generate PDF"
+
+msgid "plugins.generic.groupReview.reference.backToReviewer"
+msgstr "Back"
+
 msgid "plugins.generic.groupReview.authorization.leader"
 msgstr "Only a current Review Group Leader (RGL) assigned to this submission in External Review may manage its poll."
 
@@ -591,6 +639,9 @@ msgstr "OJS could not add the Review Group Members as participants and create th
 
 msgid "plugins.generic.groupReview.error.invalidRequest"
 msgstr "The request method or security token was invalid."
+
+msgid "plugins.generic.groupReview.error.referencePdfUnavailable"
+msgstr "The PDF generator is not installed for this plugin yet."
 
 msgid "plugins.generic.groupReview.emailVariable.recipientName"
 msgstr "Recipient name"

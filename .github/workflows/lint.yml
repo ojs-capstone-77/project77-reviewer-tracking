@@ -25,7 +25,7 @@ jobs:
       - name: Run PHP syntax check
         run: |
           find . -name "*.php" \
-            -not -path "./vendor/*" \
+            -not -path "*/vendor/*" \
             -not -path "./node_modules/*" \
             | xargs -I{} php -l {}
 
@@ -73,11 +73,13 @@ jobs:
         uses: actions/cache@v5
         with:
           path: ~/.composer/cache
-          key: ${{ runner.os }}-composer-${{ hashFiles('composer.lock') }}
+          key: ${{ runner.os }}-composer-${{ hashFiles('composer.lock', 'groupReview/composer.lock') }}
           restore-keys: ${{ runner.os }}-composer-
 
       - name: Install Composer dependencies
-        run: composer install --no-progress --prefer-dist
+        run: |
+          composer install --no-progress --prefer-dist
+          composer install -d groupReview --no-progress --prefer-dist --no-dev
 
       - name: Checkout OJS core (for PHPStan stubs)
         run: |

@@ -9,6 +9,7 @@
 namespace APP\plugins\generic\groupReview;
 
 use APP\core\Application;
+use APP\plugins\generic\groupReview\classes\forms\ReferenceTemplateForm;
 use APP\plugins\generic\groupReview\classes\GroupReviewService;
 use APP\plugins\generic\groupReview\classes\mail\GroupReviewParticipationSubmitted;
 use APP\plugins\generic\groupReview\classes\mail\GroupReviewPollClosing;
@@ -20,6 +21,7 @@ use APP\plugins\generic\groupReview\pages\groupReview\GroupReviewHandler;
 use APP\template\TemplateManager;
 use PKP\components\forms\FieldOptions;
 use PKP\components\forms\FieldText;
+use PKP\core\PKPApplication;
 use PKP\decision\Decision;
 use PKP\plugins\GenericPlugin;
 use PKP\plugins\Hook;
@@ -50,7 +52,9 @@ class GroupReviewPlugin extends GenericPlugin
         Hook::add('Form::config::before', [$this, 'addToForm']);
         Hook::add('Schema::get::context', [$this, 'addToContextSchema']);
         Hook::add('Template::Workflow', [$this, 'addWorkflowTab']);
+        Hook::add('Template::Settings::workflow::review', [$this, 'addReferenceTemplateTab']);
         Hook::add('TemplateManager::display', [$this, 'loadAssets']);
+        Hook::add('TemplateManager::display', [$this, 'addReferenceTemplateFormState']);
         Hook::add('TemplateManager::setupBackendPage', [$this, 'addMonitoringMenuItem']);
         Hook::add('AcronPlugin::parseCronTab', [$this, 'addScheduledTasks']);
         Hook::add('Mailer::Mailables', [$this, 'addMailables']);
@@ -189,6 +193,7 @@ class GroupReviewPlugin extends GenericPlugin
         $schema->properties->groupReviewDefaultSlots = $this->schemaProperty('integer', ['nullable', 'integer', 'min:1', 'max:20']);
         $schema->properties->groupReviewReminderHours = $this->schemaProperty('integer', ['nullable', 'integer', 'min:1', 'max:720']);
         $schema->properties->groupReviewMinimumLeadDays = $this->schemaProperty('integer', ['nullable', 'integer', 'min:0', 'max:365']);
+        $schema->properties->groupReviewReferenceTemplate = $this->schemaProperty('string', ['nullable']);
 
         return false;
     }
@@ -341,6 +346,56 @@ class GroupReviewPlugin extends GenericPlugin
             $this->assetUrl($request, 'css/app.css'),
             ['contexts' => ['backend']]
         );
+        return false;
+    }
+
+    /** Make the reference letter template form available on Settings > Workflow > Review. */
+    public function addReferenceTemplateFormState($hookName, $args): bool
+    {
+        $templateMgr = $args[0];
+        $request = Application::get()->getRequest();
+        $context = $request->getContext();
+
+        if (!$context
+            || !$this->getEnabled((int) $context->getId())
+            || $request->getRequestedPage() !== 'management'
+            || $request->getRequestedOp() !== 'settings'
+            || ($request->getRequestedArgs()[0] ?? null) !== 'workflow') {
+            return false;
+        }
+
+        $dispatcher = $request->getDispatcher();
+        $apiUrl = $dispatcher->url($request, PKPApplication::ROUTE_API, $context->getPath(), 'contexts/' . $context->getId());
+        $localeNames = $context->getSupportedFormLocaleNames();
+        $locales = array_map(
+            fn (string $locale, string $name): array => ['key' => $locale, 'label' => $name],
+            array_keys($localeNames),
+            $localeNames
+        );
+
+        $form = new ReferenceTemplateForm($apiUrl, $locales, $context);
+
+        $components = (array) $templateMgr->getState('components');
+        $components[$form->id] = $form->getConfig();
+        $templateMgr->setState(['components' => $components]);
+
+        return false;
+    }
+
+    /** Add the Reviewer Reference tab to Settings > Workflow > Review. */
+    public function addReferenceTemplateTab($hookName, $args): bool
+    {
+        $output = &$args[2];
+        $request = Application::get()->getRequest();
+        $context = $request->getContext();
+
+        if (!$context || !$this->getEnabled((int) $context->getId())) {
+            return false;
+        }
+
+        $templateMgr = TemplateManager::getManager($request);
+        $output .= $templateMgr->fetch($this->getTemplateResource('settings/referenceTemplateTab.tpl'));
+
         return false;
     }
 
