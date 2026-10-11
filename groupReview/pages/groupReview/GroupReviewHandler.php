@@ -10,6 +10,7 @@ use APP\core\Application;
 use APP\facades\Repo;
 use APP\handler\Handler;
 use APP\notification\NotificationManager;
+use APP\plugins\generic\groupReview\classes\forms\ReferenceTemplateForm;
 use APP\plugins\generic\groupReview\classes\GroupReviewService;
 use APP\plugins\generic\groupReview\classes\mail\GroupReviewParticipationSubmitted;
 use APP\plugins\generic\groupReview\classes\mail\GroupReviewPollCreated;
@@ -19,7 +20,6 @@ use APP\plugins\generic\groupReview\classes\notification\Notification as GroupRe
 use APP\plugins\generic\groupReview\classes\ParticipationService;
 use APP\plugins\generic\groupReview\classes\ReviewerGridService;
 use APP\plugins\generic\groupReview\classes\ReviewerLabelService;
-use APP\plugins\generic\groupReview\classes\forms\ReferenceTemplateForm;
 use APP\plugins\generic\groupReview\classes\ReviewerStatsService;
 use APP\plugins\generic\groupReview\classes\security\authorization\EditorRequiredPolicy;
 use APP\plugins\generic\groupReview\classes\security\authorization\InviteeRequiredPolicy;
