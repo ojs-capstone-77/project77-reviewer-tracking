@@ -152,6 +152,19 @@ class ReviewerStatsService
         return $years;
     }
 
+    public function getLeaderCountForYear(int $contextId, ?int $year): int
+    {
+        $data = $this->load($contextId);
+        $leaders = [];
+        foreach ($data['polls'] as $poll) {
+            if ($poll['finalized'] && $this->inYear($poll, $year)) {
+                $leaders[$poll['leaderId']] = true;
+            }
+        }
+
+        return count($leaders);
+    }
+
     public function getReviewerRow(int $contextId, int $userId, ?int $year): ?array
     {
         $data = $this->load($contextId);

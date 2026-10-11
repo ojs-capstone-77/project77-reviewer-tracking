@@ -10,7 +10,10 @@
 			{/if}
 			<div class="grpMon__reviewerHeader">
 				<h2 class="grpMon__reviewerName">{$reviewer.name|escape}</h2>
-				<button type="button" class="pkpButton" @click="$modal.show('grpEditLabels')">{translate key="plugins.generic.groupReview.monitoring.editLabels"}</button>
+				<div class="grpMon__reviewerActions">
+					<a class="pkpButton" href="{$referenceUrl|escape}">{translate key="plugins.generic.groupReview.reference.generate"}</a>
+					<button type="button" class="pkpButton" @click="$modal.show('grpEditLabels')">{translate key="plugins.generic.groupReview.monitoring.editLabels"}</button>
+				</div>
 			</div>
 
 			<dl class="grpMon__kv grpMon__kv--aligned">

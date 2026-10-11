@@ -19,6 +19,7 @@ use APP\plugins\generic\groupReview\classes\notification\Notification as GroupRe
 use APP\plugins\generic\groupReview\classes\ParticipationService;
 use APP\plugins\generic\groupReview\classes\ReviewerGridService;
 use APP\plugins\generic\groupReview\classes\ReviewerLabelService;
+use APP\plugins\generic\groupReview\classes\forms\ReferenceTemplateForm;
 use APP\plugins\generic\groupReview\classes\ReviewerStatsService;
 use APP\plugins\generic\groupReview\classes\security\authorization\EditorRequiredPolicy;
 use APP\plugins\generic\groupReview\classes\security\authorization\InviteeRequiredPolicy;
@@ -59,7 +60,7 @@ class GroupReviewHandler extends Handler
     private const PARTICIPATION_READ_OPERATIONS = ['getParticipation'];
     private const PARTICIPATION_DATE_FORMAT = 'j F Y, H:i';
     private const MONITORING_DATE_FORMAT = 'j F Y';
-    private const MONITORING_OPERATIONS = ['overview', 'reviewers', 'reviewer', 'saveLabels'];
+    private const MONITORING_OPERATIONS = ['overview', 'reviewers', 'reviewer', 'saveLabels', 'reference', 'generateReferencePdf'];
     private const MONITORING_SORT_COLUMNS = ['name', 'invited', 'available', 'availablePercent', 'selected', 'selectedPercent', 'completed', 'current', 'attended', 'attendedPercent'];
 
     public function __construct(GroupReviewPlugin $plugin)
@@ -301,6 +302,7 @@ class GroupReviewHandler extends Handler
             'labelHistory' => $labelService->getHistory($contextId, $reviewerId),
             'labelSaveError' => (bool) $request->getUserVar('labelSaveError'),
             'saveLabelsUrl' => $request->getRouter()->url($request, null, 'groupReview', 'saveLabels'),
+            'referenceUrl' => $request->getRouter()->url($request, null, 'groupReview', 'reference', null, ['reviewerId' => $row['userId'], 'year' => $year ?? 'all']),
             'gridFilterParams' => $filterParams,
             'gridStateResource' => $this->plugin->getTemplateResource('reviewerGridState.tpl'),
             'backUrl' => $request->getRouter()->url($request, null, 'groupReview', 'reviewers', null, ReviewerGridService::urlParameters(array_merge(
@@ -367,6 +369,116 @@ class GroupReviewHandler extends Handler
             'reviewerId' => $reviewerId,
             'year' => $year ?? 'all',
         ])));
+    }
+
+    public function reference($args, $request): void
+    {
+        $context = $request->getContext();
+        $contextId = (int) $context->getId();
+        $reviewerId = $this->monitoringReviewerId($request);
+        $stats = new ReviewerStatsService();
+        $years = $stats->getYears($contextId);
+        $year = $this->monitoringYear($request, $years);
+        $row = $stats->getReviewerRow($contextId, $reviewerId, $year);
+        if (!$row) {
+            $this->displayMessage($request, 'plugins.generic.groupReview.error.reviewerNotFound');
+            return;
+        }
+
+        $template = (string) ($context->getData('groupReviewReferenceTemplate') ?: ReferenceTemplateForm::defaultTemplate());
+        $letter = $this->renderReferenceLetter($template, [
+            'reviewerName' => $row['name'],
+            'journalName' => $context->getLocalizedData('name'),
+            'letterDate' => date('l jS F Y'),
+            'reviewerSince' => $row['reviewerSince'] === null ? '' : $this->service->formatUtc($row['reviewerSince'], 'UTC', 'Y'),
+            'year' => (string) ($year ?? date('Y')),
+            'completedCount' => (string) $row['completed'],
+            'ledCount' => (string) $row['timesLed'],
+            'leaderCountForYear' => (string) $stats->getLeaderCountForYear($contextId, $year),
+            'contributionsList' => $this->referenceContributionsList($stats->getContributionCounts($contextId, $reviewerId, $year)),
+        ]);
+
+        $this->display($request, 'reference.tpl', [
+            'pageTitle' => $row['name'],
+            'reviewer' => [
+                'userId' => $row['userId'],
+                'name' => $row['name'],
+            ],
+            'year' => $year ?? 'all',
+            'yearOptions' => $this->monitoringYearOptions($years),
+            'referenceUrl' => $request->getRouter()->url($request, null, 'groupReview', 'reference'),
+            'letterContent' => $letter,
+            'generatePdfUrl' => $request->getRouter()->url($request, null, 'groupReview', 'generateReferencePdf'),
+            'backUrl' => $request->getRouter()->url($request, null, 'groupReview', 'reviewer', null, [
+                'reviewerId' => $row['userId'],
+                'year' => $year ?? 'all',
+            ]),
+        ]);
+    }
+
+    public function generateReferencePdf($args, $request): void
+    {
+        if (!$request->isPost() || !$request->checkCSRF()) {
+            $this->displayMessage($request, 'plugins.generic.groupReview.error.invalidRequest');
+            return;
+        }
+
+        $contextId = (int) $request->getContext()->getId();
+        $reviewerId = $this->monitoringReviewerId($request);
+        $stats = new ReviewerStatsService();
+        $row = $stats->getReviewerRow($contextId, $reviewerId, null);
+        if ($reviewerId < 1 || !$row) {
+            $this->displayMessage($request, 'plugins.generic.groupReview.error.reviewerNotFound');
+            return;
+        }
+
+        $autoloadPath = $this->plugin->getPluginPath() . '/vendor/autoload.php';
+        if (!file_exists($autoloadPath)) {
+            $this->displayMessage($request, 'plugins.generic.groupReview.error.referencePdfUnavailable');
+            return;
+        }
+        require_once $autoloadPath;
+
+        $content = (string) $request->getUserVar('letterContent');
+        $dompdf = new \Dompdf\Dompdf();
+        $dompdf->loadHtml($content);
+        $dompdf->setPaper('A4', 'portrait');
+        $dompdf->render();
+        $output = $dompdf->output();
+
+        $filename = preg_replace('/[^A-Za-z0-9]+/', '_', $row['name']) . '_reference.pdf';
+        header('Content-Type: application/pdf');
+        header('Content-Length: ' . strlen($output));
+        header('Content-Disposition: attachment;filename=' . $filename . ';filename*=UTF-8\'\'' . rawurlencode($filename));
+        echo $output;
+    }
+
+    private function renderReferenceLetter(string $template, array $values): string
+    {
+        $template = preg_replace('/<p>\s*\{\$contributionsList\}\s*<\/p>/', '{$contributionsList}', $template);
+
+        $tokens = [];
+        foreach ($values as $key => $value) {
+            $tokens['{$' . $key . '}'] = $value;
+        }
+
+        return strtr($template, $tokens);
+    }
+
+    private function referenceContributionsList(array $counts): string
+    {
+        $items = $this->monitoringCounts($counts, ParticipationService::CONTRIBUTION_OPTIONS);
+        if (!$items) {
+            return '<p>' . htmlspecialchars(__('plugins.generic.groupReview.monitoring.history.noAnswers'), ENT_QUOTES) . '</p>';
+        }
+
+        $html = '<ul>';
+        foreach ($items as $item) {
+            $html .= '<li>' . htmlspecialchars($item['label'], ENT_QUOTES) . '</li>';
+        }
+        $html .= '</ul>';
+
+        return $html;
     }
 
     public function participation($args, $request): void
