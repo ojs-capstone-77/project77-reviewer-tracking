@@ -1,6 +1,6 @@
 msgid ""
 msgstr ""
-"Project-Id-Version: Group Review 2.4.0.1\n"
+"Project-Id-Version: Group Review 2.5.0.0\n"
 "PO-Revision-Date: 2026-07-19 00:00+1000\n"
 "Last-Translator: Group Review Plugin Maintainers\n"
 "Language-Team: English\n"
@@ -11,6 +11,33 @@ msgstr ""
 
 msgid "plugins.generic.groupReview.displayName"
 msgstr "Group Review"
+
+msgid "plugins.generic.groupReview.configuration.title"
+msgstr "Participation form configuration"
+
+msgid "plugins.generic.groupReview.configuration.description"
+msgstr "Configure future participation forms for this journal. Saved forms retain their original fields, options and requirements, including when edited or resubmitted."
+
+msgid "plugins.generic.groupReview.configuration.requiredFields"
+msgstr "Required fields"
+
+msgid "plugins.generic.groupReview.configuration.requiredHint"
+msgstr "Checked fields must be completed for every reviewer on Save or Submit. Unchecked fields remain visible and optional."
+
+msgid "plugins.generic.groupReview.configuration.locked"
+msgstr "Reviewer names, Other comments per reviewer and General comments for the editors are always present and cannot be removed. Attendance is always recorded; an optional unanswered attendance field is saved as Not recorded."
+
+msgid "plugins.generic.groupReview.configuration.options"
+msgstr "Shaping feedback options"
+
+msgid "plugins.generic.groupReview.configuration.optionName"
+msgstr "Option name"
+
+msgid "plugins.generic.groupReview.configuration.required"
+msgstr "Required"
+
+msgid "plugins.generic.groupReview.configuration.optional"
+msgstr "Optional"
 
 msgid "plugins.generic.groupReview.description"
 msgstr "Coordinates journal-scoped group-review meeting polls in OJS 3.4 without core file or template modifications."

@@ -98,11 +98,51 @@ The checks use the existing fixture generator inside a database transaction, cov
 page rendering, access policies, URL defaults, data contracts, statistics and label
 saves, and roll back test records afterward. Use a development or staging journal.
 
+## Configurable participation forms
+
+Editors and managers can open **Settings > Workflow > Review > Participation
+form configuration**. Check a field to make it required on both Save and Submit;
+unchecked fields stay visible and optional. The seven supported fields are
+attendance, contribution types, strengths, development opportunities, shaping
+feedback response, comments on contributions and comments on shaping feedback.
+Reviewer names, per-reviewer Other comments and General comments for editors
+always remain on the form. These comments can be left blank.
+
+Editors can add, rename or remove shaping feedback options. At least one option
+must remain; names are unique ignoring case and have a 150-character maximum.
+Settings are journal-scoped, require editor permissions and are saved with POST
+and CSRF protection. Attendance choices, contribution-type choices and reviewer
+label configuration are not editable in this task.
+
+Configuration is snapshotted at a form's first successful save, including draft
+saves. Subsequent journal changes apply only to unsaved future forms. Saved forms
+keep their original fields, requirements, option identities and names, including
+when edited or resubmitted. Pre-upgrade forms retain the original field set and
+defaults, without acquiring new fields. History and answer counts continue to
+display removed or renamed shaping options using their historical names.
+An unsaved form opened before a settings change must be reloaded before saving;
+validation errors keep entered reviewer text on screen and do not save partial
+changes.
+
+Upgrade the plugin to **2.5.0.0** using OJS's plugin upgrade mechanism before using
+the feature. The idempotent migration adds nullable fields and the form snapshot;
+it does not remove or rewrite existing participation records.
+
+```bash
+php plugins/generic/groupReview/tests/ParticipationConfigurationTest.php <journal path>
+```
+
+This integration script checks journal isolation, required-field enforcement,
+option management, atomic validation, configuration snapshots, legacy records,
+history, editor permissions, CSRF and actual template rendering. Fixtures and
+settings are rolled back.
+
 ## Participation and statistics tests
 
 The participation unit scripts use the current per-reviewer fields and the
-form-level submission status, rather than the removed `contribution_types` and
-per-reviewer `status` fields:
+form-level submission status. Contribution types are a separate fixed-choice
+list, stored independently of shaping feedback responses; per-reviewer `status`
+has been replaced by form-level status:
 
 ```bash
 php plugins/generic/groupReview/tests/ParticipationServiceTest.php
