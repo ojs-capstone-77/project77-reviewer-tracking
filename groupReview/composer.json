@@ -1,0 +1,9 @@
+{
+	"name": "ojs-capstone-77/group-review-reference",
+	"require": {
+		"dompdf/dompdf": "^3.1"
+	},
+	"config": {
+		"vendor-dir": "vendor"
+	}
+}
