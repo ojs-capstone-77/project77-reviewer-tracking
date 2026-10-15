@@ -1,6 +1,6 @@
 # Configuration Requirements Participation Form 
 
-**Prepared by:** Jahan Haidari (BA)
+**Creator by:** Jahan Haidari (BA)
 
 **Team:** 77
 
