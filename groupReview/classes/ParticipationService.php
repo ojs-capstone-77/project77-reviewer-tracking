@@ -55,7 +55,7 @@ class ParticipationService
      * session rather than trusted from request data.
      *
      * @param array<int, array<string, mixed>> $reviewers
-     * @param array{general_comments?:?string, submission_comment?:?string} $form
+     * @param array{general_comments?:?string, submission_comment?:?string, configuration_token?:?string} $form
      *
      * @return array{
      *   status:string,
@@ -83,6 +83,11 @@ class ParticipationService
                 throw new InvalidArgumentException('The group review session has no leader.');
             }
 
+            $configuration = (new ParticipationConfiguration())->forForm($contextId, $sessionId);
+            if (isset($form['configuration_token']) && $form['configuration_token'] !== ParticipationConfiguration::token($configuration)) {
+                throw new InvalidArgumentException('The form configuration changed. Reload the form before saving.');
+            }
+            $this->saveFormRecord($contextId, $sessionId, $userId, $form, $submit, $configuration);
             $saved = [];
             foreach ($reviewers as $data) {
                 $reviewerUserId = $this->positiveInteger(
@@ -92,7 +97,6 @@ class ParticipationService
                 $saved[$reviewerUserId] = $this->saveReviewer($contextId, $session, $reviewerUserId, $data);
             }
 
-            $this->saveFormRecord($contextId, $sessionId, $userId, $form, $submit);
             $current = $this->getFormRecord($contextId, $sessionId);
 
             return [
@@ -181,12 +185,13 @@ class ParticipationService
      *   reviewer_user_id:int, leader_user_id:int, attendance:string,
      *   attendance_other?:?string, contribution_comments?:?string,
      *   shaping_feedback_types?:string[], shaping_feedback_comments?:?string,
-     *   other_contribution?:?string
+     *   other_contribution?:?string, contribution_types?:string[],
+     *   strengths?:?string, development_opportunities?:?string
      * } $data
      */
     public function create(int $contextId, array $data): int
     {
-        $record = $this->validate($contextId, $data);
+        $record = $this->validate($contextId, $data, (new ParticipationConfiguration())->forForm($contextId, (int) ($data['session_id'] ?? 0)));
         $now = gmdate('Y-m-d H:i:s');
 
         return (int) DB::table('group_review_participation')->insertGetId([
@@ -202,6 +207,9 @@ class ParticipationService
             'shaping_feedback_types' => json_encode($record['shaping_feedback_types'], JSON_THROW_ON_ERROR),
             'shaping_feedback_comments' => $record['shaping_feedback_comments'],
             'other_contribution' => $record['other_contribution'],
+            'contribution_types' => json_encode($record['contribution_types'], JSON_THROW_ON_ERROR),
+            'strengths' => $record['strengths'],
+            'development_opportunities' => $record['development_opportunities'],
             'created_at' => $now,
             'updated_at' => $now,
         ], 'participation_id');
@@ -269,7 +277,7 @@ class ParticipationService
             return false;
         }
 
-        $record = $this->validate($contextId, array_merge($current, $data));
+        $record = $this->validate($contextId, array_merge($current, $data), (new ParticipationConfiguration())->forForm($contextId, (int) $current['session_id']));
         $updated = DB::table('group_review_participation')
             ->where('context_id', $contextId)
             ->where('participation_id', $participationId)
@@ -285,6 +293,9 @@ class ParticipationService
                 'shaping_feedback_types' => json_encode($record['shaping_feedback_types'], JSON_THROW_ON_ERROR),
                 'shaping_feedback_comments' => $record['shaping_feedback_comments'],
                 'other_contribution' => $record['other_contribution'],
+                'contribution_types' => json_encode($record['contribution_types'], JSON_THROW_ON_ERROR),
+                'strengths' => $record['strengths'],
+                'development_opportunities' => $record['development_opportunities'],
                 'updated_at' => gmdate('Y-m-d H:i:s'),
             ]);
 
@@ -338,12 +349,13 @@ class ParticipationService
      * Upsert the form-level record. Only form fields present in $form are
      * changed. A form stays submitted once submitted, even when edited later.
      */
-    private function saveFormRecord(int $contextId, int $sessionId, int $userId, array $form, bool $submit): void
+    private function saveFormRecord(int $contextId, int $sessionId, int $userId, array $form, bool $submit, array $configuration): void
     {
         $now = gmdate('Y-m-d H:i:s');
         $values = [
             'updated_at' => $now,
             'updated_by' => $userId,
+            'configuration' => json_encode($configuration, JSON_THROW_ON_ERROR),
         ];
         if (array_key_exists('general_comments', $form)) {
             $values['general_comments'] = $this->text($form['general_comments'], 'general comments');
@@ -381,7 +393,7 @@ class ParticipationService
         return $row ? (array) $row : null;
     }
 
-    private function validate(int $contextId, array $data): array
+    private function validate(int $contextId, array $data, ?array $configuration = null): array
     {
         if ($contextId <= 0) {
             throw new InvalidArgumentException('The context ID must be positive.');
@@ -394,12 +406,13 @@ class ParticipationService
             throw new InvalidArgumentException('The attendance value is invalid.');
         }
 
-        $shapingTypes = $this->validateList($data['shaping_feedback_types'] ?? [], array_keys(self::CONTRIBUTION_OPTIONS), 'shaping feedback types');
+        $configuration ??= ParticipationConfiguration::defaults();
+        $shapingTypes = $this->validateList($data['shaping_feedback_types'] ?? [], array_keys($configuration['options']), 'shaping feedback types');
         $attendanceOther = $data['attendance'] === self::ATTENDANCE_OTHER
             ? $this->text($data['attendance_other'] ?? null, 'attendance details')
             : null;
 
-        return [
+        $record = [
             'session_id' => (int) $data['session_id'],
             'review_round_id' => (int) $data['review_round_id'],
             'submission_id' => (int) $data['submission_id'],
@@ -411,7 +424,22 @@ class ParticipationService
             'shaping_feedback_types' => $shapingTypes,
             'shaping_feedback_comments' => $this->text($data['shaping_feedback_comments'] ?? null, 'shaping feedback comments'),
             'other_contribution' => $this->text($data['other_contribution'] ?? null, 'other contribution'),
+            'contribution_types' => $this->validateList($data['contribution_types'] ?? [], array_keys(ParticipationConfiguration::CONTRIBUTION_TYPES), 'contribution types'),
+            'strengths' => $this->text($data['strengths'] ?? null, 'strengths'),
+            'development_opportunities' => $this->text($data['development_opportunities'] ?? null, 'development opportunities'),
         ];
+        foreach ($configuration['fields'] as $field => $required) {
+            if ($required && ($record[$field] === null || $record[$field] === '' || $record[$field] === []
+                || ($field === 'attendance' && $record[$field] === self::ATTENDANCE_NOT_RECORDED))) {
+                throw new InvalidArgumentException(ParticipationConfiguration::FIELDS[$field] . ' is required.');
+            }
+        }
+        foreach (['contribution_types', 'strengths', 'development_opportunities'] as $field) {
+            if (!array_key_exists($field, $configuration['fields']) && $record[$field] !== null && $record[$field] !== [] && $record[$field] !== '') {
+                throw new InvalidArgumentException(ParticipationConfiguration::FIELDS[$field] . ' is not part of this saved form.');
+            }
+        }
+        return $record;
     }
 
     private function positiveInteger(mixed $value, string $label): int
@@ -452,6 +480,7 @@ class ParticipationService
     private function hydrate(array $row): array
     {
         $row['shaping_feedback_types'] = json_decode((string) $row['shaping_feedback_types'], true, 512, JSON_THROW_ON_ERROR);
+        $row['contribution_types'] = empty($row['contribution_types']) ? [] : json_decode($row['contribution_types'], true, 512, JSON_THROW_ON_ERROR);
 
         return $row;
     }

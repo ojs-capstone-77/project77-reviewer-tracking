@@ -27,11 +27,13 @@
 			{if $saveError}
 				<div class="grp__notice grp__notice--error">{translate key="plugins.generic.groupReview.participation.error.saveFailed"}</div>
 			{/if}
+			{if $validationError}<div class="grp__notice grp__notice--error" role="alert">{$validationError|escape}</div>{/if}
 
 			<form id="grpParticipationForm" method="post" action="{$saveUrl|escape}" data-grp-current-page="{$page|intval}" data-grp-page-count="{$pageCount|intval}">
 			{csrf}
 			<input type="hidden" name="sessionId" value="{$sessionId|intval}">
 			<input type="hidden" name="page" value="{$page|intval}">
+			<input type="hidden" name="configurationToken" value="{$configurationToken|escape}">
 
 			<div class="grpTool__pagination">
 				<div class="grpTool__paginationGroup">
@@ -75,10 +77,10 @@
 						<td colspan="{$columnCount}">Review meeting</td>
 					</tr>
 					<tr>
-						<td>Meeting attendance</td>
+						<td>Meeting attendance <span class="grpTool__matrixHint">{if $configuration.fields.attendance}{translate key="plugins.generic.groupReview.configuration.required"}{else}{translate key="plugins.generic.groupReview.configuration.optional"}{/if}</span></td>
 						{foreach from=$reviewers item=reviewer}
 							<td data-grp-page="{$reviewer.page}"{if $reviewer.page !== $page} hidden{/if}>
-								<select class="pkpFormField__input pkpFormField--select__input grpTool__attendanceSelect" name="reviewers[{$reviewer.id|intval}][attendance]">
+								<select aria-label="Meeting attendance: {$reviewer.name|escape}" aria-required="{if $configuration.fields.attendance}true{else}false{/if}" class="pkpFormField__input pkpFormField--select__input grpTool__attendanceSelect" name="reviewers[{$reviewer.id|intval}][attendance]">
 									{foreach from=$attendanceOptions key=optionKey item=optionLabel}
 										<option value="{$optionKey}"{if $reviewer.attendance === $optionKey} selected{/if}>{$optionLabel|escape}</option>
 									{/foreach}
@@ -90,9 +92,37 @@
 							<td data-grp-page="{$lastPage}"{if $lastPage !== $page} hidden{/if}></td>
 						{/foreach}
 					</tr>
+					{if array_key_exists('contribution_types', $configuration.fields)}
+					<tr>
+						<td>Contribution types <span class="grpTool__matrixHint">{if $configuration.fields.contribution_types}{translate key="plugins.generic.groupReview.configuration.required"}{else}{translate key="plugins.generic.groupReview.configuration.optional"}{/if}</span></td>
+						{foreach from=$reviewers item=reviewer}
+							<td data-grp-page="{$reviewer.page}"{if $reviewer.page !== $page} hidden{/if}>
+								{foreach from=$contributionTypeOptions key=optionKey item=optionLabel}
+									<label class="grpTool__check"><input type="checkbox" name="reviewers[{$reviewer.id|intval}][contributionTypes][]" value="{$optionKey|escape}"{if $reviewer.contributionTypeChecked[$optionKey]} checked{/if}> {$optionLabel|escape}</label>
+								{/foreach}
+							</td>
+						{/foreach}
+						{foreach from=$emptyReviewerSlots item=_emptySlot}<td data-grp-page="{$lastPage}"{if $lastPage !== $page} hidden{/if}></td>{/foreach}
+					</tr>
+					{/if}
+					{foreach from=['strengths' => 'Strengths demonstrated', 'development_opportunities' => 'Development opportunities'] key=field item=label}
+					{if array_key_exists($field, $configuration.fields)}
+					<tr>
+						<td>{$label|escape} <span class="grpTool__matrixHint">{if $configuration.fields[$field]}{translate key="plugins.generic.groupReview.configuration.required"}{else}{translate key="plugins.generic.groupReview.configuration.optional"}{/if}</span></td>
+						{foreach from=$reviewers item=reviewer}
+							<td data-grp-page="{$reviewer.page}"{if $reviewer.page !== $page} hidden{/if}>
+								{if $field === 'strengths'}<textarea aria-label="{$label|escape}: {$reviewer.name|escape}" aria-required="{if $configuration.fields[$field]}true{else}false{/if}" class="grpTool__matrixTextarea" name="reviewers[{$reviewer.id|intval}][strengths]">{$reviewer.strengths|escape}</textarea>
+								{else}<textarea aria-label="{$label|escape}: {$reviewer.name|escape}" aria-required="{if $configuration.fields[$field]}true{else}false{/if}" class="grpTool__matrixTextarea" name="reviewers[{$reviewer.id|intval}][developmentOpportunities]">{$reviewer.developmentOpportunities|escape}</textarea>{/if}
+							</td>
+						{/foreach}
+						{foreach from=$emptyReviewerSlots item=_emptySlot}<td data-grp-page="{$lastPage}"{if $lastPage !== $page} hidden{/if}></td>{/foreach}
+					</tr>
+					{/if}
+					{/foreach}
 					<tr>
 						<td>
 							Comments on contributions
+							<span class="grpTool__matrixHint">{if $configuration.fields.contribution_comments}{translate key="plugins.generic.groupReview.configuration.required"}{else}{translate key="plugins.generic.groupReview.configuration.optional"}{/if}</span>
 							<div class="grpTool__matrixHint">e.g. level of preparedness, interaction with others, depth of contributions. Focus on elements that stand out by their strengths or indicate where professional development might be required; no need to comment on expected levels of contributions.</div>
 						</td>
 						{foreach from=$reviewers item=reviewer}
@@ -107,7 +137,7 @@
 						<td colspan="{$columnCount}">Feedback response</td>
 					</tr>
 					<tr>
-						<td>Contributions</td>
+						<td>Contributions <span class="grpTool__matrixHint">{if $configuration.fields.shaping_feedback_types}{translate key="plugins.generic.groupReview.configuration.required"}{else}{translate key="plugins.generic.groupReview.configuration.optional"}{/if}</span></td>
 						{foreach from=$reviewers item=reviewer}
 							<td data-grp-page="{$reviewer.page}"{if $reviewer.page !== $page} hidden{/if}>
 								<div class="grpTool__checks grpTool__checks--stacked">
@@ -128,6 +158,7 @@
 					<tr>
 						<td>
 							Comments on contributions
+							<span class="grpTool__matrixHint">{if $configuration.fields.shaping_feedback_comments}{translate key="plugins.generic.groupReview.configuration.required"}{else}{translate key="plugins.generic.groupReview.configuration.optional"}{/if}</span>
 							<div class="grpTool__matrixHint">Again, focus on elements that stand out by their strengths or indicate where professional development might be required; no need to comment on expected levels of contributions.</div>
 						</td>
 						{foreach from=$reviewers item=reviewer}

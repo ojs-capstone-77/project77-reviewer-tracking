@@ -8,6 +8,7 @@
  */
 
 require_once dirname(__DIR__) . '/classes/ParticipationService.php';
+require_once dirname(__DIR__) . '/classes/ParticipationConfiguration.php';
 
 use APP\plugins\generic\groupReview\classes\ParticipationService;
 
@@ -38,7 +39,7 @@ test('valid records are normalized', function () use ($validate, $service, $base
     assertSame(['commented_on_draft', 'uploaded_notes'], $record['shaping_feedback_types']);
     assertSame(null, $record['shaping_feedback_comments']);
     assertSame(false, array_key_exists('status', $record));
-    assertSame(false, array_key_exists('contribution_types', $record));
+    assertSame([], $record['contribution_types']);
 });
 
 test('missing optional fields use empty defaults', function () use ($validate, $service, $base) {
@@ -139,7 +140,7 @@ test('every identifier must be present and positive', function () use ($validate
 });
 
 test('every comment field rejects invalid shapes and excessive length', function () use ($validate, $service, $base) {
-    foreach (['attendance_other', 'contribution_comments', 'shaping_feedback_comments', 'other_contribution'] as $key) {
+    foreach (['attendance_other', 'contribution_comments', 'shaping_feedback_comments', 'other_contribution', 'strengths', 'development_opportunities'] as $key) {
         foreach ([[], 123, str_repeat('x', 5001)] as $value) {
             assertThrows(
                 fn () => $validate->invoke($service, 10, array_merge($base, [
@@ -149,6 +150,16 @@ test('every comment field rejects invalid shapes and excessive length', function
             );
         }
     }
+});
+
+test('contribution types validate and hydrate independently of shaping feedback', function () use ($validate, $hydrate, $service, $base) {
+    $record = $validate->invoke($service, 10, $base + ['contribution_types' => ['discussion', 'writing', 'discussion']]);
+    assertSame(['discussion', 'writing'], $record['contribution_types']);
+    foreach (['discussion', ['invalid'], [12]] as $invalid) {
+        assertThrows(fn () => $validate->invoke($service, 10, $base + ['contribution_types' => $invalid]), InvalidArgumentException::class);
+    }
+    $row = $hydrate->invoke($service, ['shaping_feedback_types' => '[]', 'contribution_types' => '["analysis"]']);
+    assertSame(['analysis'], $row['contribution_types']);
 });
 
 echo "ParticipationService tests passed.\n";
