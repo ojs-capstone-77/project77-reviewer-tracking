@@ -32,6 +32,7 @@ class GroupReviewMigration extends Migration
         $this->createParticipationTable();
         $this->alignParticipationTable();
         $this->createParticipationFormsTable();
+        $this->addParticipationConfiguration();
         $this->createSlotsTable();
         $this->createMembersTable();
         $this->createAvailabilityTable();
@@ -61,8 +62,30 @@ class GroupReviewMigration extends Migration
         if (Schema::hasTable('email_templates')) {
             DB::table('email_templates')->whereIn('email_key', self::EMAIL_KEYS)->delete();
         }
+
         if (Schema::hasTable('email_templates_default_data')) {
             DB::table('email_templates_default_data')->whereIn('email_key', self::EMAIL_KEYS)->delete();
+        }
+    }
+
+    private function addParticipationConfiguration(): void
+    {
+        foreach (['strengths', 'development_opportunities'] as $column) {
+            if (!Schema::hasColumn('group_review_participation', $column)) {
+                Schema::table('group_review_participation', function (Blueprint $table) use ($column) {
+                    $table->text($column)->nullable();
+                });
+            }
+        }
+        if (!Schema::hasColumn('group_review_participation', 'contribution_types')) {
+            Schema::table('group_review_participation', function (Blueprint $table) {
+                $table->json('contribution_types')->nullable();
+            });
+        }
+        if (!Schema::hasColumn('group_review_participation_forms', 'configuration')) {
+            Schema::table('group_review_participation_forms', function (Blueprint $table) {
+                $table->json('configuration')->nullable();
+            });
         }
     }
 
@@ -125,7 +148,7 @@ class GroupReviewMigration extends Migration
         }
 
         $obsolete = array_values(array_filter(
-            ['contribution_types', 'status', 'submitted_at'],
+            ['status', 'submitted_at'],
             fn (string $column): bool => Schema::hasColumn('group_review_participation', $column)
         ));
         if ($obsolete) {

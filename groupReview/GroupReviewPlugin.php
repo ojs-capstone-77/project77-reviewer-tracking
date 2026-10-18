@@ -397,6 +397,7 @@ class GroupReviewPlugin extends GenericPlugin
 
         $templateMgr = TemplateManager::getManager($request);
         $output .= $templateMgr->fetch($this->getTemplateResource('settings/referenceTemplateTab.tpl'));
+        $output .= $templateMgr->fetch($this->getTemplateResource('settings/participationTab.tpl'));
 
         return false;
     }

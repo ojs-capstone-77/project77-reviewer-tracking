@@ -17,6 +17,7 @@ use APP\plugins\generic\groupReview\classes\mail\GroupReviewPollCreated;
 use APP\plugins\generic\groupReview\classes\mail\GroupReviewPollThankInvitees;
 use APP\plugins\generic\groupReview\classes\mail\GroupReviewPollThankRgms;
 use APP\plugins\generic\groupReview\classes\notification\Notification as GroupReviewNotification;
+use APP\plugins\generic\groupReview\classes\ParticipationConfiguration;
 use APP\plugins\generic\groupReview\classes\ParticipationService;
 use APP\plugins\generic\groupReview\classes\ReviewerGridService;
 use APP\plugins\generic\groupReview\classes\ReviewerLabelService;
@@ -47,6 +48,7 @@ class GroupReviewHandler extends Handler
 
     private GroupReviewPlugin $plugin;
     private GroupReviewService $service;
+    private ?string $participationValidationError = null;
 
     private const LEADER_OPERATIONS = [
         'create', 'store', 'invite', 'storeInvitations', 'view', 'edit', 'update',
@@ -60,7 +62,7 @@ class GroupReviewHandler extends Handler
     private const PARTICIPATION_READ_OPERATIONS = ['getParticipation'];
     private const PARTICIPATION_DATE_FORMAT = 'j F Y, H:i';
     private const MONITORING_DATE_FORMAT = 'j F Y';
-    private const MONITORING_OPERATIONS = ['overview', 'reviewers', 'reviewer', 'saveLabels', 'reference', 'generateReferencePdf', 'addLabelType', 'renameLabelType', 'removeLabelType', 'addLabelValue', 'removeLabelValue'];
+    private const MONITORING_OPERATIONS = ['overview', 'reviewers', 'reviewer', 'saveLabels', 'reference', 'generateReferencePdf', 'participationSettings', 'saveParticipationSettings', 'addLabelType', 'renameLabelType', 'removeLabelType', 'addLabelValue', 'removeLabelValue'];
     private const MONITORING_SORT_COLUMNS = ['name', 'invited', 'available', 'availablePercent', 'selected', 'selectedPercent', 'completed', 'current', 'attended', 'attendedPercent'];
 
     public function __construct(GroupReviewPlugin $plugin)
@@ -295,7 +297,7 @@ class GroupReviewHandler extends Handler
             ],
             'stats' => $reviewerStats,
             'attendanceCounts' => $this->monitoringCounts($stats->getAttendanceCounts($contextId, $reviewerId, $year), ParticipationService::ATTENDANCE_OPTIONS),
-            'contributionCounts' => $this->monitoringCounts($stats->getContributionCounts($contextId, $reviewerId, $year), ParticipationService::CONTRIBUTION_OPTIONS),
+            'contributionCounts' => $this->monitoringCounts($stats->getContributionCounts($contextId, $reviewerId, $year), $stats->getContributionLabels($contextId, $reviewerId, $year)),
             'history' => $this->reviewerHistory($stats->getHistory($contextId, $reviewerId, $year), $request),
             'labelOptions' => $this->reviewerLabelOptions($contextId),
             'labelValues' => $labels,
@@ -512,7 +514,7 @@ class GroupReviewHandler extends Handler
             'completedCount' => (string) $row['completed'],
             'ledCount' => (string) $row['timesLed'],
             'leaderCountForYear' => (string) $stats->getLeaderCountForYear($contextId, $year),
-            'contributionsList' => $this->referenceContributionsList($stats->getContributionCounts($contextId, $reviewerId, $year)),
+            'contributionsList' => $this->referenceContributionsList($stats->getContributionCounts($contextId, $reviewerId, $year), $stats->getContributionLabels($contextId, $reviewerId, $year)),
         ]);
 
         $this->display($request, 'reference.tpl', [
@@ -582,9 +584,9 @@ class GroupReviewHandler extends Handler
         return strtr($template, $tokens);
     }
 
-    private function referenceContributionsList(array $counts): string
+    private function referenceContributionsList(array $counts, array $labels): string
     {
-        $items = $this->monitoringCounts($counts, ParticipationService::CONTRIBUTION_OPTIONS);
+        $items = $this->monitoringCounts($counts, $labels);
         if (!$items) {
             return '<p>' . htmlspecialchars(__('plugins.generic.groupReview.monitoring.history.noAnswers'), ENT_QUOTES) . '</p>';
         }
@@ -638,6 +640,41 @@ class GroupReviewHandler extends Handler
         ]);
     }
 
+    public function participationSettings($args, $request): void
+    {
+        $configuration = (new ParticipationConfiguration())->get((int) $request->getContext()->getId());
+        $this->displayParticipationSettings($request, $configuration);
+    }
+
+    private function displayParticipationSettings($request, array $configuration, ?string $error = null): void
+    {
+        $this->display($request, 'settings/participation.tpl', [
+            'pageTitle' => __('plugins.generic.groupReview.configuration.title'),
+            'configuration' => $configuration,
+            'configurableFields' => ParticipationConfiguration::FIELDS,
+            'configurationError' => $error,
+            'configurationSaved' => (bool) $request->getUserVar('saved'),
+            'saveUrl' => $request->getRouter()->url($request, null, 'groupReview', 'saveParticipationSettings'),
+        ]);
+    }
+
+    public function saveParticipationSettings($args, $request): void
+    {
+        if (!$request->isPost() || !$request->checkCSRF()) {
+            $this->displayMessage($request, 'plugins.generic.groupReview.error.invalidRequest');
+            return;
+        }
+        $service = new ParticipationConfiguration();
+        $contextId = (int) $request->getContext()->getId();
+        try {
+            $service->save($contextId, $request->getUserVar('requiredFields') ?? [], $request->getUserVar('options'));
+        } catch (InvalidArgumentException $error) {
+            $this->displayParticipationSettings($request, $service->get($contextId), $error->getMessage());
+            return;
+        }
+        $request->redirect(null, 'groupReview', 'participationSettings', null, ['saved' => 1]);
+    }
+
     public function participationForm($args, $request): void
     {
         $contextId = (int) $request->getContext()->getId();
@@ -651,6 +688,7 @@ class GroupReviewHandler extends Handler
         }
 
         $saved = (new ParticipationService())->getForm($contextId, $sessionId);
+        $configuration = (new ParticipationConfiguration())->forForm($contextId, $sessionId);
         $session = $this->participationSessionData($bundle, $saved['form']);
         $reviewers = $this->participationReviewers($bundle);
         $pageSize = 2;
@@ -661,6 +699,22 @@ class GroupReviewHandler extends Handler
         $formReviewers = [];
         foreach ($reviewers as $index => $reviewer) {
             $record = $saved['reviewers'][$reviewer['id']] ?? null;
+            if ($this->participationValidationError !== null) {
+                $posted = $request->getUserVar('reviewers');
+                $fields = is_array($posted) && is_array($posted[$reviewer['id']] ?? null) ? $posted[$reviewer['id']] : [];
+                $record = [];
+                foreach ([
+                    'attendance' => 'attendance', 'attendance_other' => 'attendanceOther',
+                    'contribution_comments' => 'contributionComments', 'shaping_feedback_comments' => 'shapingFeedbackComments',
+                    'other_contribution' => 'otherContribution', 'strengths' => 'strengths',
+                    'development_opportunities' => 'developmentOpportunities',
+                ] as $key => $input) {
+                    $record[$key] = is_string($fields[$input] ?? null) ? $fields[$input] : '';
+                }
+                foreach (['shaping_feedback_types' => 'shapingFeedbackTypes', 'contribution_types' => 'contributionTypes'] as $key => $input) {
+                    $record[$key] = is_array($fields[$input] ?? null) ? array_filter($fields[$input], 'is_string') : [];
+                }
+            }
             $formReviewers[] = array_merge($reviewer, [
                 'page' => intdiv($index, $pageSize),
                 'attendance' => $record['attendance'] ?? ParticipationService::ATTENDANCE_NOT_RECORDED,
@@ -669,6 +723,9 @@ class GroupReviewHandler extends Handler
                 'contributionChecked' => array_fill_keys($record['shaping_feedback_types'] ?? [], true),
                 'feedbackComments' => $record['shaping_feedback_comments'] ?? '',
                 'otherComments' => $record['other_contribution'] ?? '',
+                'contributionTypeChecked' => array_fill_keys($record['contribution_types'] ?? [], true),
+                'strengths' => $record['strengths'] ?? '',
+                'developmentOpportunities' => $record['development_opportunities'] ?? '',
             ]);
         }
         $pages = [];
@@ -688,7 +745,9 @@ class GroupReviewHandler extends Handler
             'pageTitle' => 'Reviewer Participation Recording',
             'sessionId' => $sessionId,
             'session' => $session,
-            'generalComments' => $saved['form']['general_comments'] ?? '',
+            'generalComments' => $this->participationValidationError !== null && is_string($request->getUserVar('generalComments'))
+                ? $request->getUserVar('generalComments') : ($saved['form']['general_comments'] ?? ''),
+            'validationError' => $this->participationValidationError,
             'saveError' => (bool) $request->getUserVar('saveError'),
             'isSubmitted' => $isSubmitted,
             'reviewers' => $formReviewers,
@@ -700,7 +759,10 @@ class GroupReviewHandler extends Handler
             'reviewerSlots' => range(1, $pageSize),
             'emptyReviewerSlots' => $emptySlots ? range(1, $emptySlots) : [],
             'attendanceOptions' => $this->participationAttendanceOptions(),
-            'contributionOptions' => $this->participationContributionOptions(),
+            'contributionOptions' => $configuration['options'],
+            'configuration' => $configuration,
+            'configurationToken' => ParticipationConfiguration::token($configuration),
+            'contributionTypeOptions' => ParticipationConfiguration::CONTRIBUTION_TYPES,
             'cancelUrl' => $this->participationListUrl($request, (int) $bundle['poll']['submission_id']),
             'saveUrl' => $request->getRouter()->url($request, null, 'groupReview', 'saveParticipationForm'),
         ]);
@@ -724,8 +786,10 @@ class GroupReviewHandler extends Handler
 
         $reviewers = [];
         $posted = $request->getUserVar('reviewers');
+        $malformedReviewers = !is_array($posted);
         foreach (is_array($posted) ? $posted : [] as $reviewerUserId => $fields) {
             if (!is_array($fields)) {
+                $malformedReviewers = true;
                 continue;
             }
             $reviewers[] = [
@@ -736,6 +800,9 @@ class GroupReviewHandler extends Handler
                 'shaping_feedback_types' => $fields['shapingFeedbackTypes'] ?? [],
                 'shaping_feedback_comments' => $fields['shapingFeedbackComments'] ?? null,
                 'other_contribution' => $fields['otherContribution'] ?? null,
+                'contribution_types' => $fields['contributionTypes'] ?? [],
+                'strengths' => $fields['strengths'] ?? null,
+                'development_opportunities' => $fields['developmentOpportunities'] ?? null,
             ];
         }
 
@@ -743,6 +810,13 @@ class GroupReviewHandler extends Handler
             $bundle = $this->participationBundle($contextId, $sessionId);
             if (!$bundle) {
                 throw new InvalidArgumentException('The group review session has no participation form.');
+            }
+            $expected = array_column($this->participationReviewers($bundle), 'id');
+            $actual = array_map(fn (array $row): int => (int) $row['reviewer_user_id'], $reviewers);
+            sort($expected);
+            sort($actual);
+            if ($malformedReviewers || $expected !== $actual || !$expected) {
+                throw new InvalidArgumentException('Include every selected reviewer in the participation form.');
             }
             (new ParticipationService())->saveForm(
                 $contextId,
@@ -752,9 +826,14 @@ class GroupReviewHandler extends Handler
                 [
                     'general_comments' => $request->getUserVar('generalComments'),
                     'submission_comment' => $request->getUserVar('submissionComment'),
+                    'configuration_token' => $request->getUserVar('configurationToken'),
                 ],
                 $submit
             );
+        } catch (InvalidArgumentException $e) {
+            $this->participationValidationError = $e->getMessage();
+            $this->participationForm($args, $request);
+            return;
         } catch (Throwable $e) {
             error_log('Group Review participation form save failed: ' . $e->getMessage());
             $request->redirect(null, 'groupReview', 'participationForm', null, [
@@ -822,6 +901,9 @@ class GroupReviewHandler extends Handler
             'shaping_feedback_types' => $request->getUserVar('shapingFeedbackTypes'),
             'shaping_feedback_comments' => $request->getUserVar('shapingFeedbackComments'),
             'other_contribution' => $request->getUserVar('otherContribution'),
+            'contribution_types' => $request->getUserVar('contributionTypes') ?? [],
+            'strengths' => $request->getUserVar('strengths'),
+            'development_opportunities' => $request->getUserVar('developmentOpportunities'),
             'status' => $request->getUserVar('status'),
         ];
 
@@ -2263,9 +2345,18 @@ class GroupReviewHandler extends Handler
         $add('Review meeting', 'Comments on contributions', $record['contributionComments']);
 
         if ($record['shapingFeedbackTypes']) {
-            $labels = array_map(fn ($value) => ParticipationService::CONTRIBUTION_OPTIONS[$value] ?? $value, $record['shapingFeedbackTypes']);
+            $options = $record['shapingFeedbackLabels'] ?? ParticipationService::CONTRIBUTION_OPTIONS;
+            $labels = array_map(fn ($value) => $options[$value] ?? $value, $record['shapingFeedbackTypes']);
             $add('Feedback response', 'Contributions', implode(', ', $labels));
         }
+        if (!empty($record['contributionTypes'])) {
+            $add('Review meeting', 'Contribution types', implode(', ', array_map(
+                fn ($value) => ParticipationConfiguration::CONTRIBUTION_TYPES[$value] ?? $value,
+                $record['contributionTypes']
+            )));
+        }
+        $add('Review meeting', 'Strengths demonstrated', $record['strengths'] ?? null);
+        $add('Review meeting', 'Development opportunities', $record['developmentOpportunities'] ?? null);
         $add('Feedback response', 'Comments on contributions', $record['shapingFeedbackComments']);
         $add('Other', 'Other comments', $record['otherContribution']);
 

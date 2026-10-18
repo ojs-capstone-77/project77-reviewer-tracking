@@ -218,6 +218,7 @@ class ReviewerStatsService
             if (!$poll['finalized'] || !$this->inYear($poll, $year)) {
                 continue;
             }
+
             $isLeader = $poll['leaderId'] === $userId;
             $member = $poll['members'][$userId] ?? null;
             if (!$isLeader && !($member && $member['selected'])) {
@@ -252,6 +253,15 @@ class ReviewerStatsService
         }
 
         return $history;
+    }
+
+    public function getContributionLabels(int $contextId, int $userId, ?int $year): array
+    {
+        $labels = ParticipationService::CONTRIBUTION_OPTIONS;
+        foreach ($this->getHistory($contextId, $userId, $year) as $entry) {
+            $labels = array_replace($labels, $entry['participation']['shapingFeedbackLabels'] ?? []);
+        }
+        return $labels;
     }
 
     private function rounds(array $roundIds): array
@@ -337,17 +347,21 @@ class ReviewerStatsService
         $submittedFormRows = DB::table('group_review_participation_forms')
             ->whereIn('session_id', $sessionIds)
             ->where('status', ParticipationService::STATUS_SUBMITTED)
-            ->get(['session_id', 'general_comments']);
+            ->get(['session_id', 'general_comments', 'configuration']);
         $submittedForms = $submittedFormRows->pluck('session_id')->map(fn ($id): int => (int) $id)->all();
         $generalComments = [];
+        $configurations = [];
         foreach ($submittedFormRows as $row) {
             $generalComments[(int) $row->session_id] = $row->general_comments === null ? null : (string) $row->general_comments;
+            $configurations[(int) $row->session_id] = $row->configuration === null ? ParticipationConfiguration::defaults(true)
+                : json_decode($row->configuration, true, 512, JSON_THROW_ON_ERROR);
         }
 
         $participation = [];
         foreach (DB::table('group_review_participation')->whereIn('session_id', $submittedForms)->get([
             'session_id', 'reviewer_user_id', 'attendance', 'attendance_other', 'contribution_comments',
             'shaping_feedback_types', 'shaping_feedback_comments', 'other_contribution',
+            'contribution_types', 'strengths', 'development_opportunities',
         ]) as $row) {
             $participation[(int) $row->session_id][(int) $row->reviewer_user_id] = [
                 'attendance' => (string) $row->attendance,
@@ -357,6 +371,23 @@ class ReviewerStatsService
                 'shapingFeedbackComments' => $row->shaping_feedback_comments === null ? null : (string) $row->shaping_feedback_comments,
                 'otherContribution' => $row->other_contribution === null ? null : (string) $row->other_contribution,
             ];
+            $record = &$participation[(int) $row->session_id][(int) $row->reviewer_user_id];
+            foreach (['strengths' => 'strengths', 'development_opportunities' => 'developmentOpportunities'] as $column => $key) {
+                if ($row->$column !== null) {
+                    $record[$key] = (string) $row->$column;
+                }
+            }
+            if ($row->contribution_types) {
+                $types = json_decode($row->contribution_types, true, 512, JSON_THROW_ON_ERROR);
+                if ($types) {
+                    $record['contributionTypes'] = $types;
+                }
+            }
+            $options = $configurations[(int) $row->session_id]['options'];
+            if ($options !== ParticipationService::CONTRIBUTION_OPTIONS) {
+                $record['shapingFeedbackLabels'] = $options;
+            }
+            unset($record);
         }
 
         $latestDecisions = $this->latestDecisions($sessions->pluck('review_round_id')->map(fn ($id): int => (int) $id)->all());
