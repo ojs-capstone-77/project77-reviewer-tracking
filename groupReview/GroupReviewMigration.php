@@ -38,6 +38,8 @@ class GroupReviewMigration extends Migration
         $this->createReminderLogTable();
         $this->createReviewerLabelsTable();
         $this->createReviewerLabelHistoryTable();
+        $this->createLabelTypesTable();
+        $this->createLabelValuesTable();
         $this->migrateLegacyContextSettings();
         $this->migrateLegacyData();
     }
@@ -46,6 +48,8 @@ class GroupReviewMigration extends Migration
     {
         Schema::dropIfExists('group_review_reviewer_label_history');
         Schema::dropIfExists('group_review_reviewer_labels');
+        Schema::dropIfExists('group_review_label_values');
+        Schema::dropIfExists('group_review_label_types');
         Schema::dropIfExists('group_review_participation_forms');
         Schema::dropIfExists('group_review_participation');
         Schema::dropIfExists('group_review_reminder_log');
@@ -366,6 +370,50 @@ class GroupReviewMigration extends Migration
             $table->text('note')->nullable();
 
             $table->index(['context_id', 'user_id'], 'grp_label_history_user_idx');
+        });
+    }
+
+    /** Configurable reviewer label types, per journal. Removal is soft: existing rows stay but is_active is set to false. */
+    private function createLabelTypesTable(): void
+    {
+        if (Schema::hasTable('group_review_label_types')) {
+            return;
+        }
+
+        Schema::create('group_review_label_types', function (Blueprint $table) {
+            $table->bigInteger('type_id')->autoIncrement();
+            $table->bigInteger('context_id');
+            $table->foreign('context_id', 'grp_label_type_context_fk')
+                ->references('journal_id')->on('journals')->onDelete('cascade');
+            $table->string('type_key', 64);
+            $table->string('name', 255);
+            $table->boolean('multiple')->default(false);
+            $table->unsignedInteger('seq')->default(0);
+            $table->boolean('is_active')->default(true);
+
+            $table->unique(['context_id', 'type_key'], 'grp_label_type_unique');
+        });
+    }
+
+    /** Configurable values for each label type, per journal. Removal is soft, same as label types. */
+    private function createLabelValuesTable(): void
+    {
+        if (Schema::hasTable('group_review_label_values')) {
+            return;
+        }
+
+        Schema::create('group_review_label_values', function (Blueprint $table) {
+            $table->bigInteger('value_id')->autoIncrement();
+            $table->bigInteger('context_id');
+            $table->foreign('context_id', 'grp_label_value_def_context_fk')
+                ->references('journal_id')->on('journals')->onDelete('cascade');
+            $table->string('type_key', 64);
+            $table->string('value_key', 64);
+            $table->string('label', 255);
+            $table->unsignedInteger('seq')->default(0);
+            $table->boolean('is_active')->default(true);
+
+            $table->unique(['context_id', 'type_key', 'value_key'], 'grp_label_value_def_unique');
         });
     }
 
