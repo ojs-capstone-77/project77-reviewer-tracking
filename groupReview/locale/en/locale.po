@@ -780,3 +780,57 @@ msgstr "removed {$values}"
 
 msgid "plugins.generic.groupReview.labels.history.noteOnly"
 msgstr "Note added, no label changes."
+
+msgid "plugins.generic.groupReview.labels.tab"
+msgstr "Reviewer labels"
+
+msgid "plugins.generic.groupReview.labels.tabDescription"
+msgstr "Configure the label types and values editors can assign to reviewers."
+
+msgid "plugins.generic.groupReview.labels.addType"
+msgstr "Add label type"
+
+msgid "plugins.generic.groupReview.labels.column.type"
+msgstr "Label type"
+
+msgid "plugins.generic.groupReview.labels.column.choice"
+msgstr "Choice"
+
+msgid "plugins.generic.groupReview.labels.column.values"
+msgstr "Values"
+
+msgid "plugins.generic.groupReview.labels.column.action"
+msgstr "Action"
+
+msgid "plugins.generic.groupReview.labels.multipleChoice"
+msgstr "Multiple choice"
+
+msgid "plugins.generic.groupReview.labels.singleChoice"
+msgstr "Single choice"
+
+msgid "plugins.generic.groupReview.labels.addValue"
+msgstr "Add value"
+
+msgid "plugins.generic.groupReview.labels.typeName"
+msgstr "Label name"
+
+msgid "plugins.generic.groupReview.labels.choice"
+msgstr "Choice type"
+
+msgid "plugins.generic.groupReview.labels.choiceLocked"
+msgstr "This cannot be changed after the label type is created."
+
+msgid "plugins.generic.groupReview.labels.removeType"
+msgstr "Remove label type"
+
+msgid "plugins.generic.groupReview.labels.removeTypeConfirm"
+msgstr "Remove the \"{$name}\" label type?"
+
+msgid "plugins.generic.groupReview.labels.removeTypeWarning"
+msgstr "This will remove it from the settings list. {$reviewerCount} reviewer(s) currently have this label; their existing data and history will be kept."
+
+msgid "plugins.generic.groupReview.labels.rename"
+msgstr "Rename"
+
+msgid "plugins.generic.groupReview.labels.renameType"
+msgstr "Rename label type"

@@ -21,6 +21,8 @@ class ReviewerGridService
 
     public function settings($request): array
     {
+        $contextId = (int) $request->getContext()->getId();
+        $types = (new ReviewerLabelService())->getTypes($contextId);
         $errors = [];
         $search = $request->getUserVar('search');
         if ($search !== null && (!is_string($search) || mb_strlen($search) > 100)) {
@@ -32,11 +34,11 @@ class ReviewerGridService
         $ranges = $request->getUserVar('ranges') ?? [];
         $columns = $request->getUserVar('columns');
         $selectedLabels = $selectedRanges = [];
-        if (!is_array($labels) || array_diff(array_keys($labels), array_keys(ReviewerLabelService::TYPES))) {
+        if (!is_array($labels) || array_diff(array_keys($labels), array_keys($types))) {
             $errors[] = __('plugins.generic.groupReview.filtering.invalidLabels');
             $labels = [];
         }
-        foreach (ReviewerLabelService::TYPES as $type => $definition) {
+        foreach ($types as $type => $definition) {
             $values = $labels[$type] ?? [];
             if (!is_array($values) || array_filter($values, fn ($value): bool => !is_string($value) || !isset($definition['values'][$value]))) {
                 $errors[] = __('plugins.generic.groupReview.filtering.invalidLabels');
@@ -101,6 +103,7 @@ class ReviewerGridService
             'columns' => array_values(array_intersect(array_keys(self::COLUMNS), $columns)),
             'availableSubmissionId' => $submissionId,
             'errors' => array_values(array_unique($errors)),
+            'labelTypes' => $types,
         ];
     }
 
@@ -163,7 +166,7 @@ class ReviewerGridService
                     continue;
                 }
                 $held = $labels[$row['userId']][$type] ?? [];
-                $matches = ReviewerLabelService::TYPES[$type]['multiple']
+                $matches = $settings['labelTypes'][$type]['multiple'] ?? false
                     ? !array_diff($values, $held)
                     : (bool) array_intersect($values, $held);
                 if (!$matches) {

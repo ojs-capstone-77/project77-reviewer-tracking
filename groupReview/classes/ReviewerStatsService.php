@@ -573,10 +573,12 @@ class ReviewerStatsService
      */
     private function labelCounts(int $contextId, array $holderIds, array $active): array
     {
-        $labels = (new ReviewerLabelService())->getLabels($contextId, $holderIds);
+        $labelService = new ReviewerLabelService();
+        $labels = $labelService->getLabels($contextId, $holderIds);
+        $types = $labelService->getTypes($contextId);
 
         $counts = [];
-        foreach (ReviewerLabelService::TYPES as $type => $definition) {
+        foreach ($types as $type => $definition) {
             $counts[$type] = [
                 'values' => array_fill_keys(array_keys($definition['values']), ['total' => 0, 'active' => 0]),
                 'notSet' => ['total' => 0, 'active' => 0],

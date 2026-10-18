@@ -17,6 +17,7 @@ use APP\plugins\generic\groupReview\classes\mail\GroupReviewPollCreated;
 use APP\plugins\generic\groupReview\classes\mail\GroupReviewPollThankInvitees;
 use APP\plugins\generic\groupReview\classes\mail\GroupReviewPollThankRgms;
 use APP\plugins\generic\groupReview\classes\notification\Notification as GroupReviewNotification;
+use APP\plugins\generic\groupReview\classes\ReviewerLabelService;
 use APP\plugins\generic\groupReview\pages\groupReview\GroupReviewHandler;
 use APP\template\TemplateManager;
 use PKP\components\forms\FieldOptions;
@@ -53,6 +54,7 @@ class GroupReviewPlugin extends GenericPlugin
         Hook::add('Schema::get::context', [$this, 'addToContextSchema']);
         Hook::add('Template::Workflow', [$this, 'addWorkflowTab']);
         Hook::add('Template::Settings::workflow::review', [$this, 'addReferenceTemplateTab']);
+        Hook::add('Template::Settings::workflow::review', [$this, 'addReviewerLabelsTab']);
         Hook::add('TemplateManager::display', [$this, 'loadAssets']);
         Hook::add('TemplateManager::display', [$this, 'addReferenceTemplateFormState']);
         Hook::add('TemplateManager::setupBackendPage', [$this, 'addMonitoringMenuItem']);
@@ -396,6 +398,49 @@ class GroupReviewPlugin extends GenericPlugin
         $templateMgr = TemplateManager::getManager($request);
         $output .= $templateMgr->fetch($this->getTemplateResource('settings/referenceTemplateTab.tpl'));
         $output .= $templateMgr->fetch($this->getTemplateResource('settings/participationTab.tpl'));
+
+        return false;
+    }
+
+    /** Add the Reviewer labels tab to Settings > Workflow > Review. */
+    public function addReviewerLabelsTab($hookName, $args): bool
+    {
+        $output = &$args[2];
+        $request = Application::get()->getRequest();
+        $context = $request->getContext();
+
+        if (!$context || !$this->getEnabled((int) $context->getId())) {
+            return false;
+        }
+
+        $contextId = (int) $context->getId();
+        $service = new ReviewerLabelService();
+        $labelTypes = [];
+        foreach ($service->getTypes($contextId) as $typeKey => $definition) {
+            $values = [];
+            foreach ($definition['values'] as $valueKey => $label) {
+                $values[] = ['key' => $valueKey, 'label' => $label];
+            }
+            $labelTypes[] = [
+                'key' => $typeKey,
+                'name' => $definition['name'],
+                'multiple' => $definition['multiple'],
+                'reviewerCount' => $service->reviewerCountForType($contextId, $typeKey),
+                'values' => $values,
+            ];
+        }
+
+        $templateMgr = TemplateManager::getManager($request);
+        $templateMgr->assign([
+            'labelTypes' => $labelTypes,
+            'labelsError' => (bool) $request->getUserVar('labelsError'),
+            'addTypeUrl' => $request->getRouter()->url($request, null, 'groupReview', 'addLabelType'),
+            'renameTypeUrl' => $request->getRouter()->url($request, null, 'groupReview', 'renameLabelType'),
+            'removeTypeUrl' => $request->getRouter()->url($request, null, 'groupReview', 'removeLabelType'),
+            'addValueUrl' => $request->getRouter()->url($request, null, 'groupReview', 'addLabelValue'),
+            'removeValueUrl' => $request->getRouter()->url($request, null, 'groupReview', 'removeLabelValue'),
+        ]);
+        $output .= $templateMgr->fetch($this->getTemplateResource('settings/reviewerLabelsTab.tpl'));
 
         return false;
     }

@@ -62,7 +62,7 @@ class GroupReviewHandler extends Handler
     private const PARTICIPATION_READ_OPERATIONS = ['getParticipation'];
     private const PARTICIPATION_DATE_FORMAT = 'j F Y, H:i';
     private const MONITORING_DATE_FORMAT = 'j F Y';
-    private const MONITORING_OPERATIONS = ['overview', 'reviewers', 'reviewer', 'saveLabels', 'reference', 'generateReferencePdf', 'participationSettings', 'saveParticipationSettings'];
+    private const MONITORING_OPERATIONS = ['overview', 'reviewers', 'reviewer', 'saveLabels', 'reference', 'generateReferencePdf', 'participationSettings', 'saveParticipationSettings', 'addLabelType', 'renameLabelType', 'removeLabelType', 'addLabelValue', 'removeLabelValue'];
     private const MONITORING_SORT_COLUMNS = ['name', 'invited', 'available', 'availablePercent', 'selected', 'selectedPercent', 'completed', 'current', 'attended', 'attendedPercent'];
 
     public function __construct(GroupReviewPlugin $plugin)
@@ -204,7 +204,7 @@ class GroupReviewHandler extends Handler
             'reviewers' => $reviewers,
             'gridFilters' => $filters,
             'columns' => $columns,
-            'labelFilters' => $this->reviewerLabelOptions(),
+            'labelFilters' => $this->reviewerLabelOptions($contextId),
             'totalReviewers' => $totalReviewers,
             'gridFilterParams' => $filterParams,
         ]);
@@ -221,12 +221,12 @@ class GroupReviewHandler extends Handler
         $labelService = new ReviewerLabelService();
         $labels = [];
 
-        foreach (ReviewerLabelService::TYPES as $type => $definition) {
+        foreach ($labelService->getTypes($contextId) as $type => $definition) {
             $counts = $overview['labels'][$type];
             $values = [];
             foreach (array_keys($definition['values']) as $value) {
                 $values[] = [
-                    'label' => $labelService->name($type, $value),
+                    'label' => $labelService->name($contextId, $type, $value),
                     'total' => $counts['values'][$value]['total'],
                     'active' => $counts['values'][$value]['active'],
                 ];
@@ -237,7 +237,7 @@ class GroupReviewHandler extends Handler
                 'active' => $counts['notSet']['active'],
             ];
             $labels[] = [
-                'name' => $labelService->name($type),
+                'name' => $labelService->name($contextId, $type),
                 'values' => $values,
             ];
         }
@@ -273,7 +273,7 @@ class GroupReviewHandler extends Handler
 
         $labelService = new ReviewerLabelService();
         $labels = $labelService->getLabels($contextId, [$reviewerId])[$reviewerId]
-            ?? array_fill_keys(array_keys(ReviewerLabelService::TYPES), []);
+            ?? array_fill_keys(array_keys($labelService->getTypes($contextId)), []);
         $reviewerStats = array_merge(
             $row,
             $this->reviewerTableRow($row, $labels, $request, $year)
@@ -293,13 +293,13 @@ class GroupReviewHandler extends Handler
                 'name' => $row['name'],
                 'reviewerSince' => $row['reviewerSince'] === null ? null : $this->service->formatUtc($row['reviewerSince'], 'UTC', self::MONITORING_DATE_FORMAT),
                 'lastActivity' => $row['lastActivity'] === null ? null : $this->service->formatUtc($row['lastActivity'], 'UTC', self::MONITORING_DATE_FORMAT),
-                'labels' => $this->reviewerLabelsList($labels),
+                'labels' => $this->reviewerLabelsList($contextId, $labels),
             ],
             'stats' => $reviewerStats,
             'attendanceCounts' => $this->monitoringCounts($stats->getAttendanceCounts($contextId, $reviewerId, $year), ParticipationService::ATTENDANCE_OPTIONS),
             'contributionCounts' => $this->monitoringCounts($stats->getContributionCounts($contextId, $reviewerId, $year), $stats->getContributionLabels($contextId, $reviewerId, $year)),
             'history' => $this->reviewerHistory($stats->getHistory($contextId, $reviewerId, $year), $request),
-            'labelOptions' => $this->reviewerLabelOptions(),
+            'labelOptions' => $this->reviewerLabelOptions($contextId),
             'labelValues' => $labels,
             'labelHistory' => $labelService->getHistory($contextId, $reviewerId),
             'labelSaveError' => (bool) $request->getUserVar('labelSaveError'),
@@ -334,7 +334,8 @@ class GroupReviewHandler extends Handler
             }
 
             $values = [];
-            foreach (ReviewerLabelService::TYPES as $type => $definition) {
+            $types = (new ReviewerLabelService())->getTypes($contextId);
+            foreach ($types as $type => $definition) {
                 $posted = $request->getUserVar($type);
                 if ($definition['multiple']) {
                     if ($posted !== null && !is_array($posted)) {
@@ -371,6 +372,122 @@ class GroupReviewHandler extends Handler
             'reviewerId' => $reviewerId,
             'year' => $year ?? 'all',
         ])));
+    }
+
+    private function redirectToReviewerLabelsTab($request, bool $error = false): void
+    {
+        $request->redirect(
+            null,
+            'management',
+            'settings',
+            'workflow',
+            $error ? ['labelsError' => 1] : null,
+            'review/reviewerLabels'
+        );
+    }
+
+    public function addLabelType($args, $request): void
+    {
+        if (!$request->isPost() || !$request->checkCSRF()) {
+            $this->displayMessage($request, 'plugins.generic.groupReview.error.invalidRequest');
+            return;
+        }
+
+        $contextId = (int) $request->getContext()->getId();
+        try {
+            $name = (string) $request->getUserVar('name');
+            $multiple = (string) $request->getUserVar('multiple') === '1';
+            (new ReviewerLabelService())->addType($contextId, $name, $multiple);
+        } catch (Throwable $e) {
+            error_log('Group Review add label type failed: ' . $e->getMessage());
+            $this->redirectToReviewerLabelsTab($request, true);
+            return;
+        }
+
+        $this->redirectToReviewerLabelsTab($request);
+    }
+
+    public function renameLabelType($args, $request): void
+    {
+        if (!$request->isPost() || !$request->checkCSRF()) {
+            $this->displayMessage($request, 'plugins.generic.groupReview.error.invalidRequest');
+            return;
+        }
+
+        $contextId = (int) $request->getContext()->getId();
+        try {
+            $typeKey = (string) $request->getUserVar('typeKey');
+            $name = (string) $request->getUserVar('name');
+            (new ReviewerLabelService())->renameType($contextId, $typeKey, $name);
+        } catch (Throwable $e) {
+            error_log('Group Review rename label type failed: ' . $e->getMessage());
+            $this->redirectToReviewerLabelsTab($request, true);
+            return;
+        }
+
+        $this->redirectToReviewerLabelsTab($request);
+    }
+
+    public function removeLabelType($args, $request): void
+    {
+        if (!$request->isPost() || !$request->checkCSRF()) {
+            $this->displayMessage($request, 'plugins.generic.groupReview.error.invalidRequest');
+            return;
+        }
+
+        $contextId = (int) $request->getContext()->getId();
+        try {
+            $typeKey = (string) $request->getUserVar('typeKey');
+            (new ReviewerLabelService())->removeType($contextId, $typeKey);
+        } catch (Throwable $e) {
+            error_log('Group Review remove label type failed: ' . $e->getMessage());
+            $this->redirectToReviewerLabelsTab($request, true);
+            return;
+        }
+
+        $this->redirectToReviewerLabelsTab($request);
+    }
+
+    public function addLabelValue($args, $request): void
+    {
+        if (!$request->isPost() || !$request->checkCSRF()) {
+            $this->displayMessage($request, 'plugins.generic.groupReview.error.invalidRequest');
+            return;
+        }
+
+        $contextId = (int) $request->getContext()->getId();
+        try {
+            $typeKey = (string) $request->getUserVar('typeKey');
+            $label = (string) $request->getUserVar('label');
+            (new ReviewerLabelService())->addValue($contextId, $typeKey, $label);
+        } catch (Throwable $e) {
+            error_log('Group Review add label value failed: ' . $e->getMessage());
+            $this->redirectToReviewerLabelsTab($request, true);
+            return;
+        }
+
+        $this->redirectToReviewerLabelsTab($request);
+    }
+
+    public function removeLabelValue($args, $request): void
+    {
+        if (!$request->isPost() || !$request->checkCSRF()) {
+            $this->displayMessage($request, 'plugins.generic.groupReview.error.invalidRequest');
+            return;
+        }
+
+        $contextId = (int) $request->getContext()->getId();
+        try {
+            $typeKey = (string) $request->getUserVar('typeKey');
+            $valueKey = (string) $request->getUserVar('valueKey');
+            (new ReviewerLabelService())->removeValue($contextId, $typeKey, $valueKey);
+        } catch (Throwable $e) {
+            error_log('Group Review remove label value failed: ' . $e->getMessage());
+            $this->redirectToReviewerLabelsTab($request, true);
+            return;
+        }
+
+        $this->redirectToReviewerLabelsTab($request);
     }
 
     public function reference($args, $request): void
@@ -1128,11 +1245,6 @@ class GroupReviewHandler extends Handler
     private function participationAttendanceOptions(): array
     {
         return ParticipationService::ATTENDANCE_OPTIONS;
-    }
-
-    private function participationContributionOptions(): array
-    {
-        return ParticipationService::CONTRIBUTION_OPTIONS;
     }
 
     public function create($args, $request): void
@@ -2085,10 +2197,12 @@ class GroupReviewHandler extends Handler
 
     private function reviewerTableRow(array $row, array $labels, $request, ?int $year, array $filterParams = []): array
     {
+        $contextId = (int) $request->getContext()->getId();
+
         return [
             'userId' => $row['userId'],
             'name' => $row['name'],
-            'labelsText' => $this->reviewerLabelsText($labels),
+            'labelsText' => $this->reviewerLabelsText($contextId, $labels),
             'completed' => $row['completed'],
             'current' => $row['current'],
             'attended' => $row['attended'],
@@ -2109,29 +2223,29 @@ class GroupReviewHandler extends Handler
         ];
     }
 
-    private function reviewerLabelsText(array $labels): string
+    private function reviewerLabelsText(int $contextId, array $labels): string
     {
         $service = new ReviewerLabelService();
         $names = [];
-        foreach (ReviewerLabelService::TYPES as $type => $definition) {
+        foreach ($service->getTypes($contextId) as $type => $definition) {
             foreach ($labels[$type] ?? [] as $value) {
-                $names[] = $service->name($type, $value);
+                $names[] = $service->name($contextId, $type, $value);
             }
         }
 
         return implode(', ', $names);
     }
 
-    private function reviewerLabelsList(array $labels): array
+    private function reviewerLabelsList(int $contextId, array $labels): array
     {
         $service = new ReviewerLabelService();
         $list = [];
-        foreach (ReviewerLabelService::TYPES as $type => $definition) {
+        foreach ($service->getTypes($contextId) as $type => $definition) {
             $values = $labels[$type] ?? [];
             $list[] = [
-                'name' => $service->name($type),
+                'name' => $service->name($contextId, $type),
                 'valuesText' => $values
-                    ? implode(', ', array_map(fn ($value) => $service->name($type, $value), $values))
+                    ? implode(', ', array_map(fn ($value) => $service->name($contextId, $type, $value), $values))
                     : __('plugins.generic.groupReview.labels.notSet'),
             ];
         }
@@ -2139,16 +2253,16 @@ class GroupReviewHandler extends Handler
         return $list;
     }
 
-    private function reviewerLabelOptions(): array
+    private function reviewerLabelOptions(int $contextId): array
     {
         $service = new ReviewerLabelService();
         $options = [];
-        foreach (ReviewerLabelService::TYPES as $type => $definition) {
+        foreach ($service->getTypes($contextId) as $type => $definition) {
             $options[$type] = [
-                'name' => $service->name($type),
+                'name' => $service->name($contextId, $type),
                 'multiple' => $definition['multiple'],
                 'options' => array_map(
-                    fn ($value) => ['value' => $value, 'label' => $service->name($type, $value)],
+                    fn ($value) => ['value' => $value, 'label' => $service->name($contextId, $type, $value)],
                     array_keys($definition['values'])
                 ),
             ];
