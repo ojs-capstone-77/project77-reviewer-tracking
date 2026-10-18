@@ -191,7 +191,7 @@ class ParticipationService
      */
     public function create(int $contextId, array $data): int
     {
-        $record = $this->validate($contextId, $data, (new ParticipationConfiguration())->forForm($contextId, (int) ($data['session_id'] ?? 0)));
+        $record = $this->validate($contextId, $data, (new ParticipationConfiguration())->forForm($contextId, $data['session_id']));
         $now = gmdate('Y-m-d H:i:s');
 
         return (int) DB::table('group_review_participation')->insertGetId([

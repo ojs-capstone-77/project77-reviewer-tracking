@@ -1247,11 +1247,6 @@ class GroupReviewHandler extends Handler
         return ParticipationService::ATTENDANCE_OPTIONS;
     }
 
-    private function participationContributionOptions(): array
-    {
-        return ParticipationService::CONTRIBUTION_OPTIONS;
-    }
-
     public function create($args, $request): void
     {
         $context = $request->getContext();
