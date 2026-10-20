@@ -1,5 +1,12 @@
 <?php
 
+/**
+ * @file classes/forms/ReferenceTemplateForm.php
+ *
+ * The Settings field for editing the reference-letter template, with its default
+ * text and the list of variables it can use.
+ */
+
 namespace APP\plugins\generic\groupReview\classes\forms;
 
 use PKP\components\forms\FieldPreparedContent;

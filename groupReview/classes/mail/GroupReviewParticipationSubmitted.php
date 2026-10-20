@@ -1,5 +1,11 @@
 <?php
 
+/**
+ * @file classes/mail/GroupReviewParticipationSubmitted.php
+ *
+ * Notifies the review group leader that a member submitted their participation form.
+ */
+
 namespace APP\plugins\generic\groupReview\classes\mail;
 
 use PKP\context\Context;

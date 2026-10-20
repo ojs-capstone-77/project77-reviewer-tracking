@@ -1,5 +1,11 @@
 <?php
 
+/**
+ * @file classes/security/authorization/LeaderRequiredPolicy.php
+ *
+ * Permits the request only for the review group leader of the relevant submission.
+ */
+
 namespace APP\plugins\generic\groupReview\classes\security\authorization;
 
 use APP\plugins\generic\groupReview\classes\GroupReviewService;

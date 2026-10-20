@@ -1,5 +1,11 @@
 <?php
 
+/**
+ * @file classes/mail/GroupReviewPollClosing.php
+ *
+ * Reminds an invited reviewer that a group review poll is about to close.
+ */
+
 namespace APP\plugins\generic\groupReview\classes\mail;
 
 use PKP\context\Context;

@@ -1,5 +1,12 @@
 <?php
 
+/**
+ * @file classes/ParticipationConfiguration.php
+ *
+ * Stores and resolves a journal's participation form configuration: which fields are
+ * shown, and the list of shaping-feedback options.
+ */
+
 namespace APP\plugins\generic\groupReview\classes;
 
 use APP\plugins\generic\groupReview\GroupReviewPlugin;
@@ -82,6 +89,12 @@ class ParticipationConfiguration
         return $config;
     }
 
+    /**
+     * Resolves which configuration a participation form should use: the snapshot
+     * saved with that form if one exists, the pre-snapshot legacy defaults if the
+     * session was already answered before snapshots were introduced, or the
+     * journal's current configuration otherwise.
+     */
     public function forForm(int $contextId, int $sessionId): array
     {
         $form = DB::table('group_review_participation_forms')

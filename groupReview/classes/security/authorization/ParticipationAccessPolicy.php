@@ -1,5 +1,12 @@
 <?php
 
+/**
+ * @file classes/security/authorization/ParticipationAccessPolicy.php
+ *
+ * Permits the request only for a journal editor, or the review group leader of the
+ * specific participation form being opened.
+ */
+
 namespace APP\plugins\generic\groupReview\classes\security\authorization;
 
 use APP\plugins\generic\groupReview\classes\GroupReviewService;

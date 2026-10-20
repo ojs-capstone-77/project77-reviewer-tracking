@@ -1,5 +1,12 @@
 <?php
 
+/**
+ * @file classes/ReviewerGridService.php
+ *
+ * Validates the Reviewers grid's filter settings (search, labels, numeric ranges,
+ * visible columns) and applies them to the grid's rows.
+ */
+
 namespace APP\plugins\generic\groupReview\classes;
 
 use Illuminate\Support\Facades\DB;
