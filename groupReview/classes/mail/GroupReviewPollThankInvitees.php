@@ -1,5 +1,11 @@
 <?php
 
+/**
+ * @file classes/mail/GroupReviewPollThankInvitees.php
+ *
+ * Thanks a reviewer who was invited to a group review poll.
+ */
+
 namespace APP\plugins\generic\groupReview\classes\mail;
 
 use PKP\context\Context;

@@ -1,5 +1,11 @@
 <?php
 
+/**
+ * @file classes/security/authorization/EditorRequiredPolicy.php
+ *
+ * Permits the request only for a journal editor.
+ */
+
 namespace APP\plugins\generic\groupReview\classes\security\authorization;
 
 use APP\plugins\generic\groupReview\classes\GroupReviewService;

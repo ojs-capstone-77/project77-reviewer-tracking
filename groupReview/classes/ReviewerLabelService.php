@@ -1,5 +1,12 @@
 <?php
 
+/**
+ * @file classes/ReviewerLabelService.php
+ *
+ * Per-journal reviewer label types and values, and the history of changes to a
+ * reviewer's labels.
+ */
+
 namespace APP\plugins\generic\groupReview\classes;
 
 use APP\facades\Repo;
