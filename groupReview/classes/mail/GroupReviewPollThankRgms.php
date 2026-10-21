@@ -3,7 +3,7 @@
 /**
  * @file classes/mail/GroupReviewPollThankRgms.php
  *
- * Thanks a review group leader after a group review meeting.
+ * Tells an invited reviewer they were selected for the group review meeting.
  */
 
 namespace APP\plugins\generic\groupReview\classes\mail;

@@ -3,7 +3,7 @@
 /**
  * @file classes/security/authorization/EditorRequiredPolicy.php
  *
- * Permits the request only for a journal editor.
+ * Permits the request only for a journal editor, or also an RGL where allowed.
  */
 
 namespace APP\plugins\generic\groupReview\classes\security\authorization;
@@ -15,7 +15,7 @@ class EditorRequiredPolicy extends AuthorizationPolicy
 {
     private $request;
 
-    public function __construct($request)
+    public function __construct($request, private bool $allowLeaders = false)
     {
         parent::__construct('plugins.generic.groupReview.authorization.editor');
         $this->request = $request;
@@ -32,6 +32,7 @@ class EditorRequiredPolicy extends AuthorizationPolicy
         $service = new GroupReviewService();
 
         return $service->isJournalEditorUser((int) $context->getId(), (int) $user->getId())
+            || ($this->allowLeaders && $service->rglIsEligible((int) $context->getId(), (int) $user->getId()))
             ? self::AUTHORIZATION_PERMIT
             : self::AUTHORIZATION_DENY;
     }

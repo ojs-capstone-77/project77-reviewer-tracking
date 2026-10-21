@@ -9,6 +9,8 @@
 namespace APP\plugins\generic\groupReview;
 
 use APP\core\Application;
+use APP\core\Services;
+use APP\file\PublicFileManager;
 use APP\plugins\generic\groupReview\classes\forms\ReferenceTemplateForm;
 use APP\plugins\generic\groupReview\classes\GroupReviewService;
 use APP\plugins\generic\groupReview\classes\mail\GroupReviewParticipationSubmitted;
@@ -17,13 +19,16 @@ use APP\plugins\generic\groupReview\classes\mail\GroupReviewPollCreated;
 use APP\plugins\generic\groupReview\classes\mail\GroupReviewPollThankInvitees;
 use APP\plugins\generic\groupReview\classes\mail\GroupReviewPollThankRgms;
 use APP\plugins\generic\groupReview\classes\notification\Notification as GroupReviewNotification;
+use APP\plugins\generic\groupReview\classes\ParticipationConfiguration;
 use APP\plugins\generic\groupReview\classes\ReviewerLabelService;
 use APP\plugins\generic\groupReview\pages\groupReview\GroupReviewHandler;
 use APP\template\TemplateManager;
 use PKP\components\forms\FieldOptions;
 use PKP\components\forms\FieldText;
+use PKP\core\Core;
 use PKP\core\PKPApplication;
 use PKP\decision\Decision;
+use PKP\file\TemporaryFileManager;
 use PKP\plugins\GenericPlugin;
 use PKP\plugins\Hook;
 use PKP\submission\reviewRound\ReviewRoundDAO;
@@ -52,6 +57,8 @@ class GroupReviewPlugin extends GenericPlugin
         Hook::add('Decision::add', [$this, 'decisionAdded']);
         Hook::add('Form::config::before', [$this, 'addToForm']);
         Hook::add('Schema::get::context', [$this, 'addToContextSchema']);
+        Hook::add('Context::validate', [$this, 'validateLetterhead']);
+        Hook::add('Context::edit', [$this, 'saveLetterhead']);
         Hook::add('Template::Workflow', [$this, 'addWorkflowTab']);
         Hook::add('Template::Settings::workflow::review', [$this, 'addReferenceTemplateTab']);
         Hook::add('Template::Settings::workflow::review', [$this, 'addReviewerLabelsTab']);
@@ -99,7 +106,7 @@ class GroupReviewPlugin extends GenericPlugin
         return true;
     }
 
-    /** Apply the poll and RGM-participant lifecycle documented by the project report. */
+    /** Apply the poll lifecycle documented by the project report. */
     public function decisionAdded($hookName, $args): bool
     {
         $decision = $args[0] ?? null;
@@ -123,8 +130,7 @@ class GroupReviewPlugin extends GenericPlugin
             GroupReviewService::closeActiveForSubmission(
                 (int) $submission->getContextId(),
                 $submissionId,
-                GroupReviewService::STATUS_CANCELLED,
-                $decisionType !== Decision::ACCEPT
+                GroupReviewService::STATUS_CANCELLED
             );
         }
 
@@ -196,6 +202,62 @@ class GroupReviewPlugin extends GenericPlugin
         $schema->properties->groupReviewReminderHours = $this->schemaProperty('integer', ['nullable', 'integer', 'min:1', 'max:720']);
         $schema->properties->groupReviewMinimumLeadDays = $this->schemaProperty('integer', ['nullable', 'integer', 'min:0', 'max:365']);
         $schema->properties->groupReviewReferenceTemplate = $this->schemaProperty('string', ['nullable']);
+        $letterhead = $this->schemaProperty('object', ['nullable']);
+        $letterhead->properties = new stdClass();
+        foreach (['name' => 'string', 'uploadName' => 'string', 'width' => 'integer', 'height' => 'integer', 'dateUploaded' => 'string'] as $name => $type) {
+            $letterhead->properties->{$name} = (object) ['type' => $type];
+        }
+        $letterhead->properties->altText = (object) ['type' => 'string', 'validation' => ['nullable']];
+        $letterhead->properties->temporaryFileId = (object) ['type' => 'integer', 'writeOnly' => true];
+        $schema->properties->groupReviewLetterhead = $letterhead;
+
+        return false;
+    }
+
+    public function validateLetterhead($hookName, $args): bool
+    {
+        $errors = &$args[0];
+        $temporaryFileId = $args[2]['groupReviewLetterhead']['temporaryFileId'] ?? null;
+        $user = Application::get()->getRequest()->getUser();
+        if ($temporaryFileId && !(new TemporaryFileManager())->getFile((int) $temporaryFileId, $user ? $user->getId() : null)) {
+            $errors['groupReviewLetterhead'] = [__('common.noTemporaryFile')];
+        }
+
+        return false;
+    }
+
+    public function saveLetterhead($hookName, $args): bool
+    {
+        [$newContext, $context, $params, $request] = $args;
+        if (!array_key_exists('groupReviewLetterhead', $params)) {
+            return false;
+        }
+        $value = $params['groupReviewLetterhead'];
+        $current = $context->getData('groupReviewLetterhead');
+        $publicFileManager = new PublicFileManager();
+        if ($value === null) {
+            if (!empty($current['uploadName'])) {
+                $publicFileManager->removeContextFile($context->getId(), $current['uploadName']);
+            }
+        } elseif (!empty($value['temporaryFileId'])) {
+            $userId = $request->getUser() ? (int) $request->getUser()->getId() : null;
+            $temporaryFile = (new TemporaryFileManager())->getFile((int) $value['temporaryFileId'], $userId);
+            $fileName = $temporaryFile ? Services::get('context')->moveTemporaryFile($context, $temporaryFile, 'groupReviewLetterhead', $userId) : false;
+            if ($fileName) {
+                [$width, $height] = getimagesize($publicFileManager->getContextFilesPath($context->getId()) . '/' . $fileName);
+                $value = [
+                    'name' => $temporaryFile->getOriginalFileName(),
+                    'uploadName' => $fileName,
+                    'width' => $width,
+                    'height' => $height,
+                    'dateUploaded' => Core::getCurrentDate(),
+                    'altText' => (string) ($value['altText'] ?? ''),
+                ];
+            } else {
+                $value = $current;
+            }
+        }
+        $newContext->setData('groupReviewLetterhead', $value);
 
         return false;
     }
@@ -315,7 +377,8 @@ class GroupReviewPlugin extends GenericPlugin
             || !$user
             || !$this->getEnabled((int) $context->getId())
             || !$service->isEnabled($context)
-            || !$service->isJournalEditorUser((int) $context->getId(), (int) $user->getId())) {
+            || !$service->isJournalEditorUser((int) $context->getId(), (int) $user->getId())
+                && !$service->rglIsEligible((int) $context->getId(), (int) $user->getId())) {
             return;
         }
 
@@ -323,7 +386,7 @@ class GroupReviewPlugin extends GenericPlugin
         $menu = (array) $templateManager->getState('menu');
         $item = ['groupReview' => [
             'name' => __('plugins.generic.groupReview.displayName'),
-            'url' => $request->getRouter()->url($request, null, 'groupReview', 'overview'),
+            'url' => $request->getRouter()->url($request, null, 'groupReview', $service->isJournalEditorUser((int) $context->getId(), (int) $user->getId()) ? 'overview' : 'reviewers'),
             'isCurrent' => $request->getRequestedPage() === 'groupReview'
                 && in_array($request->getRequestedOp(), ['overview', 'reviewers', 'reviewer'], true),
         ]];
@@ -375,7 +438,13 @@ class GroupReviewPlugin extends GenericPlugin
             $localeNames
         );
 
-        $form = new ReferenceTemplateForm($apiUrl, $locales, $context);
+        $form = new ReferenceTemplateForm(
+            $apiUrl,
+            $locales,
+            $context,
+            $request->getBaseUrl() . '/' . (new PublicFileManager())->getContextFilesPath($context->getId()),
+            $dispatcher->url($request, PKPApplication::ROUTE_API, $context->getPath(), 'temporaryFiles')
+        );
 
         $components = (array) $templateMgr->getState('components');
         $components[$form->id] = $form->getConfig();
@@ -397,7 +466,12 @@ class GroupReviewPlugin extends GenericPlugin
 
         $templateMgr = TemplateManager::getManager($request);
         $output .= $templateMgr->fetch($this->getTemplateResource('settings/referenceTemplateTab.tpl'));
-        $output .= $templateMgr->fetch($this->getTemplateResource('settings/participationTab.tpl'));
+        $templateMgr->assign([
+            'configuration' => (new ParticipationConfiguration())->get((int) $context->getId()),
+            'configurableFields' => ParticipationConfiguration::FIELDS,
+            'saveUrl' => $request->getRouter()->url($request, null, 'groupReview', 'saveParticipationSettings'),
+        ]);
+        $output .= $templateMgr->fetch($this->getTemplateResource('settings/participation.tpl'));
 
         return false;
     }

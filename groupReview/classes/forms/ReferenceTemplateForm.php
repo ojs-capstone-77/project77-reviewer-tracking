@@ -10,6 +10,7 @@
 namespace APP\plugins\generic\groupReview\classes\forms;
 
 use PKP\components\forms\FieldPreparedContent;
+use PKP\components\forms\FieldUploadImage;
 use PKP\components\forms\FormComponent;
 
 define('FORM_GROUP_REVIEW_REFERENCE_TEMPLATE', 'groupReviewReferenceTemplate');
@@ -19,7 +20,7 @@ class ReferenceTemplateForm extends FormComponent
     public $id = FORM_GROUP_REVIEW_REFERENCE_TEMPLATE;
     public $method = 'PUT';
 
-    public function __construct($action, $locales, $context)
+    public function __construct($action, $locales, $context, string $baseUrl, string $temporaryFileApiUrl)
     {
         $this->action = $action;
         $this->locales = $locales;
@@ -32,7 +33,14 @@ class ReferenceTemplateForm extends FormComponent
             'toolbar' => 'bold italic underline | bullist numlist | link',
             'plugins' => 'paste,link,lists',
             'preparedContent' => self::preparedContent(),
-        ]));
+        ]))
+            ->addField(new FieldUploadImage('groupReviewLetterhead', [
+                'label' => __('plugins.generic.groupReview.reference.letterhead.label'),
+                'description' => __('plugins.generic.groupReview.reference.letterhead.description'),
+                'value' => $context->getData('groupReviewLetterhead'),
+                'baseUrl' => $baseUrl,
+                'options' => ['url' => $temporaryFileApiUrl],
+            ]));
     }
 
     public static function defaultTemplate(): string
@@ -58,6 +66,7 @@ HTML;
             'reviewerSince',
             'year',
             'completedCount',
+            'submissionsReviewedCount',
             'ledCount',
             'leaderCountForYear',
             'contributionsList',

@@ -67,14 +67,17 @@ class ParticipationConfigurationTestTool extends CommandLineTool
             $configuration = new ParticipationConfiguration();
             $service = new ParticipationService();
             $poll = array_values($fixture['polls'])[2];
-            $sessionId = $poll['sessionId'];
+            $roundId = (int) DB::table('group_review_sessions')->where('session_id', $poll['sessionId'])->value('review_round_id');
             $reviewerId = $fixture['users']['test_rgm_22']['id'];
+            $reviewerIds = [$reviewerId, $fixture['users']['test_rgm_23']['id']];
+            $formId = $service->createForm($contextId, $poll['submissionId'], $roundId, $fixture['users'][$poll['leader']]['id'], $reviewerIds);
             $editor = Repo::user()->getByUsername('test_editor_01');
             $editorId = (int) $editor->getId();
             $data = ['reviewer_user_id' => $reviewerId, 'attendance' => 'not_recorded'];
             $this->same(ParticipationConfiguration::defaults(), $configuration->get($contextId), 'Default journal settings');
-            $this->same(7, count($configuration->get($contextId)['fields']), 'All seven configurable fields');
+            $this->same(4, count($configuration->get($contextId)['fields']), 'All four configurable fields');
             $original = $configuration->get($contextId);
+            $text = $original['text'];
             foreach ([
                 ['invalid', [['label' => 'Valid']]],
                 [[[]], [['label' => 'Valid']]],
@@ -84,60 +87,63 @@ class ParticipationConfigurationTestTool extends CommandLineTool
                 [[], [['label' => 'Same'], ['label' => 'same']]],
                 [[], [['label' => []]]], [[], [['label' => str_repeat('a', 151)]]],
             ] as [$fields, $options]) {
-                $this->rejected(fn () => $configuration->save($contextId, $fields, $options), 'Invalid settings rejected');
+                $this->rejected(fn () => $configuration->save($contextId, $fields, $options, $text), 'Invalid settings rejected');
                 $this->same($original, $configuration->get($contextId), 'Invalid settings leave stored configuration unchanged');
             }
+            $this->rejected(fn () => $configuration->save($contextId, [], [['label' => 'Valid']], ['attendance' => ['label' => ' ']] + $text), 'Empty field name rejected');
+            $this->same($original, $configuration->get($contextId), 'Invalid field name leaves stored configuration unchanged');
             $options = [];
             foreach ($original['options'] as $id => $label) {
                 $options[] = ['id' => $id, 'label' => $label];
             }
             foreach (ParticipationConfiguration::FIELDS as $field => $label) {
-                $configuration->save($contextId, [$field], $options);
-                $before = $service->getForm($contextId, $sessionId);
-                $this->rejected(fn () => $service->saveForm($contextId, $sessionId, $editorId, [$data]), "{$label} enforced on save");
-                $this->same($before, $service->getForm($contextId, $sessionId), "{$label}: invalid save is atomic");
-                $this->rejected(fn () => $service->saveForm($contextId, $sessionId, $editorId, [$data], [], true), "{$label} enforced on submit");
+                $configuration->save($contextId, [$field], $options, $text);
+                DB::beginTransaction();
+                $blocked = $service->saveForm($contextId, $formId, $editorId, [$data], [], true);
+                $this->same(true, in_array($field, array_column($blocked['missing'], 'field'), true), "{$label} enforced on submit");
+                $this->same('draft', $service->getForm($contextId, $formId)['form']['status'], "{$label}: blocked submit leaves the form unsubmitted");
+                DB::rollBack();
+                DB::beginTransaction();
+                $service->saveForm($contextId, $formId, $editorId, [$data]);
+                $this->same('draft', $service->getForm($contextId, $formId)['form']['status'], "{$label} not required to save a draft");
+                DB::rollBack();
             }
-            $custom = $configuration->save($contextId, ['shaping_feedback_types'], [['label' => 'Peer feedback']]);
+            $custom = $configuration->save($contextId, ['shaping_feedback_types'], [['label' => 'Peer feedback']], $text);
             $key = array_key_first($custom['options']);
             $this->same(['Peer feedback'], array_values($configuration->get($contextId)['options']), 'New shaping option loads');
             $this->same(ParticipationConfiguration::defaults(), $configuration->get($contextId + 999999), 'Settings are journal scoped');
-            $this->rejected(fn () => $service->saveForm($contextId, $sessionId, $editorId, [
+            $this->rejected(fn () => $service->saveForm($contextId, $formId, $editorId, [
                 $data + ['shaping_feedback_types' => ['invented']],
             ]), 'Unconfigured shaping option rejected');
             $token = ParticipationConfiguration::token($custom);
-            $renamed = $configuration->save($contextId, [], [['id' => $key, 'label' => 'Renamed feedback']]);
+            $renamed = $configuration->save($contextId, [], [['id' => $key, 'label' => 'Renamed feedback']], $text);
             $this->same(false, array_key_exists($key, $renamed['options']), 'Rename has distinct historical identity');
-            $this->rejected(fn () => $service->saveForm($contextId, $sessionId, $editorId, [$data], [
+            $this->rejected(fn () => $service->saveForm($contextId, $formId, $editorId, [$data], [
                 'configuration_token' => $token,
             ]), 'Settings changed while unsaved form was open');
-            $custom = $configuration->save($contextId, [], [['label' => 'Peer feedback']]);
+            $custom = $configuration->save($contextId, [], [['label' => 'Peer feedback']], $text);
             $key = array_key_first($custom['options']);
             $data += [
-                'shaping_feedback_types' => [$key], 'contribution_types' => ['discussion', 'writing'],
-                'strengths' => 'Clear analysis', 'development_opportunities' => 'Time management',
+                'shaping_feedback_types' => [$key], 'contribution_comments' => 'Clear analysis',
                 'other_contribution' => 'Other reviewer comment',
             ];
-            $service->saveForm($contextId, $sessionId, $editorId, [$data], ['general_comments' => 'General editor comment'], true);
-            $saved = $service->getForm($contextId, $sessionId);
-            $this->same($custom, $configuration->forForm($contextId, $sessionId), 'First save snapshots configuration');
-            $this->same(['discussion', 'writing'], $saved['reviewers'][$reviewerId]['contribution_types'], 'Contribution types round trip');
-            $this->same('Clear analysis', $saved['reviewers'][$reviewerId]['strengths'], 'Strengths round trip');
-            $this->same('Time management', $saved['reviewers'][$reviewerId]['development_opportunities'], 'Development opportunities round trip');
+            $service->saveForm($contextId, $formId, $editorId, [$data], ['general_comments' => 'General editor comment'], true);
+            $saved = $service->getForm($contextId, $formId);
+            $this->same($custom, $configuration->forForm($contextId, $formId), 'First save snapshots configuration');
+            $this->same('Clear analysis', $saved['reviewers'][$reviewerId]['contribution_comments'], 'Comments round trip');
             $this->same('Other reviewer comment', $saved['reviewers'][$reviewerId]['other_contribution'], 'Other field retained');
             $this->same('General editor comment', $saved['form']['general_comments'], 'General comments retained');
-            $configuration->save($contextId, array_keys(ParticipationConfiguration::FIELDS), [['label' => 'Future option']]);
-            $this->same($saved, $service->getForm($contextId, $sessionId), 'Configuration changes do not modify submitted data');
-            $this->same($custom, $configuration->forForm($contextId, $sessionId), 'Submitted form retains old options and requirements');
-            $service->saveForm($contextId, $sessionId, $editorId, [$data], [], true);
-            $this->same([$key], $service->getForm($contextId, $sessionId)['reviewers'][$reviewerId]['shaping_feedback_types'], 'Removed option can still be resubmitted on original form');
+            $configuration->save($contextId, array_keys(ParticipationConfiguration::FIELDS), [['label' => 'Future option']], $text);
+            $this->same($saved, $service->getForm($contextId, $formId), 'Configuration changes do not modify submitted data');
+            $this->same($custom, $configuration->forForm($contextId, $formId), 'Submitted form retains old options and requirements');
+            $service->saveForm($contextId, $formId, $editorId, [$data], [], true);
+            $this->same([$key], $service->getForm($contextId, $formId)['reviewers'][$reviewerId]['shaping_feedback_types'], 'Removed option can still be resubmitted on original form');
             $this->same('Peer feedback', (new ReviewerStatsService())->getContributionLabels($contextId, $reviewerId, null)[$key], 'Dashboard answer counts use historical option names');
             $this->same(1, (new ReviewerStatsService())->getContributionCounts($contextId, $reviewerId, null)[$key], 'Removed shaping option still counts in reviewer statistics');
             $history = (new ReviewerStatsService())->getHistory($contextId, $reviewerId, null);
             $entry = array_values(array_filter($history, fn ($entry) => $entry['submissionId'] === $poll['submissionId']))[0];
             $this->same('Peer feedback', $entry['participation']['shapingFeedbackLabels'][$key], 'History preserves removed option name');
-            $this->same('Clear analysis', $entry['participation']['strengths'], 'History retains configurable field values');
-            $this->same('Time management', $entry['participation']['developmentOpportunities'], 'History retains development opportunities');
+            $this->same('Clear analysis', $entry['participation']['contributionComments'], 'History retains configurable field values');
 
             $request = new MonitoringPageRequest($context, $editor);
             $plugin = new class extends GroupReviewPlugin {
@@ -150,21 +156,19 @@ class ParticipationConfigurationTestTool extends CommandLineTool
             $manager = TemplateManager::getManager($request);
             $manager->unregisterPlugin('function', 'csrf');
             $manager->registerPlugin('function', 'csrf', fn () => '');
-            $settingsHtml = $this->render($handler, $request, 'participationSettings');
-            $this->same(true, str_contains($settingsHtml, 'Future option'), 'Settings template loads current configuration');
-            $request->vars = ['sessionId' => $sessionId];
+            $manager->assign([
+                'configuration' => $configuration->get($contextId),
+                'configurableFields' => ParticipationConfiguration::FIELDS,
+                'saveUrl' => '',
+            ]);
+            $settingsHtml = $manager->fetch($plugin->getTemplateResource('settings/participation.tpl'));
+            $this->same(true, str_contains($settingsHtml, 'Future option'), 'Settings tab loads current configuration');
+            $request->vars = ['formId' => $formId];
             $html = $this->render($handler, $request, 'participationForm');
             $this->same(true, str_contains($html, 'Peer feedback') && !str_contains($html, 'Future option'), 'Saved form renders original options');
             $this->same(true, str_contains($html, 'Other comments') && str_contains($html, 'General comments for the editors'), 'Locked fields always rendered');
             $this->same(true, str_contains($html, 'Other reviewer comment') && str_contains($html, 'General editor comment'), 'Locked comments load after configuration changes');
-            $this->same(true, str_contains($html, 'Clear analysis') && str_contains($html, 'Time management'), 'New fields render saved values');
-            $legacy = array_values($fixture['polls'])[0]['sessionId'];
-            $legacyBefore = $service->getForm($contextId, $legacy);
-            $this->same(ParticipationConfiguration::defaults(true), $configuration->forForm($contextId, $legacy), 'Pre-upgrade forms use original field set');
-            $request->vars = ['sessionId' => $legacy];
-            $legacyHtml = $this->render($handler, $request, 'participationForm');
-            $this->same(false, str_contains($legacyHtml, '[strengths]'), 'Legacy forms do not gain new fields');
-            $this->same($legacyBefore, $service->getForm($contextId, $legacy), 'Loading legacy forms never rewrites records');
+            $this->same(true, str_contains($html, 'Clear analysis'), 'Saved values render');
             foreach (['test_editor_01' => true, 'test_editor_03' => true, 'test_rgl_01' => false, 'test_rgm_21' => false] as $username => $allowed) {
                 $access = new MonitoringPageRequest($context, Repo::user()->getByUsername($username));
                 $policy = new EditorRequiredPolicy($access);
@@ -176,73 +180,81 @@ class ParticipationConfigurationTestTool extends CommandLineTool
             $this->render($handler, $request, 'saveParticipationSettings');
             $this->same($before, $configuration->get($contextId), 'Settings CSRF enforced');
             $request->csrf = true;
-            $request->vars = ['requiredFields' => [], 'options' => [['label' => 'After handler save']]];
+            $request->vars = ['requiredFields' => [], 'options' => [['label' => 'After handler save']], 'text' => $text];
             $handler->saveParticipationSettings([], $request);
-            $this->same(['saved' => 1], $request->redirectParams, 'Settings successful save redirects');
             $this->same(['After handler save'], array_values($configuration->get($contextId)['options']), 'Settings handler saves journal configuration');
-            $request->vars = ['requiredFields' => [], 'options' => []];
-            $errorHtml = $this->render($handler, $request, 'saveParticipationSettings');
-            $this->same(true, str_contains($errorHtml, 'At least one shaping feedback option'), 'Invalid settings show explicit validation error');
+            $request->vars = ['requiredFields' => [], 'options' => [], 'text' => $text];
+            $before = $configuration->get($contextId);
+            $handler->saveParticipationSettings([], $request);
+            $this->same($before, $configuration->get($contextId), 'Invalid settings leave the configuration unchanged');
 
-            // A distinct future session picks up the current configuration.
-            $futurePoll = (array) DB::table('group_review_sessions')->where('session_id', $sessionId)->first();
-            unset($futurePoll['session_id']);
-            $futureId = (int) DB::table('group_review_sessions')->insertGetId($futurePoll, 'session_id');
-            foreach (DB::table('group_review_members')->where('session_id', $sessionId)->get() as $member) {
-                $row = (array) $member;
-                unset($row['member_id']);
-                $row['session_id'] = $futureId;
-                DB::table('group_review_members')->insert($row);
-            }
-            $current = $configuration->save($contextId, array_keys(ParticipationConfiguration::FIELDS), [['label' => 'Future option']]);
-            $this->same($current, $configuration->forForm($contextId, $futureId), 'Future session uses new settings');
-            $request->vars = ['sessionId' => $futureId];
+            // A new form picks up the current configuration.
+            $service->cancelForm($contextId, $formId);
+            $futureId = $service->createForm($contextId, $poll['submissionId'], $roundId, $fixture['users'][$poll['leader']]['id'], $reviewerIds);
+            $text['contribution_comments'] = ['label' => 'What went well', 'description' => 'Name one thing.'];
+            $current = $configuration->save($contextId, array_keys(ParticipationConfiguration::FIELDS), [['label' => 'Future option']], $text);
+            $this->same($current, $configuration->forForm($contextId, $futureId), 'New form uses new settings');
+            $request->vars = ['formId' => $futureId];
             $futureHtml = $this->render($handler, $request, 'participationForm');
             $this->same(true, str_contains($futureHtml, 'Future option') && !str_contains($futureHtml, 'Peer feedback'), 'Future form renders updated options only');
             $this->same(true, str_contains($futureHtml, 'Required'), 'Future form displays required status');
+            $this->same(true, str_contains($futureHtml, 'What went well') && str_contains($futureHtml, 'Name one thing.'), 'Future form shows the renamed field and its description');
             $postedReviewers = [];
-            foreach (DB::table('group_review_members')->where('session_id', $futureId)->where('selected', true)->pluck('user_id') as $id) {
+            foreach ($reviewerIds as $id) {
                 $postedReviewers[$id] = [
                     'attendance' => 'attended', 'shapingFeedbackTypes' => [array_key_first($current['options'])],
-                    'contributionTypes' => ['discussion'], 'strengths' => '0',
-                    'developmentOpportunities' => 'More time', 'contributionComments' => 'Notes',
+                    'contributionComments' => '0',
                     'shapingFeedbackComments' => 'Feedback', 'otherContribution' => 'Always available',
                 ];
             }
             $request->vars = [
-                'sessionId' => $futureId, 'reviewers' => $postedReviewers,
+                'formId' => $futureId, 'reviewers' => $postedReviewers,
                 'configurationToken' => ParticipationConfiguration::token($current),
                 'generalComments' => 'Always present', 'formAction' => 'save',
             ];
             $invalid = $request->vars;
-            $invalid['reviewers'][$reviewerId]['strengths'] = '  ';
+            $invalid['reviewers'][$reviewerId]['contributionComments'] = '  ';
+            $invalid['formAction'] = 'submit';
+            $invalid['submissionComment'] = 'Typed before submitting';
             $request->vars = $invalid;
-            $handler = new MonitoringPageHandler($plugin);
-            $errorHtml = $this->render($handler, $request, 'saveParticipationForm');
-            $this->same(true, str_contains($errorHtml, 'Strengths demonstrated is required.'), 'Form handler names missing required field');
-            $this->same(true, str_contains($errorHtml, 'Always available') && str_contains($errorHtml, 'Always present'), 'Failed save preserves entered comments');
-            $this->same(['form' => null, 'reviewers' => []], $service->getForm($contextId, $futureId), 'Handler failure saves nothing');
+            DB::beginTransaction();
+            (new MonitoringPageHandler($plugin))->saveParticipationForm([], $request);
+            $this->same(1, $request->redirectParams['submitBlocked'] ?? null, 'Blocked submit returns to the form');
+            $blocked = $service->getForm($contextId, $futureId);
+            $this->same('draft', $blocked['form']['status'], 'Blocked submit does not submit the form');
+            $this->same('Always available', $blocked['reviewers'][$reviewerId]['other_contribution'], 'Blocked submit keeps the entered answers');
+            $this->same('Always present', $blocked['form']['general_comments'], 'Blocked submit keeps the general comments');
+            $request->vars = ['formId' => $futureId, 'submitBlocked' => 1];
+            $errorHtml = $this->render(new MonitoringPageHandler($plugin), $request, 'participationForm');
+            $this->same(true, str_contains($errorHtml, 'What went well:'), 'Form names the missing required field as the form calls it');
+            $this->same(true, str_contains($errorHtml, 'Typed before submitting'), 'Blocked submit restores the submission comment');
+            DB::rollBack();
+            $request->vars = $invalid;
             $request->vars['reviewers'] = $postedReviewers;
+            $request->vars['formAction'] = 'save';
             $handler = new MonitoringPageHandler($plugin);
             $handler->saveParticipationForm([], $request);
             $futureSaved = $service->getForm($contextId, $futureId);
             $this->same('draft', $futureSaved['form']['status'], 'Configured form saves through actual handler');
-            $this->same('0', $futureSaved['reviewers'][$reviewerId]['strengths'], 'Required text accepts zero rather than treating it as empty');
-            $this->same(2, count($futureSaved['reviewers']), 'All selected reviewers saved');
-            $configuration->save($contextId, [], [['label' => 'Later option']]);
+            $this->same('0', $futureSaved['reviewers'][$reviewerId]['contribution_comments'], 'Required text accepts zero rather than treating it as empty');
+            $this->same(2, count($futureSaved['reviewers']), 'All reviewers saved');
+            $configuration->save($contextId, [], [['label' => 'Later option']], $text);
             $this->same($current, $configuration->forForm($contextId, $futureId), 'Saved draft also retains its original configuration');
-            $request->vars = ['sessionId' => $futureId];
+            $request->vars = ['formId' => $futureId];
             $draftHtml = $this->render(new MonitoringPageHandler($plugin), $request, 'participationForm');
             $this->same(true, str_contains($draftHtml, 'Future option') && !str_contains($draftHtml, 'Later option'), 'Draft reload retains old options after settings change');
-            $this->rejected(fn () => $service->saveForSession($contextId, $futureId, $editorId, [
-                'reviewer_user_id' => $reviewerId, 'attendance' => 'attended', 'strengths' => '',
-            ]), 'Single-reviewer JSON save cannot bypass required fields');
+            DB::beginTransaction();
+            $partial = $service->saveForm($contextId, $futureId, $editorId, [
+                ['reviewer_user_id' => $reviewerId, 'attendance' => 'attended', 'contribution_comments' => ''],
+            ], [], true);
+            $this->same(true, $partial['missing'] !== [] && $partial['status'] === 'draft', 'Submitting one reviewer cannot bypass required fields');
+            DB::rollBack();
             $request->vars = [
-                'sessionId' => $futureId, 'reviewers' => [],
+                'formId' => $futureId, 'reviewers' => [],
                 'configurationToken' => ParticipationConfiguration::token($current),
             ];
             $errorHtml = $this->render(new MonitoringPageHandler($plugin), $request, 'saveParticipationForm');
-            $this->same(true, str_contains($errorHtml, 'Include every selected reviewer'), 'Omitted reviewer rows cannot bypass required validation');
+            $this->same(true, str_contains($errorHtml, 'Include every reviewer'), 'Omitted reviewer rows cannot bypass required validation');
             $this->same($futureSaved, $service->getForm($contextId, $futureId), 'Rejected incomplete form preserves saved data');
             (new \APP\plugins\generic\groupReview\GroupReviewMigration())->up();
             $this->same($futureSaved, $service->getForm($contextId, $futureId), 'Repeated upgrade preserves all participation fields and snapshots');

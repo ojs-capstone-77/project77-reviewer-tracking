@@ -16,12 +16,12 @@ class ParticipationService
     public const ATTENDANCE_ATTENDED = 'attended';
     public const ATTENDANCE_APOLOGY = 'did_not_attend_with_apology';
     public const ATTENDANCE_NO_APOLOGY = 'did_not_attend_without_apology';
-    public const ATTENDANCE_NOT_APPLICABLE = 'not_applicable';
     public const ATTENDANCE_NOT_RECORDED = 'not_recorded';
     public const ATTENDANCE_OTHER = 'other';
 
     public const STATUS_DRAFT = 'draft';
     public const STATUS_SUBMITTED = 'submitted';
+    public const STATUS_CANCELLED = 'cancelled';
 
     /** Submission event log types for participation form activity. */
     public const LOG_FORM_EDITED = 0xA0000001;
@@ -32,147 +32,194 @@ class ParticipationService
         self::ATTENDANCE_ATTENDED => 'Attended',
         self::ATTENDANCE_APOLOGY => 'Did not attend, prior apology',
         self::ATTENDANCE_NO_APOLOGY => 'Did not attend, no prior apology',
-        self::ATTENDANCE_NOT_APPLICABLE => 'N/A',
         self::ATTENDANCE_OTHER => 'Other',
     ];
 
+    public const MEETING_FIELDS = ['attendance', 'contribution_comments'];
+
     public const CONTRIBUTION_OPTIONS = [
+        'offered_creating_draft' => 'Offered to create the feedback draft',
+        'selected_creating_draft' => 'Was selected to create the feedback draft',
         'uploaded_notes' => 'Uploaded their notes or comments',
+        'created_draft' => 'Created the feedback draft',
         'commented_on_draft' => 'Commented on the feedback draft',
-        'offered_creating_draft' => 'Offered to create the draft',
-        'created_draft' => 'Created the draft',
         'did_not_contribute' => 'Did not contribute to shaping the response',
         'other' => 'Other',
     ];
 
+    public function createForm(int $contextId, int $submissionId, int $reviewRoundId, int $leaderUserId, array $reviewerIds): int
+    {
+        return DB::transaction(function () use ($contextId, $submissionId, $reviewRoundId, $leaderUserId, $reviewerIds): int {
+            DB::table('review_rounds')->where('review_round_id', $reviewRoundId)->lockForUpdate()->first();
+            if ($this->getActiveFormId($contextId, $submissionId, $reviewRoundId)) {
+                throw new InvalidArgumentException('The review round already has a participation form.');
+            }
+
+            return (int) DB::table('group_review_participation_forms')->insertGetId([
+                'context_id' => $contextId,
+                'submission_id' => $submissionId,
+                'review_round_id' => $reviewRoundId,
+                'leader_user_id' => $leaderUserId,
+                'reviewer_ids' => json_encode(array_values(array_unique($reviewerIds)), JSON_THROW_ON_ERROR),
+                'status' => self::STATUS_DRAFT,
+                'created_at' => gmdate('Y-m-d H:i:s'),
+            ], 'form_id');
+        });
+    }
+
+    public function getActiveFormId(int $contextId, int $submissionId, int $reviewRoundId): ?int
+    {
+        $formId = DB::table('group_review_participation_forms')
+            ->where('context_id', $contextId)
+            ->where('submission_id', $submissionId)
+            ->where('review_round_id', $reviewRoundId)
+            ->where('status', '!=', self::STATUS_CANCELLED)
+            ->value('form_id');
+
+        return $formId === null ? null : (int) $formId;
+    }
+
+    public function cancelForm(int $contextId, int $formId): void
+    {
+        $cancelled = DB::table('group_review_participation_forms')
+            ->where('context_id', $contextId)
+            ->where('form_id', $formId)
+            ->where('status', '!=', self::STATUS_CANCELLED)
+            ->update(['status' => self::STATUS_CANCELLED]);
+        if (!$cancelled) {
+            throw new InvalidArgumentException('The participation form was not found or is already cancelled.');
+        }
+    }
+
     /**
-     * Save the participation form for a group-review session.
+     * Save a participation form.
      *
      * Each reviewer entry is upserted, then the form-level record is updated
      * with who saved it and when. Submitting records who submitted and the
      * optional comment; submitted forms stay editable and can be resubmitted.
      * Submission, review round and leader identifiers are derived from the
-     * session rather than trusted from request data.
+     * form rather than trusted from request data.
      *
      * @param array<int, array<string, mixed>> $reviewers
-     * @param array{general_comments?:?string, submission_comment?:?string, configuration_token?:?string} $form
+     * @param array{has_meeting?:bool, general_comments?:?string, submission_comment?:?string, configuration_token?:?string} $form
      *
      * @return array{
      *   status:string,
-     *   reviewers:array<int, array{participation_id:int, created:bool}>
+     *   reviewers:array<int, array{participation_id:int, created:bool}>,
+     *   missing:array<int, array{field:string, reviewerUserId:int}>
      * }
      */
     public function saveForm(
         int $contextId,
-        int $sessionId,
+        int $formId,
         int $userId,
         array $reviewers,
         array $form = [],
         bool $submit = false
     ): array {
-        return DB::transaction(function () use ($contextId, $sessionId, $userId, $reviewers, $form, $submit): array {
-            $session = DB::table('group_review_sessions')
+        return DB::transaction(function () use ($contextId, $formId, $userId, $reviewers, $form, $submit): array {
+            $record = DB::table('group_review_participation_forms')
                 ->where('context_id', $contextId)
-                ->where('session_id', $sessionId)
+                ->where('form_id', $formId)
                 ->lockForUpdate()
                 ->first();
-            if (!$session) {
-                throw new InvalidArgumentException('The group review session was not found.');
+            if (!$record) {
+                throw new InvalidArgumentException('The participation form was not found.');
             }
-            if (!$session->leader_user_id) {
-                throw new InvalidArgumentException('The group review session has no leader.');
+            if ($record->status === self::STATUS_CANCELLED) {
+                throw new InvalidArgumentException('A cancelled participation form is read-only.');
             }
 
-            $configuration = (new ParticipationConfiguration())->forForm($contextId, $sessionId);
+            $configuration = (new ParticipationConfiguration())->forForm($contextId, $formId);
             if (isset($form['configuration_token']) && $form['configuration_token'] !== ParticipationConfiguration::token($configuration)) {
                 throw new InvalidArgumentException('The form configuration changed. Reload the form before saving.');
             }
-            $this->saveFormRecord($contextId, $sessionId, $userId, $form, $submit, $configuration);
+            $this->saveFormRecord($record, $userId, $form, $configuration);
             $saved = [];
             foreach ($reviewers as $data) {
                 $reviewerUserId = $this->positiveInteger(
                     $data['reviewer_user_id'] ?? null,
                     'reviewer_user_id'
                 );
-                $saved[$reviewerUserId] = $this->saveReviewer($contextId, $session, $reviewerUserId, $data);
+                $saved[$reviewerUserId] = $this->saveReviewer($contextId, $record, $reviewerUserId, $data);
             }
 
-            $current = $this->getFormRecord($contextId, $sessionId);
+            $missing = [];
+            if ($submit) {
+                $missing = $this->missingRequired($contextId, $formId);
+                if (!$missing) {
+                    $this->recordSubmission($record, $userId, $form);
+                }
+            }
+
+            $current = $this->getFormRecord($contextId, $formId);
 
             return [
                 'status' => (string) $current['status'],
                 'reviewers' => $saved,
+                'missing' => $missing,
             ];
         });
     }
 
-    /**
-     * Save the record for a single review group member. Used by the
-     * saveParticipation JSON endpoint; the full form uses saveForm().
-     *
-     * @return array{participation_id:int,created:bool,status:string}
-     */
-    public function saveForSession(
-        int $contextId,
-        int $sessionId,
-        int $userId,
-        array $data
-    ): array {
-        $status = $data['status'] ?? self::STATUS_DRAFT;
-        if (!in_array($status, [self::STATUS_DRAFT, self::STATUS_SUBMITTED], true)) {
-            throw new InvalidArgumentException('The participation status is invalid.');
+    public function missingRequired(int $contextId, int $formId): array
+    {
+        $saved = $this->getForm($contextId, $formId);
+        if (!$saved['form']) {
+            return [];
         }
-        unset($data['status']);
 
-        $saved = $this->saveForm($contextId, $sessionId, $userId, [$data], [], $status === self::STATUS_SUBMITTED);
-        $reviewer = reset($saved['reviewers']);
+        $required = array_keys(array_filter($this->requirements($contextId, $formId, true)['fields']));
+        $missing = [];
+        foreach ($required as $field) {
+            foreach (json_decode($saved['form']['reviewer_ids'], true) as $reviewerUserId) {
+                $record = $saved['reviewers'][(int) $reviewerUserId] ?? [];
+                if ($this->isUnanswered($field, $record[$field] ?? null)) {
+                    $missing[] = ['field' => $field, 'reviewerUserId' => (int) $reviewerUserId];
+                }
+            }
+        }
 
-        return [
-            'participation_id' => $reviewer['participation_id'],
-            'created' => $reviewer['created'],
-            'status' => $saved['status'],
-        ];
+        return $missing;
     }
 
     /**
      * Return the form-level record and the per-reviewer records keyed by
-     * reviewer user ID. The form is null until the form is first saved.
+     * reviewer user ID. The form is null when it isn't in the journal.
      *
      * @return array{form:?array, reviewers:array<int, array>}
      */
-    public function getForm(int $contextId, int $sessionId): array
+    public function getForm(int $contextId, int $formId): array
     {
         $reviewers = [];
-        foreach ($this->getForSession($contextId, $sessionId) as $record) {
+        foreach ($this->getForForm($contextId, $formId) as $record) {
             $reviewers[(int) $record['reviewer_user_id']] = $record;
         }
 
         return [
-            'form' => $this->getFormRecord($contextId, $sessionId),
+            'form' => $this->getFormRecord($contextId, $formId),
             'reviewers' => $reviewers,
         ];
     }
 
     /**
-     * Return the submission's finalized group-review sessions, newest first,
-     * optionally only those led by one user. A session has a participation
-     * form once its members are selected.
+     * Return the submission's participation forms, newest first, optionally
+     * only those led by one user.
      *
      * @return int[]
      */
-    public function getFormSessionIds(int $contextId, int $submissionId, ?int $leaderUserId = null): array
+    public function getFormIds(int $contextId, int $submissionId, ?int $leaderUserId = null): array
     {
-        $query = DB::table('group_review_sessions')
+        $query = DB::table('group_review_participation_forms')
             ->where('context_id', $contextId)
-            ->where('submission_id', $submissionId)
-            ->where('status', GroupReviewService::STATUS_FINALIZED);
+            ->where('submission_id', $submissionId);
         if ($leaderUserId !== null) {
             $query->where('leader_user_id', $leaderUserId);
         }
 
-        return $query->orderByDesc('session_id')
+        return $query->orderByDesc('form_id')
             ->limit(100)
-            ->pluck('session_id')
+            ->pluck('form_id')
             ->map(fn ($id): int => (int) $id)
             ->all();
     }
@@ -181,22 +228,21 @@ class ParticipationService
      * Create a record and return its identifier.
      *
      * @param array{
-     *   session_id:int, review_round_id:int, submission_id:int,
+     *   form_id:int, review_round_id:int, submission_id:int,
      *   reviewer_user_id:int, leader_user_id:int, attendance:string,
      *   attendance_other?:?string, contribution_comments?:?string,
      *   shaping_feedback_types?:string[], shaping_feedback_comments?:?string,
-     *   other_contribution?:?string, contribution_types?:string[],
-     *   strengths?:?string, development_opportunities?:?string
+     *   other_contribution?:?string
      * } $data
      */
-    public function create(int $contextId, array $data): int
+    public function create(int $contextId, array $data, bool $submit = true): int
     {
-        $record = $this->validate($contextId, $data, (new ParticipationConfiguration())->forForm($contextId, $data['session_id']));
+        $record = $this->validate($contextId, $data, $this->requirements($contextId, (int) $data['form_id'], $submit));
         $now = gmdate('Y-m-d H:i:s');
 
         return (int) DB::table('group_review_participation')->insertGetId([
             'context_id' => $contextId,
-            'session_id' => $record['session_id'],
+            'form_id' => $record['form_id'],
             'review_round_id' => $record['review_round_id'],
             'submission_id' => $record['submission_id'],
             'reviewer_user_id' => $record['reviewer_user_id'],
@@ -207,9 +253,6 @@ class ParticipationService
             'shaping_feedback_types' => json_encode($record['shaping_feedback_types'], JSON_THROW_ON_ERROR),
             'shaping_feedback_comments' => $record['shaping_feedback_comments'],
             'other_contribution' => $record['other_contribution'],
-            'contribution_types' => json_encode($record['contribution_types'], JSON_THROW_ON_ERROR),
-            'strengths' => $record['strengths'],
-            'development_opportunities' => $record['development_opportunities'],
             'created_at' => $now,
             'updated_at' => $now,
         ], 'participation_id');
@@ -226,12 +269,12 @@ class ParticipationService
         return $row ? $this->hydrate((array) $row) : null;
     }
 
-    /** Return all records for a group-review session, ordered by reviewer. */
-    public function getForSession(int $contextId, int $sessionId): array
+    /** Return all records for a participation form, ordered by reviewer. */
+    public function getForForm(int $contextId, int $formId): array
     {
         return DB::table('group_review_participation')
             ->where('context_id', $contextId)
-            ->where('session_id', $sessionId)
+            ->where('form_id', $formId)
             ->orderBy('reviewer_user_id')
             ->orderBy('participation_id')
             ->get()
@@ -239,50 +282,20 @@ class ParticipationService
             ->all();
     }
 
-    /** Return journal- and submission-scoped records, optionally for one reviewer. */
-    public function getForSubmission(int $contextId, int $submissionId, ?int $reviewerUserId = null): array
-    {
-        $query = DB::table('group_review_participation')
-            ->where('context_id', $contextId)
-            ->where('submission_id', $submissionId);
-        if ($reviewerUserId !== null) {
-            $query->where('reviewer_user_id', $reviewerUserId);
-        }
-
-        return $query->orderBy('reviewer_user_id')
-            ->orderBy('participation_id')
-            ->get()
-            ->map(fn ($row): array => $this->hydrate((array) $row))
-            ->all();
-    }
-
-    /**
-     * Restrict non-privileged readers to their own records even if no filter
-     * was supplied. A request for another reviewer's records is forbidden.
-     */
-    public function readableReviewerId(?int $requestedReviewerId, int $userId, bool $canReadAll): ?int
-    {
-        if (!$canReadAll && $requestedReviewerId !== null && $requestedReviewerId !== $userId) {
-            throw new \DomainException('You cannot view another reviewer\'s participation records.');
-        }
-
-        return $canReadAll ? $requestedReviewerId : $userId;
-    }
-
     /** Update a record and return whether a journal-scoped row was changed. */
-    public function update(int $contextId, int $participationId, array $data): bool
+    public function update(int $contextId, int $participationId, array $data, bool $submit = true): bool
     {
         $current = $this->get($contextId, $participationId);
         if (!$current) {
             return false;
         }
 
-        $record = $this->validate($contextId, array_merge($current, $data), (new ParticipationConfiguration())->forForm($contextId, (int) $current['session_id']));
+        $record = $this->validate($contextId, array_merge($current, $data), $this->requirements($contextId, (int) $current['form_id'], $submit));
         $updated = DB::table('group_review_participation')
             ->where('context_id', $contextId)
             ->where('participation_id', $participationId)
             ->update([
-                'session_id' => $record['session_id'],
+                'form_id' => $record['form_id'],
                 'review_round_id' => $record['review_round_id'],
                 'submission_id' => $record['submission_id'],
                 'reviewer_user_id' => $record['reviewer_user_id'],
@@ -293,9 +306,6 @@ class ParticipationService
                 'shaping_feedback_types' => json_encode($record['shaping_feedback_types'], JSON_THROW_ON_ERROR),
                 'shaping_feedback_comments' => $record['shaping_feedback_comments'],
                 'other_contribution' => $record['other_contribution'],
-                'contribution_types' => json_encode($record['contribution_types'], JSON_THROW_ON_ERROR),
-                'strengths' => $record['strengths'],
-                'development_opportunities' => $record['development_opportunities'],
                 'updated_at' => gmdate('Y-m-d H:i:s'),
             ]);
 
@@ -312,44 +322,39 @@ class ParticipationService
     }
 
     /** @return array{participation_id:int, created:bool} */
-    private function saveReviewer(int $contextId, object $session, int $reviewerUserId, array $data): array
+    private function saveReviewer(int $contextId, object $form, int $reviewerUserId, array $data): array
     {
-        $isSelectedMember = DB::table('group_review_members')
-            ->where('session_id', (int) $session->session_id)
-            ->where('user_id', $reviewerUserId)
-            ->where('selected', true)
-            ->exists();
-        if (!$isSelectedMember) {
-            throw new InvalidArgumentException('The reviewer must be a selected member of this group review.');
+        if (!in_array($reviewerUserId, json_decode($form->reviewer_ids, true), true)) {
+            throw new InvalidArgumentException('The reviewer must be one of the participation form\'s reviewers.');
         }
 
         $record = array_merge($data, [
-            'session_id' => (int) $session->session_id,
-            'review_round_id' => (int) $session->review_round_id,
-            'submission_id' => (int) $session->submission_id,
+            'form_id' => (int) $form->form_id,
+            'review_round_id' => (int) $form->review_round_id,
+            'submission_id' => (int) $form->submission_id,
             'reviewer_user_id' => $reviewerUserId,
-            'leader_user_id' => (int) $session->leader_user_id,
+            'leader_user_id' => (int) $form->leader_user_id,
         ]);
         $existing = DB::table('group_review_participation')
             ->where('context_id', $contextId)
-            ->where('session_id', (int) $session->session_id)
+            ->where('form_id', (int) $form->form_id)
             ->where('reviewer_user_id', $reviewerUserId)
             ->first();
 
         if ($existing) {
             $participationId = (int) $existing->participation_id;
-            $this->update($contextId, $participationId, $record);
+            $this->update($contextId, $participationId, $record, false);
             return ['participation_id' => $participationId, 'created' => false];
         }
 
-        return ['participation_id' => $this->create($contextId, $record), 'created' => true];
+        return ['participation_id' => $this->create($contextId, $record, false), 'created' => true];
     }
 
     /**
-     * Upsert the form-level record. Only form fields present in $form are
+     * Update the form-level record. Only form fields present in $form are
      * changed. A form stays submitted once submitted, even when edited later.
      */
-    private function saveFormRecord(int $contextId, int $sessionId, int $userId, array $form, bool $submit, array $configuration): void
+    private function saveFormRecord(object $record, int $userId, array $form, array $configuration): void
     {
         $now = gmdate('Y-m-d H:i:s');
         $values = [
@@ -357,40 +362,58 @@ class ParticipationService
             'updated_by' => $userId,
             'configuration' => json_encode($configuration, JSON_THROW_ON_ERROR),
         ];
+        if (array_key_exists('has_meeting', $form)) {
+            $values['has_meeting'] = (bool) $form['has_meeting'];
+        }
         if (array_key_exists('general_comments', $form)) {
             $values['general_comments'] = $this->text($form['general_comments'], 'general comments');
         }
-        if ($submit) {
-            $values['status'] = self::STATUS_SUBMITTED;
-            $values['submitted_at'] = $now;
-            $values['submitted_by'] = $userId;
-            $values['submission_comment'] = $this->text($form['submission_comment'] ?? null, 'submission comment');
-        }
 
-        $existing = $this->getFormRecord($contextId, $sessionId);
-        if ($existing) {
-            DB::table('group_review_participation_forms')
-                ->where('form_id', (int) $existing['form_id'])
-                ->update($values);
-            return;
-        }
-
-        DB::table('group_review_participation_forms')->insert(array_merge([
-            'context_id' => $contextId,
-            'session_id' => $sessionId,
-            'status' => self::STATUS_DRAFT,
-            'created_at' => $now,
-        ], $values));
+        DB::table('group_review_participation_forms')
+            ->where('form_id', (int) $record->form_id)
+            ->update($values);
     }
 
-    private function getFormRecord(int $contextId, int $sessionId): ?array
+    private function recordSubmission(object $record, int $userId, array $form): void
+    {
+        $now = gmdate('Y-m-d H:i:s');
+        $comment = $this->text($form['submission_comment'] ?? null, 'submission comment');
+        $submissions = json_decode($record->submissions ?? '[]', true);
+        $submissions[] = ['submitted_at' => $now, 'submitted_by' => $userId, 'comment' => $comment];
+
+        DB::table('group_review_participation_forms')
+            ->where('form_id', (int) $record->form_id)
+            ->update([
+                'status' => self::STATUS_SUBMITTED,
+                'submitted_at' => $now,
+                'submitted_by' => $userId,
+                'submission_comment' => $comment,
+                'submissions' => json_encode($submissions, JSON_THROW_ON_ERROR),
+            ]);
+    }
+
+    public function getFormRecord(int $contextId, int $formId): ?array
     {
         $row = DB::table('group_review_participation_forms')
             ->where('context_id', $contextId)
-            ->where('session_id', $sessionId)
+            ->where('form_id', $formId)
             ->first();
 
         return $row ? (array) $row : null;
+    }
+
+    private function requirements(int $contextId, int $formId, bool $submit): array
+    {
+        $configuration = (new ParticipationConfiguration())->forForm($contextId, $formId);
+        if (!$submit) {
+            $configuration['fields'] = array_fill_keys(array_keys($configuration['fields']), false);
+        } elseif (!DB::table('group_review_participation_forms')->where('form_id', $formId)->value('has_meeting')) {
+            foreach (self::MEETING_FIELDS as $field) {
+                $configuration['fields'][$field] = false;
+            }
+        }
+
+        return $configuration;
     }
 
     private function validate(int $contextId, array $data, ?array $configuration = null): array
@@ -399,7 +422,7 @@ class ParticipationService
             throw new InvalidArgumentException('The context ID must be positive.');
         }
 
-        foreach (['session_id', 'review_round_id', 'submission_id', 'reviewer_user_id', 'leader_user_id'] as $key) {
+        foreach (['form_id', 'review_round_id', 'submission_id', 'reviewer_user_id', 'leader_user_id'] as $key) {
             $data[$key] = $this->positiveInteger($data[$key] ?? null, $key);
         }
         if (!isset($data['attendance']) || !in_array($data['attendance'], array_keys(self::ATTENDANCE_OPTIONS), true)) {
@@ -413,7 +436,7 @@ class ParticipationService
             : null;
 
         $record = [
-            'session_id' => (int) $data['session_id'],
+            'form_id' => (int) $data['form_id'],
             'review_round_id' => (int) $data['review_round_id'],
             'submission_id' => (int) $data['submission_id'],
             'reviewer_user_id' => (int) $data['reviewer_user_id'],
@@ -424,22 +447,19 @@ class ParticipationService
             'shaping_feedback_types' => $shapingTypes,
             'shaping_feedback_comments' => $this->text($data['shaping_feedback_comments'] ?? null, 'shaping feedback comments'),
             'other_contribution' => $this->text($data['other_contribution'] ?? null, 'other contribution'),
-            'contribution_types' => $this->validateList($data['contribution_types'] ?? [], array_keys(ParticipationConfiguration::CONTRIBUTION_TYPES), 'contribution types'),
-            'strengths' => $this->text($data['strengths'] ?? null, 'strengths'),
-            'development_opportunities' => $this->text($data['development_opportunities'] ?? null, 'development opportunities'),
         ];
         foreach ($configuration['fields'] as $field => $required) {
-            if ($required && ($record[$field] === null || $record[$field] === '' || $record[$field] === []
-                || ($field === 'attendance' && $record[$field] === self::ATTENDANCE_NOT_RECORDED))) {
-                throw new InvalidArgumentException(ParticipationConfiguration::FIELDS[$field] . ' is required.');
-            }
-        }
-        foreach (['contribution_types', 'strengths', 'development_opportunities'] as $field) {
-            if (!array_key_exists($field, $configuration['fields']) && $record[$field] !== null && $record[$field] !== [] && $record[$field] !== '') {
-                throw new InvalidArgumentException(ParticipationConfiguration::FIELDS[$field] . ' is not part of this saved form.');
+            if ($required && $this->isUnanswered($field, $record[$field])) {
+                throw new InvalidArgumentException($configuration['text'][$field]['label'] . ' is required.');
             }
         }
         return $record;
+    }
+
+    private function isUnanswered(string $field, mixed $value): bool
+    {
+        return $value === null || $value === '' || $value === []
+            || ($field === 'attendance' && $value === self::ATTENDANCE_NOT_RECORDED);
     }
 
     private function positiveInteger(mixed $value, string $label): int
@@ -480,7 +500,6 @@ class ParticipationService
     private function hydrate(array $row): array
     {
         $row['shaping_feedback_types'] = json_decode((string) $row['shaping_feedback_types'], true, 512, JSON_THROW_ON_ERROR);
-        $row['contribution_types'] = empty($row['contribution_types']) ? [] : json_decode($row['contribution_types'], true, 512, JSON_THROW_ON_ERROR);
 
         return $row;
     }
