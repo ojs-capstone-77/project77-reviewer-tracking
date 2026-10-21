@@ -4,7 +4,7 @@
 	<div class="grp">
 		<h1 class="app__pageHeading">{translate key="plugins.generic.groupReview.created.title"}</h1>
 		<div class="grp__notice grp__notice--success">{translate key="plugins.generic.groupReview.created"}</div>
-		{if $mailFailures}<div class="grp__notice grp__notice--warning">{translate key="plugins.generic.groupReview.mailFailures" count=$mailFailures}</div>{/if}
+		{if $mailFailures}<div class="grp__notice grp__notice--warning">{translate key="plugins.generic.groupReview.mailFailures" number=$mailFailures}</div>{/if}
 		<label class="grp__field">
 			<span>{translate key="plugins.generic.groupReview.inviteeLink"}</span>
 			<input type="text" value="{$pollUrl|escape}" readonly onclick="this.select();">

@@ -173,7 +173,7 @@ class ReviewerLabelService
      */
     public function setLabels(int $contextId, int $userId, array $values, ?string $note, int $changedBy): bool
     {
-        $types = $this->getTypes($contextId);
+        $types = $this->getTypesFor($contextId, $userId);
         $new = $this->validate($types, $values);
         $note = $this->note($note);
 
@@ -258,7 +258,23 @@ class ReviewerLabelService
             return $types[$type]['name'];
         }
 
-        return $types[$type]['values'][$value] ?? '';
+        return $types[$type]['values'][$value] ?? (string) DB::table('group_review_label_values')
+            ->where('context_id', $contextId)
+            ->where('type_key', $type)
+            ->where('value_key', $value)
+            ->value('label');
+    }
+
+    public function getTypesFor(int $contextId, int $userId): array
+    {
+        $types = $this->getTypes($contextId);
+        foreach ($this->getLabels($contextId, [$userId])[$userId] as $type => $values) {
+            foreach ($values as $value) {
+                $types[$type]['values'][$value] ??= $this->name($contextId, $type, $value);
+            }
+        }
+
+        return $types;
     }
 
     /**
@@ -398,6 +414,29 @@ class ReviewerLabelService
             'seq' => $nextSeq,
             'is_active' => true,
         ]);
+
+        unset($this->typesCache[$contextId]);
+    }
+
+    public function renameValue(int $contextId, string $typeKey, string $valueKey, string $label): void
+    {
+        $label = trim($label);
+        if ($label === '') {
+            throw new InvalidArgumentException('A value is required.');
+        }
+
+        $values = fn () => DB::table('group_review_label_values')
+            ->where('context_id', $contextId)
+            ->where('type_key', $typeKey)
+            ->where('is_active', true);
+        if (!$values()->where('value_key', $valueKey)->exists()) {
+            throw new InvalidArgumentException('Unknown label value.');
+        }
+        if ($values()->where('value_key', '!=', $valueKey)->whereRaw('LOWER(label) = ?', [mb_strtolower($label)])->exists()) {
+            throw new InvalidArgumentException('That value already exists for this label type.');
+        }
+
+        $values()->where('value_key', $valueKey)->update(['label' => $label]);
 
         unset($this->typesCache[$contextId]);
     }

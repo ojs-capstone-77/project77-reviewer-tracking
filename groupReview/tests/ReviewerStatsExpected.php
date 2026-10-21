@@ -14,6 +14,7 @@ class ReviewerStatsExpected
 
     public function __construct(private array $fixture)
     {
+        $this->fixture += ['forms' => [], 'decisions' => [], 'answers' => [], 'generalComments' => []];
     }
 
     public function expected(?int $year): array
@@ -22,26 +23,28 @@ class ReviewerStatsExpected
             return in_array($poll['status'], [1, 3], true)
                 || ($poll['status'] === 0 && ($poll['deadline'] ?? $poll['created'] + 864000) <= time());
         });
-        $reviewers = array_filter($this->fixture['users'], function (array $user, string $username) use ($polls): bool {
+        $forms = $this->fixture['forms'];
+        $inGroup = fn (array $form, string $username): bool => $form['leader'] === $username || in_array($username, $form['reviewers'], true);
+        $reviewers = array_filter($this->fixture['users'], function (array $user, string $username) use ($polls, $forms, $inGroup): bool {
             if ($user['disabled'] ?? false) {
                 return false;
             }
             return array_intersect($user['roles'], ['rgl', 'rgm'])
-                || array_filter($polls, fn ($poll): bool => $poll['leader'] === $username || array_key_exists($username, $poll['invited']));
+                || array_filter($polls, fn ($poll): bool => $poll['leader'] === $username || array_key_exists($username, $poll['invited']))
+                || array_filter($forms, fn ($form): bool => $inGroup($form, $username));
         }, ARRAY_FILTER_USE_BOTH);
         $holders = array_filter($reviewers, fn ($user): bool => (bool) array_intersect($user['roles'], ['rgl', 'rgm']));
         $filtered = array_filter($polls, fn ($poll): bool => $year === null || $this->year($poll) === $year);
-        $groups = array_filter($filtered, fn ($poll): bool => $poll['status'] === 1);
+        $groups = array_filter($forms, fn ($form): bool => $year === null || $this->formYear($form) === $year);
         $rows = $attendance = $contributions = $histories = $active = [];
         foreach ($reviewers as $username => $user) {
             $invitations = array_filter($filtered, fn ($poll): bool => array_key_exists($username, $poll['invited']));
             $available = array_filter($invitations, fn ($poll): bool => !empty($poll['invited'][$username]));
             $unavailable = array_filter($invitations, fn ($poll): bool => $poll['invited'][$username] === []);
-            $selected = array_filter($groups, fn ($poll): bool => in_array($username, $poll['selected'] ?? [], true));
-            $led = array_filter($groups, fn ($poll): bool => $poll['leader'] === $username);
-            $joined = $selected + $led;
-            $allJoined = array_filter($polls, fn ($poll): bool => $poll['status'] === 1
-                && ($poll['leader'] === $username || in_array($username, $poll['selected'] ?? [], true)));
+            $selected = array_filter($filtered, fn ($poll): bool => $poll['status'] === 1 && in_array($username, $poll['selected'] ?? [], true));
+            $led = array_filter($groups, fn ($form): bool => $form['leader'] === $username);
+            $joined = array_filter($groups, fn ($form): bool => $inGroup($form, $username));
+            $allJoined = array_filter($forms, fn ($form): bool => $inGroup($form, $username));
             $starts = $activityDates = [];
             foreach ($polls as $poll) {
                 if (array_key_exists($username, $poll['invited'])) {
@@ -52,20 +55,16 @@ class ReviewerStatsExpected
                     }
                 }
             }
-            foreach ($allJoined as $poll) {
-                if ($poll['leader'] === $username) {
-                    $starts[] = $poll['created'];
-                }
-                if ($this->meeting($poll) <= time()) {
-                    $activityDates[] = $this->meeting($poll);
-                }
+            foreach ($allJoined as $form) {
+                $starts[] = $form['created'];
+                $activityDates[] = $form['created'];
             }
             $attendance[$username] = $contributions[$username] = $histories[$username] = [];
-            foreach ($filtered as $sessionId => $poll) {
-                if (!($poll['form']['submitted'] ?? false)) {
+            foreach ($groups as $formId => $form) {
+                if (!$form['submitted']) {
                     continue;
                 }
-                $answer = $this->fixture['answers'][$sessionId][$username] ?? null;
+                $answer = $this->fixture['answers'][$formId][$username] ?? null;
                 if (!$answer) {
                     continue;
                 }
@@ -77,19 +76,18 @@ class ReviewerStatsExpected
                     $contributions[$username][$key] = ($contributions[$username][$key] ?? 0) + 1;
                 }
             }
-            uasort($joined, fn ($a, $b): int => $this->meeting($b) <=> $this->meeting($a));
-            foreach ($joined as $sessionId => $poll) {
-                $isLeader = $poll['leader'] === $username;
-                $submitted = $poll['form']['submitted'] ?? false;
+            uasort($joined, fn ($a, $b): int => $b['created'] <=> $a['created']);
+            foreach ($joined as $formId => $form) {
+                $isLeader = $form['leader'] === $username;
+                $answer = !$isLeader && $form['submitted'] ? ($this->fixture['answers'][$formId][$username] ?? null) : null;
                 $histories[$username][] = [
-                    'submissionId' => $poll['submissionId'],
-                    'round' => $poll['round'],
-                    'date' => gmdate('Y-m-d H:i:s', $this->meeting($poll)),
-                    'timezone' => $poll['timezone'],
-                    'leaderName' => $this->fixture['users'][$poll['leader']]['name'],
+                    'submissionId' => $form['submissionId'],
+                    'round' => (int) \Illuminate\Support\Facades\DB::table('review_rounds')->where('review_round_id', $form['roundId'])->value('round'),
+                    'date' => gmdate('Y-m-d H:i:s', $form['created']),
+                    'leaderName' => $this->fixture['users'][$form['leader']]['name'],
                     'isLeader' => $isLeader,
-                    'participation' => !$isLeader && $submitted ? ($this->fixture['answers'][$sessionId][$username] ?? null) : null,
-                    'generalComments' => $isLeader && $submitted ? ($this->fixture['generalComments'][$sessionId] ?? null) : null,
+                    'participation' => $answer ? $answer + ['fieldLabels' => array_map(fn (array $text): string => $text['label'], \APP\plugins\generic\groupReview\classes\ParticipationConfiguration::defaults()['text'])] : null,
+                    'generalComments' => $isLeader && $form['submitted'] ? ($this->fixture['generalComments'][$formId] ?? null) : null,
                 ];
             }
             $rows[$username] = [
@@ -102,8 +100,9 @@ class ReviewerStatsExpected
                 'selected' => count($selected),
                 'notSelected' => count($available) - count($selected),
                 'timesLed' => count($led),
-                'completed' => count(array_filter($joined, fn ($poll): bool => $this->completed($poll))),
-                'current' => count(array_filter($allJoined, fn ($poll): bool => empty($poll['decision']))),
+                'completed' => count(array_filter($joined, fn ($form): bool => $this->completed($form))),
+                'submissionsReviewed' => count(array_unique(array_column(array_filter($joined, fn ($form): bool => $this->completed($form)), 'submissionId'))),
+                'current' => count(array_filter($allJoined, fn ($form): bool => !$this->decided($form))),
                 'attended' => $attendance[$username]['attended'] ?? 0,
                 'attendanceRecorded' => array_sum(array_intersect_key($attendance[$username], array_flip([
                     'attended', 'did_not_attend_with_apology', 'did_not_attend_without_apology',
@@ -111,12 +110,12 @@ class ReviewerStatsExpected
                 'reviewerSince' => $starts ? gmdate('Y-m-d H:i:s', min($starts)) : null,
                 'lastActivity' => $activityDates ? gmdate('Y-m-d H:i:s', max($activityDates)) : null,
             ];
-            $active[$username] = (bool) ($available || $led);
+            $active[$username] = (bool) ($available || $joined);
         }
         uasort($rows, fn ($a, $b): int => strcasecmp($a['name'], $b['name']));
         $activity = ['invited' => 0, 'participated' => 0, 'notSelected' => 0, 'inactive' => 0, 'notInvited' => 0];
         foreach ($rows as $username => $row) {
-            if ($row['selected'] || $row['timesLed']) {
+            if (array_filter($groups, fn ($form): bool => $inGroup($form, $username))) {
                 $activity['participated']++;
                 $activity['invited']++;
             } elseif ($row['available']) {
@@ -130,7 +129,7 @@ class ReviewerStatsExpected
             }
         }
         $activity['reviewGroups'] = count($groups);
-        $activity['completed'] = count(array_filter($groups, fn ($poll): bool => $this->completed($poll)));
+        $activity['completed'] = count(array_filter($groups, fn ($form): bool => $this->completed($form)));
         $labels = [];
         foreach (self::LABELS as $type => $values) {
             $labels[$type] = ['values' => [], 'notSet' => ['total' => 0, 'active' => 0]];
@@ -151,7 +150,7 @@ class ReviewerStatsExpected
                 }
             }
         }
-        $years = array_unique(array_map(fn ($poll): int => $this->year($poll), $polls));
+        $years = array_unique(array_merge(array_map(fn ($poll): int => $this->year($poll), $polls), array_map(fn ($form): int => $this->formYear($form), $forms)));
         rsort($years);
         return [
             'years' => $years,
@@ -163,7 +162,7 @@ class ReviewerStatsExpected
                 'live' => [
                     'total' => count($holders),
                     'leaders' => count(array_filter($holders, fn ($user): bool => in_array('rgl', $user['roles'], true))),
-                    'currentGroups' => count(array_filter($polls, fn ($poll): bool => $poll['status'] === 1 && empty($poll['decision']))),
+                    'currentGroups' => count(array_filter($forms, fn ($form): bool => !$this->decided($form))),
                 ],
                 'activity' => $activity,
                 'labels' => $labels,
@@ -171,9 +170,19 @@ class ReviewerStatsExpected
         ];
     }
 
-    private function completed(array $poll): bool
+    private function decided(array $form): bool
     {
-        return !empty($poll['decision']) && $poll['decision'] !== \PKP\decision\Decision::CANCEL_REVIEW_ROUND;
+        return isset($this->fixture['decisions'][$form['roundId']]);
+    }
+
+    private function completed(array $form): bool
+    {
+        return $this->decided($form) && $this->fixture['decisions'][$form['roundId']] !== \PKP\decision\Decision::CANCEL_REVIEW_ROUND;
+    }
+
+    private function formYear(array $form): int
+    {
+        return (int) (new DateTimeImmutable('@' . $form['created']))->setTimezone(new DateTimeZone(date_default_timezone_get()))->format('Y');
     }
 
     private function meeting(array $poll): int

@@ -2,23 +2,26 @@
 
 {block name="page"}
 	<h1 class="app__pageHeading">Reviewer Participation Recording</h1>
-	<p class="app__pageDescription"><strong>{$submissionTitle|escape}</strong>{if $firstAuthor} &middot; {$firstAuthor|escape}{/if}</p>
 
 	<div class="grpTool__card grpTool__card--wide">
 		<div class="grpTool__cardHeader">
-			<span>Your review groups</span>
+			<span>{$submissionTitle|escape}</span>
+			{if $firstAuthor}<span>{$firstAuthor|escape}</span>{/if}
 		</div>
 		<div class="grpTool__cardBody">
+			{if $createUrl && !$hasReviewers}
+				<div class="grp__notice grp__notice--warning">{translate key="plugins.generic.groupReview.participation.create.noReviewers"}</div>
+			{/if}
 			<div class="grpTool__sectionLabel">Group reviews</div>
 			<ul class="grpTool__list">
 				{foreach from=$sessions item=session}
 					<li class="grpTool__listItem">
 						<div>
 							<div class="grpTool__listTitle">
-								Submission #{$session.submissionId} group review
-								<span class="grpTool__badge grpTool__badge--{$session.status}">{if $session.status === 'submitted'}Submitted{else}Draft{/if}</span>
+								Round {$session.round}
+								<span class="grpTool__badge grpTool__badge--{$session.status}">{if $session.status === 'submitted'}Submitted{elseif $session.status === 'cancelled'}Cancelled{else}Draft{/if}</span>
 							</div>
-							<div class="grp__muted">Round {$session.round} &middot; {$session.reviewerCount} reviewers assigned &middot; {$session.meetingLabel|escape}</div>
+							<div class="grp__muted">Led by {$session.leaderName|escape}, {$session.reviewerCount} reviewers</div>
 						</div>
 						<div class="grpTool__listMeta">
 							{if $session.lastSaved}
@@ -32,9 +35,16 @@
 				{/foreach}
 			</ul>
 
-			<p class="grp__actions">
+			<div class="grp__actions">
 				<a class="pkp_button" href="{$backUrl|escape}">Back</a>
-			</p>
+				{if $createUrl}
+					<form class="grpTool__createForm" method="post" action="{$createUrl|escape}">
+						{csrf}
+						<input type="hidden" name="submissionId" value="{$submissionId|intval}">
+						<button type="submit" class="pkp_button pkp_button_primary"{if !$hasReviewers} disabled{/if}>{translate key="common.create"}</button>
+					</form>
+				{/if}
+			</div>
 		</div>
 	</div>
 {/block}

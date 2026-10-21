@@ -541,6 +541,12 @@
 	gap: 0.5rem;
 }
 
+.grp__actions .grpTool__createForm {
+	display: flex;
+	gap: 0.5rem;
+	margin-inline-start: auto;
+}
+
 .grpTool__cancelButton {
 	color: #d00a6c;
 }
@@ -570,6 +576,18 @@
 .grpTool__badge--submitted {
 	background: #d9f7e5;
 	color: #00913f;
+}
+
+.grpTool__badge--cancelled {
+	background: #f1e7eb;
+	color: #7b2448;
+}
+
+.grpTool__fieldset {
+	min-width: 0;
+	margin: 0;
+	padding: 0;
+	border: 0;
 }
 
 .grpTool__lastSaved > div + div {
@@ -731,22 +749,8 @@
 	gap: 0.5rem;
 }
 
-.grpMon__referenceLetter {
-	display: block;
-	width: 100%;
-	min-height: 28rem;
-	margin: 1rem 0;
-	padding: 1rem;
-	border: 1px solid #d8dee3;
-	border-radius: 4px;
-	font-family: inherit;
-	font-size: 0.9375rem;
-	line-height: 1.6;
-	resize: vertical;
-}
-
 .grpMon__referenceActions {
-	margin-bottom: 1.5rem;
+	margin: 1rem 0 1.5rem;
 }
 
 .grpMon__kv {
@@ -1034,6 +1038,8 @@
 
 .grpLabels__link--danger {
 	color: #d00a6c;
+}
+
 .grpConfig__form fieldset {
 	border: 1px solid #ddd;
 	margin: 0 0 1.5rem;

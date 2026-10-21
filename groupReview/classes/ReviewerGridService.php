@@ -142,7 +142,7 @@ class ReviewerGridService
     }
 
     /** Only currently open, unexpired polls in this journal; no year constraint. */
-    public function availableReviewerIds(int $contextId, int $submissionId): array
+    public function availableReviewerIds(int $contextId, ?int $submissionId, ?int $leaderUserId = null): array
     {
         return DB::table('group_review_availability as a')
             ->join('group_review_sessions as s', 's.session_id', '=', 'a.session_id')
@@ -150,7 +150,8 @@ class ReviewerGridService
                 $join->on('m.session_id', '=', 'a.session_id')->on('m.user_id', '=', 'a.user_id');
             })
             ->where('s.context_id', $contextId)
-            ->where('s.submission_id', $submissionId)
+            ->when($submissionId !== null, fn ($query) => $query->where('s.submission_id', $submissionId))
+            ->when($leaderUserId !== null, fn ($query) => $query->where('s.leader_user_id', $leaderUserId))
             ->where('s.status', GroupReviewService::STATUS_OPEN)
             ->where('s.deadline_utc', '>', gmdate('Y-m-d H:i:s'))
             ->distinct()->pluck('a.user_id')->map(fn ($id): int => (int) $id)->all();

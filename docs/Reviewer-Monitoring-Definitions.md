@@ -4,17 +4,19 @@ The standard for every count on the editor dashboard, and the data passed to its
 
 ## Definitions
 
-**Reviewer:** a user in the RGM or RGL user group, or anyone invited to or leading a past poll (even if they've since lost the role). Disabled accounts are left out everywhere.
+**Reviewer:** a user in the RGM or RGL user group, or anyone invited to or leading a past poll, or in a review group (even if they've since lost the role). Disabled accounts are left out everywhere.
 
-**Polls:** a poll is a row in `group_review_sessions`. Only closed polls count: finalised and expired. Draft, open and cancelled polls are ignored everywhere, so a reviewer's counts only change once a poll closes. A poll still marked open after its response deadline counts as expired (the plugin only updates its status when someone next views it). A **review group** is a finalised poll.
+**Polls:** a poll is a row in `group_review_sessions`. Only closed polls count: finalised and expired. Draft, open and cancelled polls are ignored everywhere, so a reviewer's counts only change once a poll closes. A poll still marked open after its response deadline counts as expired (the plugin only updates its status when someone next views it).
+
+**Review groups:** a review group is a participation form (`group_review_participation_forms`) that isn't cancelled, whether draft or submitted. Its members are the form's reviewers, and its leader is the form's leader.
 
 **Decided:** a review group is decided when the latest editorial decision on its review round (in OJS's `edit_decisions`) is accept, request revisions, resubmit for review, decline, new review round or cancel review round. Recommendations don't count, and a reverted decline makes the round undecided again. A review group whose latest such decision is **cancel review round** is **cancelled**: it's left out of Completed and Current, but its invitations, availability, selection, leading and attendance still count.
 
-**Year:** filters on the poll's meeting date by calendar year: the chosen meeting time for finalised polls, otherwise the last proposed meeting time, in the poll's own timezone. "All time" removes the filter. Labels, Reviewer since and Last activity are never filtered. Current ignores the year.
+**Year:** filters polls on their meeting date by calendar year: the chosen meeting time for finalised polls, otherwise the last proposed meeting time, in the poll's own timezone. Review groups are filtered on the date their form was created, in the site's timezone. "All time" removes the filter. Labels, Reviewer since and Last activity are never filtered. Current ignores the year.
 
 ### Per-reviewer counts (Reviewers table, reviewer page)
 
-These count **polls**, so a reviewer invited 8 times has Invited 8.
+Invited to Selected count **polls**, so a reviewer invited 8 times has Invited 8. The rest count **review groups**.
 
 | Count | Meaning |
 |---|---|
@@ -22,14 +24,15 @@ These count **polls**, so a reviewer invited 8 times has Invited 8.
 | Available | Polls where they gave at least one time |
 | Not available | Polls where they responded with no times |
 | No response | Polls where they didn't respond |
-| Selected | Review groups they were selected for as a member |
+| Selected | Finalised polls they were selected in |
 | Not selected | Available − Selected |
 | Times led | Review groups they led |
-| Completed | Review groups selected for or led, decided and not cancelled |
-| Current | Review groups selected for or led, not yet decided (cancelled ones are left out) |
+| Completed | Review groups they were in or led, decided and not cancelled |
+| Submissions reviewed | Submissions with at least one Completed review group |
+| Current | Review groups they were in or led, not yet decided (cancelled ones are left out) |
 | Attended | Submitted forms recording them as Attended |
-| Attendance recorded | Submitted forms recording Attended or either "Did not attend" option (N.A., Other and Not recorded left out) |
-| Reviewer since | First invitation or review group led |
+| Attendance recorded | Submitted forms recording Attended or either "Did not attend" option (Other and Not recorded left out, as are forms recording no meeting) |
+| Reviewer since | First invitation or review group |
 | Last activity | Most recent invitation, response or review group |
 
 Invited = Available + Not available + No response. Available = Selected + Not selected.
@@ -40,9 +43,9 @@ Invited = Available + Not available + No response. Available = Selected + Not se
 
 | Item | Meaning |
 |---|---|
-| Meeting attendance counts | For each attendance answer, how many submitted forms in the year record it for them. Not recorded is left out, and answers never given aren't shown. |
-| Contributions counts | For each feedback contribution option, how many submitted forms in the year record it for them. Options never given aren't shown. |
-| Review group history | Review groups in the year they were selected for as a member or led, newest first. Member entries show their answered form fields; leader entries show the form's general comments. |
+| Meeting attendance counts | For each attendance answer, how many submitted forms in the year record it for them, including 0. Not recorded is left out, as are forms recording no meeting. |
+| Contributions counts | For each feedback contribution option, how many submitted forms in the year record it for them, including 0. |
+| Review group history | Review groups in the year they were in or led, newest first. Member entries show their answered form fields; leader entries show the form's general comments. |
 
 ### Overview counts
 
@@ -58,12 +61,12 @@ Invited = Available + Not available + No response. Available = Selected + Not se
 
 | Count | Meaning |
 |---|---|
-| Invited | Invited to at least one poll, or led at least one review group |
-| Participated | Selected for or led at least one review group |
-| Not selected | Gave at least one time, but never selected and led no review group |
-| Inactive | Invited, never gave a time, and led no review group |
-| Not invited | Currently holds the RGM or RGL role, but no invitations and led no review group |
-| Review groups | Review groups with their meeting in the year |
+| Invited | Invited to at least one poll, or in at least one review group |
+| Participated | In or led at least one review group |
+| Not selected | Gave at least one time, but in no review group |
+| Inactive | Invited, never gave a time, and in no review group |
+| Not invited | Currently holds the RGM or RGL role, but no invitations and in no review group |
+| Review groups | Review groups with their form created in the year |
 | Completed | Of those, decided and not cancelled |
 
 Invited = Participated + Not selected + Inactive. Invited + Not invited can be more than the live Total, because someone who has since lost the role still counts as Invited in years they took part.
@@ -73,7 +76,7 @@ Invited = Participated + Not selected + Inactive. Invited + Not invited can be m
 | Count | Meaning |
 |---|---|
 | Label Total | Reviewers currently holding that label value (live) |
-| Label Active | Of those, gave at least one time or led a review group in the selected year |
+| Label Active | Of those, gave at least one time or was in a review group in the selected year |
 
 ## Labels
 
@@ -116,7 +119,7 @@ Each row in `reviewers`:
 | `invited` | Count |
 | `available`, `availablePercent` | Count, and percentage or null |
 | `selected`, `selectedPercent` | Count, and percentage or null |
-| `url` | Link to their reviewer page |
+| `url` | Link to their reviewer page, or null for an RGL |
 
 ### `reviewer.tpl` (reviewer page)
 
@@ -138,7 +141,7 @@ Each entry in `history`:
 
 | Field | Contains |
 |---|---|
-| `submissionId`, `round`, `date` | Which review group, and its meeting date |
+| `submissionId`, `submissionTitle`, `round`, `date` | Which review group, and when its form was created |
 | `leaderName`, `isLeader` | Who led it, and whether it was this reviewer |
 | `answers` | Their form answers: list of `section`, `label`, `value` (answered fields only) |
 | `generalComments` | The form's general comments (leader entries only) |

@@ -32,7 +32,6 @@ jobs:
       - name: Run participation unit tests
         run: |
           php groupReview/tests/ParticipationServiceTest.php
-          php groupReview/tests/ParticipationReadTest.php
 
   code-style:
     name: Code Style

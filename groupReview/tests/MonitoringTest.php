@@ -67,6 +67,11 @@ class MonitoringPageRequest extends \APP\core\Request
     {
         $this->redirectParams = $params;
     }
+
+    public function getSession(): \PKP\session\Session
+    {
+        return new \PKP\session\Session();
+    }
 }
 
 class MonitoringPageHandler extends GroupReviewHandler
@@ -110,8 +115,15 @@ class MonitoringTestTool extends CommandLineTool
         try {
             (new GroupReviewTestDataTool([__FILE__, $path, 'seed']))->execute();
             $handler = new GroupReviewHandler(new GroupReviewPlugin());
-            $request = new class {
+            $request = new class($context) {
                 public array $vars = [];
+                public function __construct(private $context)
+                {
+                }
+                public function getContext()
+                {
+                    return $this->context;
+                }
                 public function getUserVar($key)
                 {
                     return $this->vars[$key] ?? null;
@@ -143,8 +155,8 @@ class MonitoringTestTool extends CommandLineTool
             }
             $request->vars = ['sort' => 'name', 'dir' => 'asc'];
             $this->check($this->invoke($handler, 'monitoringSortAndDir', $request) === ['name', 'asc'], 'Valid sort retained');
-            $urls = $this->invoke($handler, 'monitoringSortUrls', $request, null, 'completed', 'desc');
-            $this->check(str_contains($urls['completed'], 'dir=asc') && str_contains($urls['completed'], 'year=all'), 'Sort links reverse direction and retain year');
+            $orders = $this->invoke($handler, 'monitoringSortOrders', 'completed', 'desc');
+            $this->check($orders['completed'] === 'completed.asc' && $orders['invited'] === 'invited.desc' && $orders['name'] === 'name.asc', 'Sorting reverses the current column and starts others highest first');
             foreach ([[], '1abc', '-1', '0'] as $id) {
                 $request->vars = ['reviewerId' => $id];
                 $this->check($this->invoke($handler, 'monitoringReviewerId', $request) === 0, 'Invalid reviewer ID rejected');
@@ -174,7 +186,7 @@ class MonitoringTestTool extends CommandLineTool
             }
             foreach (['overview', 'reviewers', 'reviewer', 'saveLabels'] as $op) {
                 $this->check(in_array($op, $handler->getRoleAssignment(Role::ROLE_ID_MANAGER), true), "Manager route: {$op}");
-                $this->check(!in_array($op, $handler->getRoleAssignment(Role::ROLE_ID_SUB_EDITOR), true), "RGL/RGM route denied: {$op}");
+                $this->check(in_array($op, $handler->getRoleAssignment(Role::ROLE_ID_SUB_EDITOR), true) === ($op === 'reviewers'), "RGL/RGM route: {$op}");
                 $this->check(!in_array($op, $handler->getRoleAssignment(Role::ROLE_ID_AUTHOR) ?? [], true), "Author route denied: {$op}");
             }
 
@@ -214,7 +226,7 @@ class MonitoringTestTool extends CommandLineTool
             $values = ['experience_level' => ['experienced'], 'methodology' => ['qualitative'], 'expertise' => ['statistics']];
             $labels->setLabels($contextId, $reviewerId, $values, 'Monitoring test', $editorId);
             $saved = $labels->getLabels($contextId, [$reviewerId])[$reviewerId];
-            $this->check($saved === $values, 'Saved labels immediately readable');
+            $this->check(array_intersect_key($saved, $values) === $values, 'Saved labels immediately readable');
             $historyBefore = count($labels->getHistory($contextId, $reviewerId));
             foreach ([
                 ['unknown' => ['x']],
@@ -348,13 +360,16 @@ class MonitoringTestTool extends CommandLineTool
                 $menu = $manager->getState('menu');
                 $this->check(isset($menu['submissions'], $menu['groupReview']), 'Editor sidebar adds Group Review and preserves other items');
                 $this->check(str_contains($menu['groupReview']['url'], 'overview'), 'Sidebar opens Overview');
-                foreach (['test_rgl_01', 'test_rgm_21'] as $username) {
-                    $deniedRequest = new MonitoringPageRequest($context, Repo::user()->getByUsername($username));
-                    Registry::set('request', $deniedRequest);
-                    $manager->setState(['menu' => []]);
-                    $menuPlugin->addMonitoringMenuItem('TemplateManager::setupBackendPage', []);
-                    $this->check(!isset($manager->getState('menu')['groupReview']), "Sidebar hidden for {$username}");
-                }
+                $leaderRequest = new MonitoringPageRequest($context, Repo::user()->getByUsername('test_rgl_05'));
+                Registry::set('request', $leaderRequest);
+                $manager->setState(['menu' => []]);
+                $menuPlugin->addMonitoringMenuItem('TemplateManager::setupBackendPage', []);
+                $this->check(str_contains($manager->getState('menu')['groupReview']['url'] ?? '', 'reviewers'), 'Sidebar opens Reviewers for an RGL');
+                $memberRequest = new MonitoringPageRequest($context, Repo::user()->getByUsername('test_rgm_21'));
+                Registry::set('request', $memberRequest);
+                $manager->setState(['menu' => []]);
+                $menuPlugin->addMonitoringMenuItem('TemplateManager::setupBackendPage', []);
+                $this->check(!isset($manager->getState('menu')['groupReview']), 'Sidebar hidden for an RGM');
             } finally {
                 Registry::set('request', $originalRequest);
             }

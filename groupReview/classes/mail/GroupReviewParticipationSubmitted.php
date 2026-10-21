@@ -3,7 +3,7 @@
 /**
  * @file classes/mail/GroupReviewParticipationSubmitted.php
  *
- * Notifies the review group leader that a member submitted their participation form.
+ * Notifies the submission's journal editors that a participation form was submitted.
  */
 
 namespace APP\plugins\generic\groupReview\classes\mail;

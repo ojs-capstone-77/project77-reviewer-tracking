@@ -16,7 +16,7 @@
 					{foreach from=$members item=member}
 						<label class="grp__member" data-name="{$member.name|escape} {$member.email|escape}">
 							<input type="checkbox" name="memberIds[]" value="{$member.user_id|intval}">
-							<span><strong>{$member.name|escape}</strong><small>{$member.email|escape}</small></span>
+							<span><strong>{$member.name|escape}</strong>{if $member.assigned} <badge>{translate key="plugins.generic.groupReview.invite.assigned"}</badge>{/if}<small>{$member.email|escape}</small></span>
 						</label>
 					{foreachelse}
 						<p>{translate key="plugins.generic.groupReview.members.none"}</p>

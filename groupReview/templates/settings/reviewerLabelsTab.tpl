@@ -106,6 +106,12 @@
 					<span>{translate key="plugins.generic.groupReview.labels.typeName"} *</span>
 					<input type="text" name="name" value="{$type.name|escape}" required>
 				</label>
+				{foreach from=$type.values item=value}
+					<label class="grp__field">
+						<span>{translate key="plugins.generic.groupReview.labels.valueName"} *</span>
+						<input type="text" name="values[{$value.key|escape}]" value="{$value.label|escape}" required>
+					</label>
+				{/foreach}
 			</form>
 			<template slot="footer">
 				<pkp-button :is-warnable="true" @click="$modal.hide('grpRenameLabelType_{$type.key|escape}')">{translate key="common.cancel"}</pkp-button>

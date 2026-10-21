@@ -2,6 +2,7 @@
 
 {block name="page"}
 	{capture assign="grpApply"}$nextTick(() => document.getElementById('grpReviewerFilters').submit());{/capture}
+	{capture assign="grpReset"}{foreach from=$labelFilters key=type item=definition}grpLabels.{$type} = []; {/foreach}grpFilters = {ldelim}{rdelim}; document.getElementById('grpAvailableSubmission').value = ''; {$grpApply}{/capture}
 	<div class="grp">
 		{include file=$monitoringTabsResource activeTab="reviewers" overviewUrl=$overviewUrl reviewersUrl=$reviewersUrl}
 
@@ -54,7 +55,7 @@
 								{/foreach}
 							</ul>
 						</pkp-dropdown>
-						<pkp-button :is-active="grpShowFilters" @click="grpShowFilters = !grpShowFilters; if (!grpShowFilters) {ldelim} {foreach from=$labelFilters key=type item=definition}grpLabels.{$type} = []; {/foreach}grpFilters = {ldelim}{rdelim}; document.getElementById('grpAvailableSubmission').value = ''; {$grpApply} {rdelim}">
+						<pkp-button :is-active="grpShowFilters" @click="grpShowFilters = !grpShowFilters">
 							<icon icon="filter" :inline="true"></icon>
 							{translate key="common.filter"}
 						</pkp-button>
@@ -67,6 +68,10 @@
 							<pkp-header :is-one-line="false">
 								<h3><icon icon="filter" :inline="true"></icon> {translate key="common.filter"}</h3>
 							</pkp-header>
+							<div class="listPanel__block">
+								<pkp-button :is-primary="true" @click="{$grpApply}">{translate key="plugins.generic.groupReview.filtering.apply"}</pkp-button>
+								<pkp-button @click="{$grpReset}">{translate key="common.reset"}</pkp-button>
+							</div>
 							{foreach from=$labelFilters key=type item=definition}
 								<div class="listPanel__block">
 									<pkp-header><h4>{$definition.name|escape}</h4></pkp-header>
@@ -76,8 +81,8 @@
 											title="{$option.label|escape}"
 											value="{$option.value|escape}"
 											:is-filter-active="grpLabels.{$type}.includes({$option.value|json_encode|escape})"
-											@add-filter="(param, value) => {ldelim} grpLabels[param].push(value); {$grpApply} {rdelim}"
-											@remove-filter="(param, value) => {ldelim} grpLabels[param].splice(grpLabels[param].indexOf(value), 1); {$grpApply} {rdelim}"
+											@add-filter="(param, value) => grpLabels[param].push(value)"
+											@remove-filter="(param, value) => grpLabels[param].splice(grpLabels[param].indexOf(value), 1)"
 										></pkp-filter>
 									{/foreach}
 								</div>
@@ -85,7 +90,7 @@
 							<div class="listPanel__block">
 								<pkp-header><h4>{translate key="plugins.generic.groupReview.filtering.openPoll"}</h4></pkp-header>
 								<label class="-screenReader" for="grpAvailableSubmission">{translate key="plugins.generic.groupReview.filtering.submissionId"}</label>
-								<div class="pkpFormField--sizesmall"><input class="pkpFormField__input pkpFormField--text__input" id="grpAvailableSubmission" type="text" inputmode="numeric" form="grpReviewerFilters" name="availableSubmissionId" value="{$gridFilters.availableSubmissionId|escape}" placeholder="{translate key="plugins.generic.groupReview.filtering.submissionId"}" @change="{$grpApply}" @keydown.enter.prevent="{$grpApply}"></div>
+								<div class="pkpFormField--sizesmall"><input class="pkpFormField__input pkpFormField--text__input" id="grpAvailableSubmission" type="text" inputmode="numeric" form="grpReviewerFilters" name="availableSubmissionId" value="{$gridFilters.availableSubmissionId|escape}" placeholder="{translate key="plugins.generic.groupReview.filtering.submissionId"}" @keydown.enter.prevent="{$grpApply}"></div>
 							</div>
 							<div class="listPanel__block">
 								<pkp-header><h4>{translate key="plugins.generic.groupReview.monitoring.activity"}</h4></pkp-header>
@@ -100,9 +105,9 @@
 										more-than-label="{translate key="common.moreThan"}"
 										less-than-label="{translate key="common.lessThan"}"
 										:is-filter-active="!!grpFilters.{$column.key}"
-										@add-filter="(param, value) => {ldelim} $set(grpFilters, param, value); {$grpApply} {rdelim}"
-										@update-filter="(param, value) => {ldelim} $set(grpFilters, param, value); {$grpApply} {rdelim}"
-										@remove-filter="(param) => {ldelim} $delete(grpFilters, param); {$grpApply} {rdelim}"
+										@add-filter="(param, value) => $set(grpFilters, param, value)"
+										@update-filter="(param, value) => $set(grpFilters, param, value)"
+										@remove-filter="(param) => $delete(grpFilters, param)"
 									></pkp-filter-slider-multirange>
 								{/foreach}
 							</div>
@@ -111,7 +116,7 @@
 
 					<div class="listPanel__items">
 						{if empty($reviewers)}
-							<div class="pkpStats__noRecords">{translate key="plugins.generic.groupReview.filtering.empty"}</div>
+							<div class="pkpStats__noRecords">{if !$isEditor && !$totalReviewers}{translate key="plugins.generic.groupReview.monitoring.reviewers.noneAvailable"}{else}{translate key="plugins.generic.groupReview.filtering.empty"}{/if}</div>
 						{else}
 							<div class="grp__tableWrap">
 								<table class="pkpTable" aria-labelledby="grpReviewersLabel">
@@ -139,7 +144,7 @@
 										{foreach from=$reviewers item=reviewer}
 											<tr>
 												<td>
-													<a href="{$reviewer.url|escape}">{$reviewer.name|escape}</a>
+													{if $reviewer.url}<a href="{$reviewer.url|escape}">{$reviewer.name|escape}</a>{else}{$reviewer.name|escape}{/if}
 													{if $reviewer.labelsText}<div class="grpMon__labels">{$reviewer.labelsText|escape}</div>{/if}
 												</td>
 												{foreach from=$columns item=column}
