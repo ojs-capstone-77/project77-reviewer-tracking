@@ -20,6 +20,7 @@ use APP\plugins\generic\groupReview\classes\mail\GroupReviewPollThankInvitees;
 use APP\plugins\generic\groupReview\classes\mail\GroupReviewPollThankRgms;
 use APP\plugins\generic\groupReview\classes\notification\Notification as GroupReviewNotification;
 use APP\plugins\generic\groupReview\classes\ParticipationConfiguration;
+use APP\plugins\generic\groupReview\classes\ReferenceLetterhead;
 use APP\plugins\generic\groupReview\classes\ReviewerLabelService;
 use APP\plugins\generic\groupReview\pages\groupReview\GroupReviewHandler;
 use APP\template\TemplateManager;
@@ -217,10 +218,23 @@ class GroupReviewPlugin extends GenericPlugin
     public function validateLetterhead($hookName, $args): bool
     {
         $errors = &$args[0];
-        $temporaryFileId = $args[2]['groupReviewLetterhead']['temporaryFileId'] ?? null;
-        $user = Application::get()->getRequest()->getUser();
-        if ($temporaryFileId && !(new TemporaryFileManager())->getFile((int) $temporaryFileId, $user ? $user->getId() : null)) {
-            $errors['groupReviewLetterhead'] = [__('common.noTemporaryFile')];
+        if (!array_key_exists('groupReviewLetterhead', $args[2])) {
+            return false;
+        }
+        $value = $args[2]['groupReviewLetterhead'];
+        $context = Application::get()->getRequest()->getContext();
+        try {
+            ReferenceLetterhead::validateValue($value, $context ? $context->getData('groupReviewLetterhead') : null);
+            if (!empty($value['temporaryFileId'])) {
+                $user = Application::get()->getRequest()->getUser();
+                $file = $user ? (new TemporaryFileManager())->getFile((int) $value['temporaryFileId'], (int) $user->getId()) : null;
+                if (!$file) {
+                    throw new \InvalidArgumentException(__('common.noTemporaryFile'));
+                }
+                ReferenceLetterhead::image($file->getFilePath(), $file->getFileType());
+            }
+        } catch (\InvalidArgumentException $error) {
+            $errors['groupReviewLetterhead'] = [$error->getMessage()];
         }
 
         return false;
@@ -234,6 +248,7 @@ class GroupReviewPlugin extends GenericPlugin
         }
         $value = $params['groupReviewLetterhead'];
         $current = $context->getData('groupReviewLetterhead');
+        ReferenceLetterhead::validateValue($value, $current);
         $publicFileManager = new PublicFileManager();
         if ($value === null) {
             if (!empty($current['uploadName'])) {
@@ -242,20 +257,26 @@ class GroupReviewPlugin extends GenericPlugin
         } elseif (!empty($value['temporaryFileId'])) {
             $userId = $request->getUser() ? (int) $request->getUser()->getId() : null;
             $temporaryFile = (new TemporaryFileManager())->getFile((int) $value['temporaryFileId'], $userId);
-            $fileName = $temporaryFile ? Services::get('context')->moveTemporaryFile($context, $temporaryFile, 'groupReviewLetterhead', $userId) : false;
+            if (!$userId || !$temporaryFile) {
+                throw new \InvalidArgumentException(__('common.noTemporaryFile'));
+            }
+            $dimensions = ReferenceLetterhead::image($temporaryFile->getFilePath(), $temporaryFile->getFileType());
+            $originalName = $temporaryFile->getOriginalFileName();
+            $fileName = Services::get('context')->moveTemporaryFile($context, $temporaryFile, 'groupReviewLetterhead', $userId);
             if ($fileName) {
-                [$width, $height] = getimagesize($publicFileManager->getContextFilesPath($context->getId()) . '/' . $fileName);
                 $value = [
-                    'name' => $temporaryFile->getOriginalFileName(),
+                    'name' => $originalName,
                     'uploadName' => $fileName,
-                    'width' => $width,
-                    'height' => $height,
+                    'width' => $dimensions['width'],
+                    'height' => $dimensions['height'],
                     'dateUploaded' => Core::getCurrentDate(),
                     'altText' => (string) ($value['altText'] ?? ''),
                 ];
             } else {
-                $value = $current;
+                throw new \RuntimeException('The letterhead image could not be stored.');
             }
+        } elseif ($value !== null) {
+            $value = array_merge($current, ['altText' => $value['altText'] ?? '']);
         }
         $newContext->setData('groupReviewLetterhead', $value);
 

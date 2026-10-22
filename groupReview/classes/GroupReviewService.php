@@ -152,19 +152,11 @@ class GroupReviewService
     }
 
     /**
-     * Append a line to the plugin's own access-control log file, kept
-     * separate from PHP's generic error log so denied attempts are easy
-     * to find and review on their own.
+     * Use the server-managed error log, not a file under the public plugin path.
      */
     public function logAccessDenied(string $message): void
     {
-        $logDir = dirname(__DIR__) . '/logs';
-        if (!is_dir($logDir)) {
-            @mkdir($logDir, 0755, true);
-        }
-
-        $line = '[' . gmdate('Y-m-d H:i:s') . ' UTC] ' . $message . PHP_EOL;
-        @file_put_contents($logDir . '/participation-access.log', $line, FILE_APPEND | LOCK_EX);
+        error_log('Group Review access denied: ' . str_replace(["\r", "\n"], ' ', $message));
     }
 
     public function isInvited(int $contextId, int $sessionId, int $userId): bool
