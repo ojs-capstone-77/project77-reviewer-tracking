@@ -1,5 +1,11 @@
 <?php
 
+/**
+ * @file classes/mail/GroupReviewPollCreated.php
+ *
+ * Invites a reviewer to a new group review poll.
+ */
+
 namespace APP\plugins\generic\groupReview\classes\mail;
 
 use PKP\context\Context;

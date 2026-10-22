@@ -1,5 +1,11 @@
 <?php
 
+/**
+ * @file classes/security/authorization/InviteeRequiredPolicy.php
+ *
+ * Permits the request only for a user invited to the given poll.
+ */
+
 namespace APP\plugins\generic\groupReview\classes\security\authorization;
 
 use APP\plugins\generic\groupReview\classes\GroupReviewService;

@@ -1,15 +1,10 @@
-{extends file="layouts/backend.tpl"}
-{block name="page"}
-	<h1 class="app__pageHeading">{translate key="plugins.generic.groupReview.configuration.title"}</h1>
-	<p>{translate key="plugins.generic.groupReview.configuration.description"}</p>
-	{if $configurationError}<div class="grp__notice grp__notice--error" role="alert">{$configurationError|escape}</div>{/if}
-	{if $configurationSaved}<div class="grp__notice" role="status">{translate key="common.changesSaved"}</div>{/if}
-	<form method="post" action="{$saveUrl|escape}" class="grpTool__card grpTool__card--wide grpConfig__form">
-		{csrf}
-		<div class="grpTool__cardBody">
+<tab id="groupReviewParticipation" label="{translate key="plugins.generic.groupReview.configuration.title"}">
+	<div class="grp">
+		<p>{translate key="plugins.generic.groupReview.configuration.description"}</p>
+		<form method="post" action="{$saveUrl|escape}" class="grpConfig__form">
+			{csrf}
 			<fieldset>
 				<legend>{translate key="plugins.generic.groupReview.configuration.requiredFields"}</legend>
-				<p>{translate key="plugins.generic.groupReview.configuration.requiredHint"}</p>
 				{foreach from=$configurableFields key=field item=label}
 					<label class="grpTool__check">
 						<input type="checkbox" name="requiredFields[]" value="{$field|escape}"{if $configuration.fields[$field]} checked{/if}>
@@ -17,7 +12,19 @@
 					</label>
 				{/foreach}
 			</fieldset>
-			<p>{translate key="plugins.generic.groupReview.configuration.locked"}</p>
+			<fieldset>
+				<legend>{translate key="plugins.generic.groupReview.configuration.text"}</legend>
+				{foreach from=$configuration.text key=field item=text}
+					<div class="grpConfig__option">
+						<label>{if isset($configurableFields[$field])}{$configurableFields[$field]|escape}{else}{translate key="plugins.generic.groupReview.participation.field.`$field`"}{/if}
+							<input class="pkpFormField__input" type="text" name="text[{$field|escape}][label]" value="{$text.label|escape}" required maxlength="150">
+						</label>
+						<label>{translate key="plugins.generic.groupReview.configuration.fieldDescription"}
+							<input class="pkpFormField__input" type="text" name="text[{$field|escape}][description]" value="{$text.description|escape}" maxlength="1000">
+						</label>
+					</div>
+				{/foreach}
+			</fieldset>
 			<fieldset>
 				<legend>{translate key="plugins.generic.groupReview.configuration.options"}</legend>
 				<div id="grpConfigurationOptions" data-option-label="{translate key="plugins.generic.groupReview.configuration.optionName"}" data-remove-label="{translate key="common.remove"}">
@@ -34,8 +41,8 @@
 				<button type="button" class="pkpButton" id="grpAddConfigurationOption">{translate key="common.add"}</button>
 			</fieldset>
 			<p><button type="submit" class="pkpButton pkpButton--isPrimary">{translate key="common.save"}</button></p>
-		</div>
-	</form>
+		</form>
+	</div>
 	<script>
 	{literal}
 	document.addEventListener('click', function (event) {
@@ -71,4 +78,4 @@
 	});
 	{/literal}
 	</script>
-{/block}
+</tab>

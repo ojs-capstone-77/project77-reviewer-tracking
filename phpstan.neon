@@ -12,3 +12,4 @@ parameters:
     stubFiles:
         - phpstan-stubs/Mailable.stub.php
         - phpstan-stubs/ReviewRoundDAO.stub.php
+        - phpstan-stubs/TemporaryFileManager.stub.php

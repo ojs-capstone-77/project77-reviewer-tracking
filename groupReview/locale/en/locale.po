@@ -13,22 +13,16 @@ msgid "plugins.generic.groupReview.displayName"
 msgstr "Group Review"
 
 msgid "plugins.generic.groupReview.configuration.title"
-msgstr "Participation form configuration"
+msgstr "Participation form"
 
 msgid "plugins.generic.groupReview.configuration.description"
-msgstr "Configure future participation forms for this journal. Saved forms retain their original fields, options and requirements, including when edited or resubmitted."
+msgstr "Changes apply to new forms."
 
 msgid "plugins.generic.groupReview.configuration.requiredFields"
 msgstr "Required fields"
 
-msgid "plugins.generic.groupReview.configuration.requiredHint"
-msgstr "Checked fields must be completed for every reviewer on Save or Submit. Unchecked fields remain visible and optional."
-
-msgid "plugins.generic.groupReview.configuration.locked"
-msgstr "Reviewer names, Other comments per reviewer and General comments for the editors are always present and cannot be removed. Attendance is always recorded; an optional unanswered attendance field is saved as Not recorded."
-
 msgid "plugins.generic.groupReview.configuration.options"
-msgstr "Shaping feedback options"
+msgstr "Feedback response options"
 
 msgid "plugins.generic.groupReview.configuration.optionName"
 msgstr "Option name"
@@ -159,9 +153,6 @@ msgstr "Generate Reference"
 msgid "plugins.generic.groupReview.reference.pageTitle"
 msgstr "Reference Letter"
 
-msgid "plugins.generic.groupReview.reference.generatePdf"
-msgstr "Generate PDF"
-
 msgid "plugins.generic.groupReview.reference.backToReviewer"
 msgstr "Back"
 
@@ -172,7 +163,7 @@ msgid "plugins.generic.groupReview.authorization.invitee"
 msgstr "Only a Review Group Member invited to this journal's poll may access it."
 
 msgid "plugins.generic.groupReview.authorization.participation"
-msgstr "Only the journal's Manager, an assigned Journal editor, or the assigned Review Group Leader for this submission may view or record participation."
+msgstr "Only a Journal editor, or a Review Group Leader assigned to this submission, may view or record participation."
 
 msgid "plugins.generic.groupReview.authorization.editor"
 msgstr "Only the journal's Manager or an assigned Journal editor may view the reviewer monitoring dashboard."
@@ -334,9 +325,6 @@ msgstr "Meeting attendance"
 msgid "plugins.generic.groupReview.monitoring.contributionCounts"
 msgstr "Contributions"
 
-msgid "plugins.generic.groupReview.monitoring.noCounts"
-msgstr "Nothing recorded for this period."
-
 msgid "plugins.generic.groupReview.monitoring.history"
 msgstr "History"
 
@@ -351,12 +339,6 @@ msgstr "Led by"
 
 msgid "plugins.generic.groupReview.monitoring.history.groupLeader"
 msgstr "Group leader"
-
-msgid "plugins.generic.groupReview.monitoring.history.submission"
-msgstr "Submission #"
-
-msgid "plugins.generic.groupReview.monitoring.history.groupReviewLabel"
-msgstr "group review"
 
 msgid "plugins.generic.groupReview.monitoring.history.generalComments"
 msgstr "General comments"
@@ -391,26 +373,14 @@ msgstr "User"
 msgid "plugins.generic.groupReview.labels.changeHistory.change"
 msgstr "Change"
 
-msgid "plugins.generic.groupReview.participation.saved"
-msgstr "The participation record was saved."
-
 msgid "plugins.generic.groupReview.participation.error.saveFailed"
 msgstr "The participation record could not be saved. Please try again."
 
-msgid "plugins.generic.groupReview.participation.retrieved"
-msgstr "Participation records retrieved."
+msgid "plugins.generic.groupReview.participation.error.submitBlocked"
+msgstr "Your changes were saved, but the form was not submitted. Complete these required fields, then submit again:"
 
-msgid "plugins.generic.groupReview.participation.error.invalidFilter"
-msgstr "Supply a valid submission ID and, optionally, a valid reviewer user ID."
-
-msgid "plugins.generic.groupReview.participation.error.notFound"
-msgstr "The submission was not found in this journal."
-
-msgid "plugins.generic.groupReview.participation.error.forbidden"
-msgstr "You may only view your own participation records."
-
-msgid "plugins.generic.groupReview.participation.error.readFailed"
-msgstr "The participation records could not be retrieved. Please try again."
+msgid "plugins.generic.groupReview.participation.error.missingField"
+msgstr "{$field}: {$reviewers}"
 
 msgid "plugins.generic.groupReview.create.title"
 msgstr "Create Group Review Poll"
@@ -584,10 +554,10 @@ msgid "plugins.generic.groupReview.finalized"
 msgstr "The meeting was finalized and the selected Review Group Members were added as participants."
 
 msgid "plugins.generic.groupReview.resent"
-msgstr "Invitation messages were resent to {$count} non-respondent(s)."
+msgstr "Invitation messages were resent to {$number} non-respondent(s)."
 
 msgid "plugins.generic.groupReview.mailFailures"
-msgstr "{$count} email message(s) could not be sent. Poll data was saved; check the OJS mail configuration and resend if needed."
+msgstr "{$number} email message(s) could not be sent. Poll data was saved; check the OJS mail configuration and resend if needed."
 
 msgid "plugins.generic.groupReview.discussion.title"
 msgstr "Feedback Draft"
@@ -692,16 +662,13 @@ msgid "plugins.generic.groupReview.emailVariable.meetingUrl"
 msgstr "Meeting URL"
 
 msgid "plugins.generic.groupReview.participation.error.formNotFound"
-msgstr "This review group does not have a participation form yet. Members must be selected first."
+msgstr "The participation form was not found."
 
 msgid "plugins.generic.groupReview.participation.log.edited"
 msgstr "Participation form for round {$round} edited."
 
 msgid "plugins.generic.groupReview.participation.log.submitted"
 msgstr "Participation form for round {$round} submitted."
-
-msgid "plugins.generic.groupReview.participation.log.submittedWithComment"
-msgstr "Participation form for round {$round} submitted. Comment: {$comment}"
 
 msgid "plugins.generic.groupReview.participation.noComment"
 msgstr "No comment was added."
@@ -780,3 +747,135 @@ msgstr "removed {$values}"
 
 msgid "plugins.generic.groupReview.labels.history.noteOnly"
 msgstr "Note added, no label changes."
+
+msgid "plugins.generic.groupReview.labels.tab"
+msgstr "Reviewer labels"
+
+msgid "plugins.generic.groupReview.labels.tabDescription"
+msgstr "Configure the label types and values editors can assign to reviewers."
+
+msgid "plugins.generic.groupReview.labels.addType"
+msgstr "Add label type"
+
+msgid "plugins.generic.groupReview.labels.column.type"
+msgstr "Label type"
+
+msgid "plugins.generic.groupReview.labels.column.choice"
+msgstr "Choice"
+
+msgid "plugins.generic.groupReview.labels.column.values"
+msgstr "Values"
+
+msgid "plugins.generic.groupReview.labels.column.action"
+msgstr "Action"
+
+msgid "plugins.generic.groupReview.labels.multipleChoice"
+msgstr "Multiple choice"
+
+msgid "plugins.generic.groupReview.labels.singleChoice"
+msgstr "Single choice"
+
+msgid "plugins.generic.groupReview.labels.addValue"
+msgstr "Add value"
+
+msgid "plugins.generic.groupReview.labels.typeName"
+msgstr "Label name"
+
+msgid "plugins.generic.groupReview.labels.choice"
+msgstr "Choice type"
+
+msgid "plugins.generic.groupReview.labels.choiceLocked"
+msgstr "This cannot be changed after the label type is created."
+
+msgid "plugins.generic.groupReview.labels.removeType"
+msgstr "Remove label type"
+
+msgid "plugins.generic.groupReview.labels.removeTypeConfirm"
+msgstr "Remove the \"{$name}\" label type?"
+
+msgid "plugins.generic.groupReview.labels.removeTypeWarning"
+msgstr "This will remove it from the settings list. {$reviewerCount} reviewer(s) currently have this label; their existing data and history will be kept."
+
+msgid "plugins.generic.groupReview.labels.rename"
+msgstr "Rename"
+
+msgid "plugins.generic.groupReview.labels.renameType"
+msgstr "Rename label type"
+
+msgid "plugins.generic.groupReview.participation.create.noReviewers"
+msgstr "No Review Group Members assigned."
+
+msgid "plugins.generic.groupReview.participation.error.createFailed"
+msgstr "The participation form could not be created."
+
+msgid "plugins.generic.groupReview.participation.error.cancelFailed"
+msgstr "The participation form could not be cancelled."
+
+msgid "plugins.generic.groupReview.participation.cancel"
+msgstr "Cancel Form"
+
+msgid "plugins.generic.groupReview.participation.cancel.confirm"
+msgstr "Cancel this form? Its answers are kept but no longer counted, and the round can have a new form."
+
+msgid "plugins.generic.groupReview.participation.cancelledNotice"
+msgstr "This form is cancelled. Its answers aren't counted."
+
+msgid "plugins.generic.groupReview.participation.submittedBy"
+msgstr "Submitted {$date} by {$name}"
+
+msgid "plugins.generic.groupReview.participation.history.empty"
+msgstr "Not submitted yet."
+
+msgid "plugins.generic.groupReview.configuration.text"
+msgstr "Field names"
+
+msgid "plugins.generic.groupReview.configuration.fieldDescription"
+msgstr "Description"
+
+msgid "plugins.generic.groupReview.participation.field.attendance"
+msgstr "Meeting attendance"
+
+msgid "plugins.generic.groupReview.participation.field.contribution_comments"
+msgstr "Comments on contributions"
+
+msgid "plugins.generic.groupReview.participation.field.contribution_comments.description"
+msgstr "e.g. level of preparedness, interaction with others, depth of contributions. Focus on elements that stand out by their strengths or indicate where professional development might be required; no need to comment on expected levels of contributions."
+
+msgid "plugins.generic.groupReview.participation.field.shaping_feedback_types"
+msgstr "Contributions"
+
+msgid "plugins.generic.groupReview.participation.field.shaping_feedback_comments"
+msgstr "Comments on contributions"
+
+msgid "plugins.generic.groupReview.participation.field.shaping_feedback_comments.description"
+msgstr "Again, focus on elements that stand out by their strengths or indicate where professional development might be required; no need to comment on expected levels of contributions."
+
+msgid "plugins.generic.groupReview.participation.field.other_contribution"
+msgstr "Other comments"
+
+msgid "plugins.generic.groupReview.participation.field.general_comments"
+msgstr "General comments for the editors"
+
+msgid "plugins.generic.groupReview.invite.assigned"
+msgstr "Assigned"
+
+msgid "plugins.generic.groupReview.monitoring.reviewers.noneAvailable"
+msgstr "No reviewers are available in your open polls. Reviewers who are available in your open polls are listed here."
+
+msgid "plugins.generic.groupReview.reference.letterhead.label"
+msgstr "Letterhead"
+
+msgid "plugins.generic.groupReview.reference.letterhead.description"
+msgstr "Shown at the top of the letter."
+
+msgid "plugins.generic.groupReview.reference.fileName"
+msgstr "{$journalAcronym} reference letter - {$reviewerName} - {$year}"
+
+msgid "plugins.generic.groupReview.reference.variable.submissionsReviewedCount"
+msgstr "Submissions reviewed in the year"
+
+msgid "plugins.generic.groupReview.labels.valueName"
+msgstr "Value"
+
+msgid "plugins.generic.groupReview.filtering.apply"
+msgstr "Apply"

@@ -1,4 +1,4 @@
-# Configurable Participation Form and Labels Requirements
+# Configuration Requirements Participation Form 
 
 **Creator by:** Jahan Haidari (BA)
 
@@ -10,140 +10,132 @@
 
 ## 1. Task Scope
 
-Editors need to control which fields appear in the participation recording form and how reviewer labels are managed. This document defines what is configurable, what stays locked, and how changes interact with the monitoring dashboard and reviewer history.
+Editors need to control parts of the participation form and the reviewer labels. The PM and UX have agreed on what is configurable and what is not. This document sets out exactly what editors can change.
 
-The client has already confirmed that editors should manage configuration through journal settings. This document expands on that decision.
-
----
-
-## 2. What Editors Can Configure
-
-### 2.1 Required and Optional Fields
-
-Editors can choose which participation form fields are required and which are optional.
-
-The fields that can be configured are attendance, contribution types, strengths, development opportunities, shaping feedback response, comments on contributions, and comments on shaping feedback.
-
-### 2.2 Contribution Types
-
-Editors can add, edit, or remove the contribution type options. The default options are Discussion, Writing, Analysis, Editing, and Other.
-
-### 2.3 Attendance Options
-
-Editors can add, edit, or remove attendance options. The default options are Attended, Did not attend with apology, Did not attend without apology, N.A., and Other.
-
-### 2.4 Shaping Feedback Options
-
-Editors can add, edit, or remove shaping feedback options. The default options are Uploaded notes or comments, Commented on the feedback draft, Offered creating the draft, and Created the draft.
-
-### 2.5 Reviewer Labels
-Editors can manage the label types themselves as well as the values inside them.
-
-Editors can add a new label type, rename an existing one, or remove a label type they no longer need.
-
-Editors can also add, edit, or remove the values inside each label type.
-
-Each label type is set as either single choice or multiple choice when it is created.
-
-The default label types that ship with the plugin are experience level, methodology background, and expertise.
-
-| Label type | Values | Multiple |
-|------------|--------|----------|
-| Experience level | Novice, Intermediate, Experienced | No |
-| Methodology background | Quantitative, Qualitative, Mixed methods | No |
-| Expertise | Education, Statistics | Yes |
-
-Editors can replace these defaults or add new label types on top of them.
+The aim is to keep configuration simple and to integrate naturally into OJS, so editors work in the same place they already manage review settings.
 
 ---
 
-## 3. What Stays Locked
+## 2. What the Form Contains
 
-The following fields are always present and cannot be removed or made optional.
+These are the fields in the participation form. Each reviewer has their own column.
 
-| Field | Why it is locked |
-|-------|------------------|
-| Other field per reviewer | Client requested this to allow the RGL to add extra comments |
-| General comments field for the editors | Client requested this for the RGL to communicate with editors |
-| Reviewer name | Required to link the record to a reviewer |
-| Attendance recorded | Used for calculating participation and attendance percentages |
+| Field | Type |
+|-------|------|
+| Meeting attendance | Dropdown |
+| Comments on contributions (meeting) | Text area |
+| Feedback response contributions | Multi select |
+| Comments on contributions (feedback response) | Text area |
+| Other comments | Text area |
 
-Editors cannot add new form field types beyond the ones listed in section 2. Label types are separate from form fields and can be added freely.
-
----
-
-## 4. How Configuration Affects Existing Data
-
-Configuration changes only apply to future forms.
-
-Already submitted forms keep the fields and options that were in place when they were saved.
-
-If an editor removes a contribution type or attendance option, any existing records that used it stay in the database and continue to appear in the reviewer history on the dashboard.
-
-If an editor renames an option, the old name is preserved for existing records so the history stays accurate.
-
-If a label type is removed, reviewers who already have a value for it keep their value in the database, but the label type no longer appears in the editor settings or on new reviewer pages.
----
-
-## 5. How This Affects the Monitoring Dashboard
-
-The monitoring dashboard reads from the same data the participation form writes.
-
-If a field or option is removed from the form, past records that used it still count toward the reviewer's stats on the dashboard.
-
-The dashboard does not need to know which fields are currently active. It reads whatever is stored.
-
-Label values that are removed from the settings stay attached to reviewers who already had them. New values can be assigned going forward.
-
-The label counts section on the Overview page is generated from whatever label types currently exist. If an editor adds a new label type, the dashboard shows it automatically. If a label type is removed, the dashboard stops showing it, but the historical values stay in the database.
----
-
-## 6. Storing Old Fields for History
-
-When a contribution type, attendance option, or shaping feedback option is removed, the value stored in past records stays unchanged.
-
-The dashboard shows the historical value as it was recorded.
-
-The settings page only controls what appears in new forms, not what is shown in history.
-
-Label changes are tracked in a history log with the date, the person who made the change, and a summary of what changed. This applies to changes to label types as well as changes to the values inside them.
+The form also has one general comments field for the whole form, not per reviewer.
 
 ---
 
-## 7. What Needs to Be Configurable and What Stays Locked
+## 3. What Editors Can Configure
 
-| Element | Configurable |
-|---------|--------------|
-| Required or optional status for form fields | Yes |
-| Contribution type list | Yes |
-| Attendance option list | Yes |
-| Shaping feedback option list | Yes |
-| Label types themselves | Yes |
-| Single or multiple choice setting per label type | Yes |
-| Experience level values | Yes |
-| Methodology background values | Yes |
-| Expertise values | Yes |
-| Other field per reviewer | No |
-| General comments field | No |
-| Reviewer name | No |
-| Attendance recorded field | No |
+### 3.1 Form Text
+
+Editors can edit the text on the form. This includes the field names and the descriptions that appear under each field.
+
+For example, an editor could rename "Comments on contributions" to "Reviewer contribution notes" or change the guidance text that appears below a field.
+
+### 3.2 Feedback Response Contributions
+
+Editors can add and remove options in the feedback response contributions multi select.
+
+The default options are Uploaded their notes or comments, Commented on the feedback draft, Offered to create the draft, Created the draft, Did not contribute to shaping the response, and Other.
+
+### 3.3 Reviewer Labels
+
+Editors can manage the label types and the values inside them.
+
+Editors can add a new label type, rename an existing one, or remove a label type.
+
+Editors can add, edit, or remove the values inside each label type.
+
+The default label types are experience level, methodology background, and expertise.
+
+---
+
+## 4. What Editors Cannot Configure
+
+The following items are locked. Editors cannot change them.
+
+| Item | Reason |
+|------|--------|
+| Which fields exist on the form | The field set is fixed by the plugin |
+| Attendance dropdown options | The options are fixed |
+| The general comments field | It is always present |
+| The Other comments field per reviewer | It is always present |
+
+Editors cannot add new field types. They can only change the text that labels existing fields.
 
 ---
 
-## 8. Open Questions for the Client
+## 5. Where Configuration Lives
 
-The following points need confirmation from Eva before development starts.
+Configuration is added to the existing OJS review settings.
 
-Can editors reorder the contribution type and attendance options, or only add and remove them?
+Everything sits under Workflow > Review.
 
-When a label value is removed, should reviewers who already have it keep it visible in the dashboard, or should it stop showing?
+The participation form and the reviewer labels appear as separate tabs alongside the existing Reviewer Reference settings.
 
-Should the general comments field for the editors ever be hidden in special cases, or always visible?
-
-Can editors bulk assign label values to many reviewers at once, or only one at a time?
-
-When a label type is removed, should the dashboard hide it completely, or keep it visible in history for reviewers who already had a value?
-
-Is there a maximum number of label types or values per label type, or no limit?
+Editors do not go to a separate page to configure the plugin. They use the same review settings area they already use for other journal setup.
 
 ---
+
+## 6. How Configuration Affects Existing Data
+
+Form text changes apply only to future forms. Already submitted forms keep the text they were saved with.
+
+If an editor removes a feedback response contribution option, existing records that used it stay in the database and continue to appear on the reviewer page and dashboard.
+
+If an editor adds a new feedback response contribution option, it appears for future forms.
+
+Label type changes follow the same rule. Removing a label type stops it appearing in settings and on new reviewer pages, but reviewers who already have a value keep it in the database.
+
+Label history is part of the reviewer page in the dashboard, not the settings. It is already implemented and does not need to be configured.
+
+---
+
+## 7. User Stories
+
+### Managing Editor
+
+As a Managing Editor I want to edit the text of the participation form so that I can use wording that fits our journal.
+
+As a Managing Editor I want to add or remove feedback response contribution options so that the form matches how our reviewers work.
+
+As a Managing Editor I want to manage reviewer label types and values so that I can track what matters to our journal.
+
+As a Managing Editor I want to find all these settings under Workflow > Review so that I do not need to learn a new part of OJS.
+
+### Quality Review Editor
+
+As a Quality Review Editor I want to view and change label values so that I can keep reviewer records up to date.
+
+---
+
+## 8. Roles and Permissions
+
+| Role | Can configure |
+|------|---------------|
+| Managing Editor | Yes |
+| Quality Review Editor | Yes |
+| Review Group Leader | No |
+| Reviewer | No |
+
+---
+
+## 9. Open Questions for the Client
+
+Should the editor be able to reset the form text back to the default if they make a mistake?
+
+Should there be a preview of the form inside the settings so the editor can see what the changes will look like?
+
+---
+
+Historical records keep the values they were saved with.
+
+Label history remains on the reviewer page in the dashboard and is not part of the settings.

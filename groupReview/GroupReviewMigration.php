@@ -29,16 +29,16 @@ class GroupReviewMigration extends Migration
     {
         $this->refreshEmailTemplates();
         $this->createSessionsTable();
-        $this->createParticipationTable();
-        $this->alignParticipationTable();
         $this->createParticipationFormsTable();
-        $this->addParticipationConfiguration();
+        $this->createParticipationTable();
         $this->createSlotsTable();
         $this->createMembersTable();
         $this->createAvailabilityTable();
         $this->createReminderLogTable();
         $this->createReviewerLabelsTable();
         $this->createReviewerLabelHistoryTable();
+        $this->createLabelTypesTable();
+        $this->createLabelValuesTable();
         $this->migrateLegacyContextSettings();
         $this->migrateLegacyData();
     }
@@ -47,8 +47,10 @@ class GroupReviewMigration extends Migration
     {
         Schema::dropIfExists('group_review_reviewer_label_history');
         Schema::dropIfExists('group_review_reviewer_labels');
-        Schema::dropIfExists('group_review_participation_forms');
+        Schema::dropIfExists('group_review_label_values');
+        Schema::dropIfExists('group_review_label_types');
         Schema::dropIfExists('group_review_participation');
+        Schema::dropIfExists('group_review_participation_forms');
         Schema::dropIfExists('group_review_reminder_log');
         Schema::dropIfExists('group_review_availability');
         Schema::dropIfExists('group_review_members');
@@ -58,30 +60,8 @@ class GroupReviewMigration extends Migration
         if (Schema::hasTable('email_templates')) {
             DB::table('email_templates')->whereIn('email_key', self::EMAIL_KEYS)->delete();
         }
-
         if (Schema::hasTable('email_templates_default_data')) {
             DB::table('email_templates_default_data')->whereIn('email_key', self::EMAIL_KEYS)->delete();
-        }
-    }
-
-    private function addParticipationConfiguration(): void
-    {
-        foreach (['strengths', 'development_opportunities'] as $column) {
-            if (!Schema::hasColumn('group_review_participation', $column)) {
-                Schema::table('group_review_participation', function (Blueprint $table) use ($column) {
-                    $table->text($column)->nullable();
-                });
-            }
-        }
-        if (!Schema::hasColumn('group_review_participation', 'contribution_types')) {
-            Schema::table('group_review_participation', function (Blueprint $table) {
-                $table->json('contribution_types')->nullable();
-            });
-        }
-        if (!Schema::hasColumn('group_review_participation_forms', 'configuration')) {
-            Schema::table('group_review_participation_forms', function (Blueprint $table) {
-                $table->json('configuration')->nullable();
-            });
         }
     }
 
@@ -96,9 +76,9 @@ class GroupReviewMigration extends Migration
             $table->bigInteger('context_id');
             $table->foreign('context_id', 'grp_participation_context_fk')
                 ->references('journal_id')->on('journals')->onDelete('cascade');
-            $table->bigInteger('session_id');
-            $table->foreign('session_id', 'grp_participation_session_fk')
-                ->references('session_id')->on('group_review_sessions')->onDelete('cascade');
+            $table->bigInteger('form_id');
+            $table->foreign('form_id', 'grp_participation_form_fk')
+                ->references('form_id')->on('group_review_participation_forms')->onDelete('cascade');
             $table->bigInteger('review_round_id');
             $table->foreign('review_round_id', 'grp_participation_round_fk')
                 ->references('review_round_id')->on('review_rounds')->onDelete('cascade');
@@ -120,41 +100,13 @@ class GroupReviewMigration extends Migration
             $table->dateTime('created_at');
             $table->dateTime('updated_at');
 
-            $table->unique(['session_id', 'reviewer_user_id'], 'grp_participation_session_reviewer_unique');
+            $table->unique(['form_id', 'reviewer_user_id'], 'grp_participation_form_reviewer_unique');
             $table->index(['context_id', 'submission_id'], 'grp_participation_context_submission_idx');
             $table->index(['reviewer_user_id'], 'grp_participation_reviewer_idx');
         });
     }
 
-    /**
-     * Bring participation tables created before the form-level record
-     * existed in line with the current schema. Status and submission
-     * details now live on group_review_participation_forms.
-     */
-    private function alignParticipationTable(): void
-    {
-        if (!Schema::hasTable('group_review_participation')) {
-            return;
-        }
-
-        if (!Schema::hasColumn('group_review_participation', 'attendance_other')) {
-            Schema::table('group_review_participation', function (Blueprint $table) {
-                $table->text('attendance_other')->nullable();
-            });
-        }
-
-        $obsolete = array_values(array_filter(
-            ['status', 'submitted_at'],
-            fn (string $column): bool => Schema::hasColumn('group_review_participation', $column)
-        ));
-        if ($obsolete) {
-            Schema::table('group_review_participation', function (Blueprint $table) use ($obsolete) {
-                $table->dropColumn($obsolete);
-            });
-        }
-    }
-
-    /** One participation form per group-review session. */
+    /** One participation form per review round, other than cancelled ones. */
     private function createParticipationFormsTable(): void
     {
         if (Schema::hasTable('group_review_participation_forms')) {
@@ -166,14 +118,24 @@ class GroupReviewMigration extends Migration
             $table->bigInteger('context_id');
             $table->foreign('context_id', 'grp_participation_form_context_fk')
                 ->references('journal_id')->on('journals')->onDelete('cascade');
-            $table->bigInteger('session_id');
-            $table->foreign('session_id', 'grp_participation_form_session_fk')
-                ->references('session_id')->on('group_review_sessions')->onDelete('cascade');
+            $table->bigInteger('submission_id');
+            $table->foreign('submission_id', 'grp_participation_form_submission_fk')
+                ->references('submission_id')->on('submissions')->onDelete('cascade');
+            $table->bigInteger('review_round_id');
+            $table->foreign('review_round_id', 'grp_participation_form_round_fk')
+                ->references('review_round_id')->on('review_rounds')->onDelete('cascade');
+            $table->bigInteger('leader_user_id');
+            $table->foreign('leader_user_id', 'grp_participation_form_leader_fk')
+                ->references('user_id')->on('users')->onDelete('cascade');
+            $table->json('reviewer_ids');
+            $table->boolean('has_meeting')->default(true);
             $table->string('status', 16)->default('draft');
             $table->text('general_comments')->nullable();
             $table->text('submission_comment')->nullable();
+            $table->json('submissions')->nullable();
+            $table->json('configuration')->nullable();
             $table->dateTime('created_at');
-            $table->dateTime('updated_at');
+            $table->dateTime('updated_at')->nullable();
             $table->bigInteger('updated_by')->nullable();
             $table->foreign('updated_by', 'grp_participation_form_updated_by_fk')
                 ->references('user_id')->on('users')->onDelete('set null');
@@ -182,8 +144,8 @@ class GroupReviewMigration extends Migration
             $table->foreign('submitted_by', 'grp_participation_form_submitted_by_fk')
                 ->references('user_id')->on('users')->onDelete('set null');
 
-            $table->unique(['session_id'], 'grp_participation_form_session_unique');
             $table->index(['context_id'], 'grp_participation_form_context_idx');
+            $table->index(['submission_id', 'review_round_id'], 'grp_participation_form_round_idx');
         });
     }
 
@@ -389,6 +351,50 @@ class GroupReviewMigration extends Migration
             $table->text('note')->nullable();
 
             $table->index(['context_id', 'user_id'], 'grp_label_history_user_idx');
+        });
+    }
+
+    /** Configurable reviewer label types, per journal. Removal is soft: existing rows stay but is_active is set to false. */
+    private function createLabelTypesTable(): void
+    {
+        if (Schema::hasTable('group_review_label_types')) {
+            return;
+        }
+
+        Schema::create('group_review_label_types', function (Blueprint $table) {
+            $table->bigInteger('type_id')->autoIncrement();
+            $table->bigInteger('context_id');
+            $table->foreign('context_id', 'grp_label_type_context_fk')
+                ->references('journal_id')->on('journals')->onDelete('cascade');
+            $table->string('type_key', 64);
+            $table->string('name', 255);
+            $table->boolean('multiple')->default(false);
+            $table->unsignedInteger('seq')->default(0);
+            $table->boolean('is_active')->default(true);
+
+            $table->unique(['context_id', 'type_key'], 'grp_label_type_unique');
+        });
+    }
+
+    /** Configurable values for each label type, per journal. Removal is soft, same as label types. */
+    private function createLabelValuesTable(): void
+    {
+        if (Schema::hasTable('group_review_label_values')) {
+            return;
+        }
+
+        Schema::create('group_review_label_values', function (Blueprint $table) {
+            $table->bigInteger('value_id')->autoIncrement();
+            $table->bigInteger('context_id');
+            $table->foreign('context_id', 'grp_label_value_def_context_fk')
+                ->references('journal_id')->on('journals')->onDelete('cascade');
+            $table->string('type_key', 64);
+            $table->string('value_key', 64);
+            $table->string('label', 255);
+            $table->unsignedInteger('seq')->default(0);
+            $table->boolean('is_active')->default(true);
+
+            $table->unique(['context_id', 'type_key', 'value_key'], 'grp_label_value_def_unique');
         });
     }
 

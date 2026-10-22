@@ -8,8 +8,8 @@
 		{if $created}<div class="grp__notice grp__notice--success">{translate key="plugins.generic.groupReview.created"}</div>{/if}
 		{if $updated}<div class="grp__notice grp__notice--success">{translate key="plugins.generic.groupReview.updated"}</div>{/if}
 		{if $finalized}<div class="grp__notice grp__notice--success">{translate key="plugins.generic.groupReview.finalized"}</div>{/if}
-		{if $resent}<div class="grp__notice grp__notice--success">{translate key="plugins.generic.groupReview.resent" count=$resent}</div>{/if}
-		{if $mailFailures}<div class="grp__notice grp__notice--warning">{translate key="plugins.generic.groupReview.mailFailures" count=$mailFailures}</div>{/if}
+		{if $resent}<div class="grp__notice grp__notice--success">{translate key="plugins.generic.groupReview.resent" number=$resent}</div>{/if}
+		{if $mailFailures}<div class="grp__notice grp__notice--warning">{translate key="plugins.generic.groupReview.mailFailures" number=$mailFailures}</div>{/if}
 
 		<div class="grp__summary">
 			<div><strong>{translate key="common.status"}:</strong> <span class="grp__status grp__status--{$bundle.poll.status|intval}">{$statusLabel|escape}</span></div>

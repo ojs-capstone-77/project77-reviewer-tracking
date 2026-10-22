@@ -30,16 +30,16 @@ It does **not** create ordinary OJS reviewer assignments, reviewer file grants o
 ## Reviewer monitoring
 
 Journal editors and managers (OJS's Manager permission level) can open **Group Review**
-from the backend sidebar, then switch between **Overview** and **Reviewers**, or use
-**View** to open a reviewer. RGL/RGM membership and author access do not grant
-dashboard access. The existing **My Group Review Polls** page remains separate.
+from the backend sidebar, then switch between **Overview** and **Reviewers**, or
+open a reviewer. RGLs see **Reviewers** only, listing the reviewers who are
+available in the open polls they lead, without links to reviewer pages.
 
 The pages follow [Reviewer Monitoring Definitions](../docs/Reviewer-Monitoring-Definitions.md).
 The `year` URL parameter accepts a year in the selector or `all`; missing or invalid
 values use the current year. Reviewers defaults to `sort=completed&dir=desc`.
 Column links reverse the current direction; another numeric column starts highest
 first, and names start alphabetically. The selected year is preserved across tabs,
-View, Back, and label saves.
+opening a reviewer, Back, and label saves.
 
 Edit Labels requires POST and a valid CSRF token. An unknown reviewer cannot be
 updated; malformed or invalid label values are rejected without changing labels or
@@ -51,13 +51,14 @@ The Reviewers header provides name search, the year selector and a **Columns**
 menu. Name stays visible; each of the nine count/percentage columns can be shown
 or hidden independently, and the counts show by default. The **Filter** side panel contains label choices,
 inclusive range sliders and **Available in an open poll** by Submission ID.
-Changes apply as soon as they are made. Closing the panel clears all filters
-and keeps the selected year, sort and column configuration.
+Filter choices apply when **Apply** is pressed, so several can be set before the
+page reloads. **Reset** clears all filters and keeps the selected year, sort and
+column configuration. Closing the panel keeps the applied filters.
 
-Filters combine with AND. Experience level and methodology accept any selected
-value; expertise requires every selected value. Options come from the existing
-label definitions used by the label service (label types/settings are currently
-fixed in code; this task does not introduce a label-settings editor).
+Filters combine with AND. A single-choice label type, such as experience level or
+methodology, accepts any selected value; a multiple-choice type, such as expertise,
+requires every selected value. Options come from the label types and values
+editors manage in **Settings > Workflow > Review > Reviewer labels**.
 Numeric ranges use nonnegative whole numbers. Blank bounds impose no limit,
 equal bounds are valid (for example Completed 0-0), and percentage bounds are
 limited to 0-100. A percentage with no denominator is not applicable, not zero,
@@ -71,9 +72,9 @@ Disabled accounts remain excluded. Filtering does not expand dashboard access.
 
 The result count shows matching reviewers out of the unfiltered reviewer total.
 Filters, sorting and columns are kept in the URL across sorting, year changes,
-tabs, View/Back and label saves; no account preference or database schema is
-changed. Invalid URL filter shapes/ranges display an error rather than silently
-showing an unfiltered grid.
+tabs, opening a reviewer, Back and label saves, and are not saved to the account.
+Invalid URL filter shapes/ranges display an error rather than silently showing an
+unfiltered grid.
 
 ```bash
 php plugins/generic/groupReview/tests/ReviewerGridTest.php <journal path>
@@ -83,10 +84,6 @@ This transactional integration script checks parsing, combined filters,
 inclusive bounds, zero/null percentages, visibility, URL state, page rendering
 and journal-scoped poll availability. Its temporary journal and fixtures are
 rolled back. The page is built from OJS's own list panel, filter and table components.
-
-For an existing installation, run the plugin's Upgrade action before using the
-dashboard: copying the plugin directory alone does not create its new database
-tables. Back up the database first; the upgrade preserves the legacy poll tables.
 
 Run the integration checks inside an installed OJS 3.4 environment:
 
@@ -100,53 +97,57 @@ saves, and roll back test records afterward. Use a development or staging journa
 
 ## Configurable participation forms
 
-Editors and managers can open **Settings > Workflow > Review > Participation
-form configuration**. Check a field to make it required on both Save and Submit;
-unchecked fields stay visible and optional. The seven supported fields are
-attendance, contribution types, strengths, development opportunities, shaping
-feedback response, comments on contributions and comments on shaping feedback.
-Reviewer names, per-reviewer Other comments and General comments for editors
-always remain on the form. These comments can be left blank.
+From a submission's **Group Review** tab, an assigned RGL opens **Reviewer
+participation** and creates the current review round's form, which they then
+lead. Its reviewers are the RGMs assigned to the submission at that time; journal
+editors can open and edit it. **No meeting** hides the meeting
+fields, which are then neither required nor counted. Submitting can include a
+comment, kept in the form's **History**; the Activity Log records who edited or
+submitted and when. **Cancel Form** keeps the answers but stops them counting, and
+the round can then have a new form.
 
-Editors can add, rename or remove shaping feedback options. At least one option
+Editors and managers can open **Settings > Workflow > Review > Participation
+form**. Check a field to make it required to submit the form; a
+draft can always be saved. Unchecked fields stay visible and optional. The four
+fields are meeting attendance, meeting comments, feedback response and feedback
+response comments. Reviewer names, per-reviewer Other comments and General
+comments for editors always remain on the form. These comments can be left blank.
+
+Editors can add, rename or remove feedback response options. At least one option
 must remain; names are unique ignoring case and have a 150-character maximum.
-Settings are journal-scoped, require editor permissions and are saved with POST
-and CSRF protection. Attendance choices, contribution-type choices and reviewer
-label configuration are not editable in this task.
+Editors can also change each field's name and description. Settings are
+journal-scoped, require editor permissions and are saved with POST and CSRF
+protection. Attendance choices are fixed.
 
 Configuration is snapshotted at a form's first successful save, including draft
 saves. Subsequent journal changes apply only to unsaved future forms. Saved forms
 keep their original fields, requirements, option identities and names, including
-when edited or resubmitted. Pre-upgrade forms retain the original field set and
-defaults, without acquiring new fields. History and answer counts continue to
-display removed or renamed shaping options using their historical names.
+when edited or resubmitted. History and answer counts continue to display
+removed or renamed feedback response options using their historical names.
 An unsaved form opened before a settings change must be reloaded before saving;
-validation errors keep entered reviewer text on screen and do not save partial
-changes.
-
-Upgrade the plugin to **2.5.0.0** using OJS's plugin upgrade mechanism before using
-the feature. The idempotent migration adds nullable fields and the form snapshot;
-it does not remove or rewrite existing participation records.
+other validation errors keep entered reviewer text on screen and do not save
+partial changes.
 
 ```bash
 php plugins/generic/groupReview/tests/ParticipationConfigurationTest.php <journal path>
 ```
 
 This integration script checks journal isolation, required-field enforcement,
-option management, atomic validation, configuration snapshots, legacy records,
-history, editor permissions, CSRF and actual template rendering. Fixtures and
-settings are rolled back.
+option management, atomic validation, configuration snapshots, history, editor
+permissions, CSRF and actual template rendering. Fixtures and settings are rolled
+back.
+
+## Reference letters
+
+**Generate Reference** on a reviewer page drafts a letter for the selected year from
+the template in **Settings > Workflow > Review > Reviewer Reference**, where a
+letterhead image can also be uploaded. The draft can be edited and given a file
+name, then opened as a PDF with **Preview** or saved with **Download**.
 
 ## Participation and statistics tests
 
-The participation unit scripts use the current per-reviewer fields and the
-form-level submission status. Contribution types are a separate fixed-choice
-list, stored independently of shaping feedback responses; per-reviewer `status`
-has been replaced by form-level status:
-
 ```bash
 php plugins/generic/groupReview/tests/ParticipationServiceTest.php
-php plugins/generic/groupReview/tests/ParticipationReadTest.php
 php plugins/generic/groupReview/tests/ParticipationFormTest.php <journal path>
 php plugins/generic/groupReview/tests/ReviewerStatsServiceTest.php <journal path>
 ```
@@ -216,11 +217,14 @@ Uploading plugin code and running migrations affect the shared OJS installation.
 
 - A leader must belong to `RGL` and be assigned to that exact submission under the RGL group in External Review.
 - An invitee must be active, belong to the journal's `RGM` group and have a membership record for that exact poll.
-- `groupReview/getParticipation` accepts a GET request with a required positive `submissionId` and optional positive `reviewerUserId`. Journal managers and members of the journal's `QRE` user group can read all records for that submission; assigned RGLs can read records for their submission; other journal users with access to this operation can only read their own records. Configure the Quality Review Editor user group with the `QRE` abbreviation and Section Editor permission level to enable its read access.
-- The read endpoint returns an OJS JSONMessage with `status`, `code` and `records` (an array, empty when there are no matches). It returns `invalid_request`, `not_found`, `forbidden` or `read_failed` on errors. The participation mock-up does not yet call this endpoint.
 - Submission, review-round, slot, member and poll identifiers are checked within the current journal.
 - Create, update, availability, finalize, resend and cancel actions require POST and a valid CSRF token.
 - Finalization accepts only invited RGM users who marked themselves available for the selected slot.
+
+## Upgrade notes from 2.4.0.1
+
+- Back up the database, then run the plugin's **Upgrade** action to 2.5.0.0 before using the new pages
+- The migration adds tables for participation forms and reviewer labels. Existing poll tables and settings are unchanged.
 
 ## Upgrade notes from 2.3.0.0
 

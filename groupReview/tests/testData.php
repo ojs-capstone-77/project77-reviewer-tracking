@@ -38,7 +38,7 @@
  *   003  Led by test_rgl_01: expired.
  *   004  Led by test_rgl_02: cancelled.
  *   005  Led by test_editor_03, who is also its only assigned journal editor: proposed times
- *        either side of New Year, meeting in January, form submitted with an N.A. attendance,
+ *        either side of New Year, meeting in January, form submitted with an attendance not recorded,
  *        accepted.
  *   006  Led by test_rgl_02: still open, meeting in the future, so ignored by all counts.
  *   007  Led by test_rgl_05: draft, no invitations, so ignored by all counts.
@@ -94,7 +94,7 @@ class GroupReviewTestDataTool extends CommandLineTool
     /** @var array<string, int> username => user ID */
     private array $users = [];
 
-    private array $fixture = ['users' => [], 'polls' => [], 'labels' => []];
+    private array $fixture = ['users' => [], 'polls' => [], 'forms' => [], 'decisions' => [], 'answers' => [], 'generalComments' => [], 'labels' => []];
 
     /** Fixture inputs, not statistics results, for independent expected-value tests. */
     public function getFixture(): array
@@ -380,7 +380,7 @@ class GroupReviewTestDataTool extends CommandLineTool
             'decision' => Decision::ACCEPT,
             'form' => ['submitted' => true, 'at' => gmmktime(0, 0, 0, 1, 9, $year), 'records' => [
                 'test_rgm_22' => ['attended', ['uploaded_notes']],
-                'test_rgm_23' => ['not_applicable', ['commented_on_draft']],
+                'test_rgm_23' => [$this->notRecorded(), ['commented_on_draft']],
                 'test_rgm_24' => ['attended', ['created_draft']],
             ]],
         ]);
@@ -552,7 +552,7 @@ class GroupReviewTestDataTool extends CommandLineTool
                 $roll <= 90 => 'did_not_attend_with_apology',
                 $roll <= 95 => 'did_not_attend_without_apology',
                 $roll <= 97 => 'other',
-                default => $round === 2 ? 'not_applicable' : 'attended',
+                default => 'attended',
             };
             $contributions = [];
             if ($attendance === 'attended' || $attendance === 'other') {
@@ -719,8 +719,6 @@ class GroupReviewTestDataTool extends CommandLineTool
             }
         }
 
-        // The RGL is assigned to the submission. Starting a new round removes earlier
-        // RGMs, so only the latest round's members stay assigned.
         $this->assign($submissionId, $this->groups['rgl'], $leaderId, false);
         if ($isFinalized && ($spec['provisionMembers'] ?? true)) {
             foreach ($selected as $username) {
@@ -730,7 +728,7 @@ class GroupReviewTestDataTool extends CommandLineTool
 
         if (!empty($spec['form'])) {
             $meeting = $spec['slots'][$spec['meetingSlot']];
-            $this->form($sessionId, $submissionId, $roundId, $leaderId, $spec['form'], $spec['form']['at'] ?? $meeting + 5 * self::DAY);
+            $this->form($submissionId, $roundId, $leader, $selected, $spec['form'], $spec['form']['at'] ?? $meeting + 5 * self::DAY);
         }
 
         if (!empty($spec['decision'])) {
@@ -760,6 +758,7 @@ class GroupReviewTestDataTool extends CommandLineTool
             'decision' => $decision,
             'date_decided' => $this->date(min($at, $this->today)),
         ]);
+        $this->fixture['decisions'][$roundId] = $decision;
 
         if ($decision === Decision::ACCEPT) {
             DB::table('submissions')->where('submission_id', $submissionId)->update(['stage_id' => WORKFLOW_STAGE_ID_EDITING]);
@@ -768,14 +767,18 @@ class GroupReviewTestDataTool extends CommandLineTool
         }
     }
 
-    private function form(int $sessionId, int $submissionId, int $roundId, int $leaderId, array $form, int $at): void
+    private function form(int $submissionId, int $roundId, string $leader, array $reviewers, array $form, int $at): void
     {
+        $leaderId = $this->users[$leader];
         $submitted = $form['submitted'];
         $generalComments = $this->chance(0.3) ? 'Test general comment.' : null;
-        $this->fixture['generalComments'][$sessionId] = $generalComments;
-        DB::table('group_review_participation_forms')->insert([
+        $formId = (int) DB::table('group_review_participation_forms')->insertGetId([
             'context_id' => $this->contextId,
-            'session_id' => $sessionId,
+            'submission_id' => $submissionId,
+            'review_round_id' => $roundId,
+            'leader_user_id' => $leaderId,
+            'reviewer_ids' => json_encode(array_map(fn (string $username): int => $this->users[$username], $reviewers)),
+            'submissions' => $submitted ? json_encode([['submitted_at' => $this->date($at), 'submitted_by' => $leaderId, 'comment' => null]]) : null,
             'status' => $submitted ? 'submitted' : 'draft',
             'general_comments' => $generalComments,
             'submission_comment' => null,
@@ -784,12 +787,17 @@ class GroupReviewTestDataTool extends CommandLineTool
             'updated_by' => $leaderId,
             'submitted_at' => $submitted ? $this->date($at) : null,
             'submitted_by' => $submitted ? $leaderId : null,
-        ]);
+        ], 'form_id');
+        $this->fixture['generalComments'][$formId] = $generalComments;
+        $this->fixture['forms'][$formId] = [
+            'submissionId' => $submissionId, 'roundId' => $roundId, 'leader' => $leader,
+            'reviewers' => $reviewers, 'created' => $at, 'submitted' => $submitted,
+        ];
 
         foreach ($form['records'] as $username => $record) {
             [$attendance, $contributions] = $record;
             $contributionComments = $this->chance(0.3) ? 'Test comment on contributions.' : null;
-            $this->fixture['answers'][$sessionId][$username] = [
+            $this->fixture['answers'][$formId][$username] = [
                 'attendance' => $attendance,
                 'attendanceOther' => $record[2] ?? null,
                 'contributionComments' => $contributionComments,
@@ -799,7 +807,7 @@ class GroupReviewTestDataTool extends CommandLineTool
             ];
             DB::table('group_review_participation')->insert([
                 'context_id' => $this->contextId,
-                'session_id' => $sessionId,
+                'form_id' => $formId,
                 'review_round_id' => $roundId,
                 'submission_id' => $submissionId,
                 'reviewer_user_id' => $this->users[$username],

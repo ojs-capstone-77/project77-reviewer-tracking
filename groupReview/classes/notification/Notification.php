@@ -1,8 +1,14 @@
 <?php
 
+/**
+ * @file classes/notification/Notification.php
+ *
+ * Notification type constants for group review, retained from the delivered
+ * student implementation.
+ */
+
 namespace APP\plugins\generic\groupReview\classes\notification;
 
-/** Notification types retained from the delivered student implementation. */
 class Notification extends \APP\notification\Notification
 {
     public const NOTIFICATION_TYPE_POLL_CREATED = 0xA00000;

@@ -1,8 +1,16 @@
 <?php
 
+/**
+ * @file classes/security/authorization/ParticipationAccessPolicy.php
+ *
+ * Permits the request only for a journal editor, or the review group leader of the
+ * specific participation form being opened.
+ */
+
 namespace APP\plugins\generic\groupReview\classes\security\authorization;
 
 use APP\plugins\generic\groupReview\classes\GroupReviewService;
+use APP\plugins\generic\groupReview\classes\ParticipationService;
 use PKP\security\authorization\AuthorizationPolicy;
 
 class ParticipationAccessPolicy extends AuthorizationPolicy
@@ -28,18 +36,18 @@ class ParticipationAccessPolicy extends AuthorizationPolicy
         $operation = $this->request->getRequestedOp();
         $service = new GroupReviewService();
 
-        // The review group list has no session; it is opened from a submission.
-        $sessionId = (int) $this->request->getUserVar('sessionId');
-        $session = $sessionId ? $service->get($contextId, $sessionId) : null;
-        $submissionId = $sessionId
-            ? (int) ($session['submission_id'] ?? 0)
+        // The review group list and Create have no form; they are opened from a submission.
+        $formId = (int) $this->request->getUserVar('formId');
+        $form = $formId ? (new ParticipationService())->getFormRecord($contextId, $formId) : null;
+        $submissionId = $formId
+            ? (int) ($form['submission_id'] ?? 0)
             : (int) $this->request->getUserVar('submissionId');
         if (!$submissionId) {
             $service->logAccessDenied(sprintf(
-                'Denied user #%d on operation "%s": session #%d does not resolve to a submission in context #%d.',
+                'Denied user #%d on operation "%s": form #%d does not resolve to a submission in context #%d.',
                 $userId,
                 $operation,
-                $sessionId,
+                $formId,
                 $contextId
             ));
 
@@ -49,16 +57,16 @@ class ParticipationAccessPolicy extends AuthorizationPolicy
         // Journal editors see every form; an RGL only the forms they lead.
         if ($service->isJournalEditor($contextId, $submissionId, $userId)
             || ($service->isAssignedLeader($contextId, $submissionId, $userId)
-                && (!$session || (int) $session['leader_user_id'] === $userId))) {
+                && (!$form || (int) $form['leader_user_id'] === $userId))) {
             return self::AUTHORIZATION_PERMIT;
         }
 
         $service->logAccessDenied(sprintf(
-            'Denied user #%d on operation "%s": not a Journal editor, or the assigned Review Group Leader leading this form, for submission #%d (session #%d).',
+            'Denied user #%d on operation "%s": not a Journal editor, or the assigned Review Group Leader leading this form, for submission #%d (form #%d).',
             $userId,
             $operation,
             $submissionId,
-            $sessionId
+            $formId
         ));
 
         return self::AUTHORIZATION_DENY;

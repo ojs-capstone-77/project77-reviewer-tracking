@@ -1,5 +1,11 @@
 <?php
 
+/**
+ * @file classes/mail/GroupReviewParticipationSubmitted.php
+ *
+ * Notifies the submission's journal editors that a participation form was submitted.
+ */
+
 namespace APP\plugins\generic\groupReview\classes\mail;
 
 use PKP\context\Context;

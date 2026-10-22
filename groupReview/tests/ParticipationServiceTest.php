@@ -10,6 +10,7 @@
 require_once dirname(__DIR__) . '/classes/ParticipationService.php';
 require_once dirname(__DIR__) . '/classes/ParticipationConfiguration.php';
 
+use APP\plugins\generic\groupReview\classes\ParticipationConfiguration;
 use APP\plugins\generic\groupReview\classes\ParticipationService;
 
 $service = new ParticipationService();
@@ -18,8 +19,13 @@ $validate->setAccessible(true);
 $hydrate = new ReflectionMethod($service, 'hydrate');
 $hydrate->setAccessible(true);
 
+$configuration = [
+    'fields' => array_fill_keys(array_keys(ParticipationConfiguration::FIELDS), false),
+    'options' => ParticipationService::CONTRIBUTION_OPTIONS,
+];
+
 $base = [
-    'session_id' => 1,
+    'form_id' => 1,
     'review_round_id' => 2,
     'submission_id' => 3,
     'reviewer_user_id' => 4,
@@ -31,74 +37,66 @@ $base = [
     'other_contribution' => null,
 ];
 
-test('valid records are normalized', function () use ($validate, $service, $base) {
-    $record = $validate->invoke($service, 10, $base);
+test('valid records are normalized', function () use ($validate, $service, $base, $configuration) {
+    $record = $validate->invoke($service, 10, $base, $configuration);
 
-    assertSame(1, $record['session_id']);
+    assertSame(1, $record['form_id']);
     assertSame('Clear contribution notes', $record['contribution_comments']);
     assertSame(['commented_on_draft', 'uploaded_notes'], $record['shaping_feedback_types']);
     assertSame(null, $record['shaping_feedback_comments']);
     assertSame(false, array_key_exists('status', $record));
-    assertSame([], $record['contribution_types']);
 });
 
-test('missing optional fields use empty defaults', function () use ($validate, $service, $base) {
+test('missing optional fields use empty defaults', function () use ($validate, $service, $base, $configuration) {
     $data = array_diff_key($base, array_flip([
         'contribution_comments', 'shaping_feedback_types', 'shaping_feedback_comments', 'other_contribution',
     ]));
-    $record = $validate->invoke($service, 10, $data);
+    $record = $validate->invoke($service, 10, $data, $configuration);
     assertSame([], $record['shaping_feedback_types']);
     assertSame(null, $record['contribution_comments']);
     assertSame(null, $record['other_contribution']);
 });
 
-test('invalid attendance is rejected', function () use ($validate, $service, $base) {
+test('invalid attendance is rejected', function () use ($validate, $service, $base, $configuration) {
     $data = array_merge($base, ['attendance' => 'late']);
 
-    assertThrows(fn () => $validate->invoke($service, 10, $data), InvalidArgumentException::class);
+    assertThrows(fn () => $validate->invoke($service, 10, $data, $configuration), InvalidArgumentException::class);
 });
 
-test('non-integer identifiers are rejected', function () use ($validate, $service, $base) {
+test('non-integer identifiers are rejected', function () use ($validate, $service, $base, $configuration) {
     $data = array_merge($base, ['reviewer_user_id' => '4reviewer']);
 
-    assertThrows(fn () => $validate->invoke($service, 10, $data), InvalidArgumentException::class);
+    assertThrows(fn () => $validate->invoke($service, 10, $data, $configuration), InvalidArgumentException::class);
 });
 
-test('zero identifiers are rejected', function () use ($validate, $service, $base) {
-    $data = array_merge($base, ['session_id' => 0]);
+test('zero identifiers are rejected', function () use ($validate, $service, $base, $configuration) {
+    $data = array_merge($base, ['form_id' => 0]);
 
-    assertThrows(fn () => $validate->invoke($service, 10, $data), InvalidArgumentException::class);
+    assertThrows(fn () => $validate->invoke($service, 10, $data, $configuration), InvalidArgumentException::class);
 });
 
-test('invalid shaping feedback type is rejected', function () use ($validate, $service, $base) {
+test('invalid shaping feedback type is rejected', function () use ($validate, $service, $base, $configuration) {
     $data = array_merge($base, ['shaping_feedback_types' => ['created_draft', 'invalid']]);
 
-    assertThrows(fn () => $validate->invoke($service, 10, $data), InvalidArgumentException::class);
+    assertThrows(fn () => $validate->invoke($service, 10, $data, $configuration), InvalidArgumentException::class);
 });
 
-test('non-string list values are rejected', function () use ($validate, $service, $base) {
+test('non-string list values are rejected', function () use ($validate, $service, $base, $configuration) {
     $data = array_merge($base, ['shaping_feedback_types' => ['created_draft', 3]]);
 
-    assertThrows(fn () => $validate->invoke($service, 10, $data), InvalidArgumentException::class);
+    assertThrows(fn () => $validate->invoke($service, 10, $data, $configuration), InvalidArgumentException::class);
 });
 
-test('non-array list values are rejected', function () use ($validate, $service, $base) {
+test('non-array list values are rejected', function () use ($validate, $service, $base, $configuration) {
     $data = array_merge($base, ['shaping_feedback_types' => 'created_draft']);
 
-    assertThrows(fn () => $validate->invoke($service, 10, $data), InvalidArgumentException::class);
+    assertThrows(fn () => $validate->invoke($service, 10, $data, $configuration), InvalidArgumentException::class);
 });
 
-test('invalid form status is rejected before database access', function () use ($service, $base) {
-    assertThrows(
-        fn () => $service->saveForSession(10, 1, 5, $base + ['status' => 'published']),
-        InvalidArgumentException::class
-    );
-});
-
-test('overlong comments are rejected', function () use ($validate, $service, $base) {
+test('overlong comments are rejected', function () use ($validate, $service, $base, $configuration) {
     $data = array_merge($base, ['contribution_comments' => str_repeat('x', 5001)]);
 
-    assertThrows(fn () => $validate->invoke($service, 10, $data), InvalidArgumentException::class);
+    assertThrows(fn () => $validate->invoke($service, 10, $data, $configuration), InvalidArgumentException::class);
 });
 
 test('hydration decodes json list fields', function () use ($hydrate, $service) {
@@ -117,49 +115,39 @@ test('malformed stored JSON is reported', function () use ($hydrate, $service) {
     );
 });
 
-test('all attendance options and other details are normalized', function () use ($validate, $service, $base) {
+test('all attendance options and other details are normalized', function () use ($validate, $service, $base, $configuration) {
     foreach (array_keys(ParticipationService::ATTENDANCE_OPTIONS) as $attendance) {
         $record = $validate->invoke($service, 10, array_merge($base, [
             'attendance' => $attendance, 'attendance_other' => '  Joined late  ',
-        ]));
+        ]), $configuration);
         assertSame($attendance, $record['attendance']);
         assertSame($attendance === ParticipationService::ATTENDANCE_OTHER ? 'Joined late' : null, $record['attendance_other']);
     }
 });
 
-test('every identifier must be present and positive', function () use ($validate, $service, $base) {
-    assertThrows(fn () => $validate->invoke($service, 0, $base), InvalidArgumentException::class);
-    foreach (['session_id', 'review_round_id', 'submission_id', 'reviewer_user_id', 'leader_user_id'] as $key) {
+test('every identifier must be present and positive', function () use ($validate, $service, $base, $configuration) {
+    assertThrows(fn () => $validate->invoke($service, 0, $base, $configuration), InvalidArgumentException::class);
+    foreach (['form_id', 'review_round_id', 'submission_id', 'reviewer_user_id', 'leader_user_id'] as $key) {
         foreach ([null, -1, [], '2bad'] as $value) {
             assertThrows(
-                fn () => $validate->invoke($service, 10, array_merge($base, [$key => $value])),
+                fn () => $validate->invoke($service, 10, array_merge($base, [$key => $value]), $configuration),
                 InvalidArgumentException::class
             );
         }
     }
 });
 
-test('every comment field rejects invalid shapes and excessive length', function () use ($validate, $service, $base) {
-    foreach (['attendance_other', 'contribution_comments', 'shaping_feedback_comments', 'other_contribution', 'strengths', 'development_opportunities'] as $key) {
+test('every comment field rejects invalid shapes and excessive length', function () use ($validate, $service, $base, $configuration) {
+    foreach (['attendance_other', 'contribution_comments', 'shaping_feedback_comments', 'other_contribution'] as $key) {
         foreach ([[], 123, str_repeat('x', 5001)] as $value) {
             assertThrows(
                 fn () => $validate->invoke($service, 10, array_merge($base, [
                     'attendance' => ParticipationService::ATTENDANCE_OTHER, $key => $value,
-                ])),
+                ]), $configuration),
                 InvalidArgumentException::class
             );
         }
     }
-});
-
-test('contribution types validate and hydrate independently of shaping feedback', function () use ($validate, $hydrate, $service, $base) {
-    $record = $validate->invoke($service, 10, $base + ['contribution_types' => ['discussion', 'writing', 'discussion']]);
-    assertSame(['discussion', 'writing'], $record['contribution_types']);
-    foreach (['discussion', ['invalid'], [12]] as $invalid) {
-        assertThrows(fn () => $validate->invoke($service, 10, $base + ['contribution_types' => $invalid]), InvalidArgumentException::class);
-    }
-    $row = $hydrate->invoke($service, ['shaping_feedback_types' => '[]', 'contribution_types' => '["analysis"]']);
-    assertSame(['analysis'], $row['contribution_types']);
 });
 
 echo "ParticipationService tests passed.\n";

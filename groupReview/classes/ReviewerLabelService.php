@@ -3,8 +3,8 @@
 /**
  * @file classes/ReviewerLabelService.php
  *
- * Reviewer labels (experience level, methodology background, expertise) and
- * their change history. The label types and values are fixed in code.
+ * Per-journal reviewer label types and values, and the history of changes to a
+ * reviewer's labels.
  */
 
 namespace APP\plugins\generic\groupReview\classes;
@@ -15,38 +15,116 @@ use InvalidArgumentException;
 
 class ReviewerLabelService
 {
-    /**
-     * Label types, in display order. Names are locale keys; "multiple" means a
-     * reviewer can hold several values of that type.
-     */
-    public const TYPES = [
+    private const DEFAULT_TYPES = [
         'experience_level' => [
-            'name' => 'plugins.generic.groupReview.labels.experienceLevel',
+            'name' => 'Experience level',
             'multiple' => false,
             'values' => [
-                'novice' => 'plugins.generic.groupReview.labels.novice',
-                'intermediate' => 'plugins.generic.groupReview.labels.intermediate',
-                'experienced' => 'plugins.generic.groupReview.labels.experienced',
+                'novice' => 'Novice',
+                'intermediate' => 'Intermediate',
+                'experienced' => 'Experienced',
             ],
         ],
         'methodology' => [
-            'name' => 'plugins.generic.groupReview.labels.methodology',
+            'name' => 'Methodology background',
             'multiple' => false,
             'values' => [
-                'quantitative' => 'plugins.generic.groupReview.labels.quantitative',
-                'qualitative' => 'plugins.generic.groupReview.labels.qualitative',
-                'mixed_methods' => 'plugins.generic.groupReview.labels.mixedMethods',
+                'quantitative' => 'Quantitative',
+                'qualitative' => 'Qualitative',
+                'mixed_methods' => 'Mixed methods',
             ],
         ],
         'expertise' => [
-            'name' => 'plugins.generic.groupReview.labels.expertise',
+            'name' => 'Expertise',
             'multiple' => true,
             'values' => [
-                'education' => 'plugins.generic.groupReview.labels.education',
-                'statistics' => 'plugins.generic.groupReview.labels.statistics',
+                'education' => 'Education',
+                'statistics' => 'Statistics',
             ],
         ],
     ];
+
+    private array $typesCache = [];
+
+    /**
+     * This journal's label types, in display order, each with its values in
+     * display order. Seeds the defaults the first time a journal is read.
+     *
+     * @return array<string, array{name:string, multiple:bool, values:array<string,string>}>
+     */
+    public function getTypes(int $contextId): array
+    {
+        if (isset($this->typesCache[$contextId])) {
+            return $this->typesCache[$contextId];
+        }
+
+        $this->ensureDefaults($contextId);
+
+        $typeRows = DB::table('group_review_label_types')
+            ->where('context_id', $contextId)
+            ->where('is_active', true)
+            ->orderBy('seq')
+            ->orderBy('type_id')
+            ->get();
+
+        $valueRows = DB::table('group_review_label_values')
+            ->where('context_id', $contextId)
+            ->where('is_active', true)
+            ->orderBy('seq')
+            ->orderBy('value_id')
+            ->get();
+
+        $valuesByType = [];
+        foreach ($valueRows as $row) {
+            $valuesByType[$row->type_key][(string) $row->value_key] = (string) $row->label;
+        }
+
+        $types = [];
+        foreach ($typeRows as $row) {
+            $types[(string) $row->type_key] = [
+                'name' => (string) $row->name,
+                'multiple' => (bool) $row->multiple,
+                'values' => $valuesByType[$row->type_key] ?? [],
+            ];
+        }
+
+        return $this->typesCache[$contextId] = $types;
+    }
+
+    /** Create the default label types and values for a journal that has none yet. */
+    private function ensureDefaults(int $contextId): void
+    {
+        $exists = DB::table('group_review_label_types')->where('context_id', $contextId)->exists();
+        if ($exists) {
+            return;
+        }
+
+        DB::transaction(function () use ($contextId): void {
+            $typeSeq = 0;
+            foreach (self::DEFAULT_TYPES as $typeKey => $definition) {
+                DB::table('group_review_label_types')->insert([
+                    'context_id' => $contextId,
+                    'type_key' => $typeKey,
+                    'name' => $definition['name'],
+                    'multiple' => $definition['multiple'],
+                    'seq' => $typeSeq++,
+                    'is_active' => true,
+                ]);
+
+                $valueSeq = 0;
+                foreach ($definition['values'] as $valueKey => $label) {
+                    DB::table('group_review_label_values')->insert([
+                        'context_id' => $contextId,
+                        'type_key' => $typeKey,
+                        'value_key' => $valueKey,
+                        'label' => $label,
+                        'seq' => $valueSeq++,
+                        'is_active' => true,
+                    ]);
+                }
+            }
+        });
+    }
 
     /**
      * Return each reviewer's current values, keyed by user ID then label type.
@@ -58,9 +136,10 @@ class ReviewerLabelService
      */
     public function getLabels(int $contextId, array $userIds): array
     {
+        $types = $this->getTypes($contextId);
         $labels = [];
         foreach ($userIds as $userId) {
-            $labels[(int) $userId] = array_fill_keys(array_keys(self::TYPES), []);
+            $labels[(int) $userId] = array_fill_keys(array_keys($types), []);
         }
         if (!$labels) {
             return [];
@@ -72,7 +151,7 @@ class ReviewerLabelService
             ->orderBy('label_id')
             ->get();
         foreach ($rows as $row) {
-            if (isset(self::TYPES[$row->label_type])) {
+            if (isset($types[$row->label_type])) {
                 $labels[(int) $row->user_id][$row->label_type][] = (string) $row->value;
             }
         }
@@ -94,12 +173,13 @@ class ReviewerLabelService
      */
     public function setLabels(int $contextId, int $userId, array $values, ?string $note, int $changedBy): bool
     {
-        $new = $this->validate($values);
+        $types = $this->getTypesFor($contextId, $userId);
+        $new = $this->validate($types, $values);
         $note = $this->note($note);
 
-        return DB::transaction(function () use ($contextId, $userId, $new, $note, $changedBy): bool {
+        return DB::transaction(function () use ($contextId, $userId, $new, $note, $changedBy, $types): bool {
             $old = $this->getLabels($contextId, [$userId])[$userId];
-            $summary = $this->summary($old, $new);
+            $summary = $this->summary($types, $old, $new);
             if ($summary === '' && $note === null) {
                 return false;
             }
@@ -167,22 +247,226 @@ class ReviewerLabelService
         return $history;
     }
 
-    /** The display name of a label type or value. */
-    public function name(string $type, ?string $value = null): string
+    /** The display name of a label type or value. Empty string if either is unknown. */
+    public function name(int $contextId, string $type, ?string $value = null): string
     {
-        return __($value === null ? self::TYPES[$type]['name'] : self::TYPES[$type]['values'][$value]);
+        $types = $this->getTypes($contextId);
+        if (!isset($types[$type])) {
+            return '';
+        }
+        if ($value === null) {
+            return $types[$type]['name'];
+        }
+
+        return $types[$type]['values'][$value] ?? (string) DB::table('group_review_label_values')
+            ->where('context_id', $contextId)
+            ->where('type_key', $type)
+            ->where('value_key', $value)
+            ->value('label');
+    }
+
+    public function getTypesFor(int $contextId, int $userId): array
+    {
+        $types = $this->getTypes($contextId);
+        foreach ($this->getLabels($contextId, [$userId])[$userId] as $type => $values) {
+            foreach ($values as $value) {
+                $types[$type]['values'][$value] ??= $this->name($contextId, $type, $value);
+            }
+        }
+
+        return $types;
+    }
+
+    /**
+     * Add a new label type. The single/multiple choice cannot be changed later.
+     *
+     * @throws InvalidArgumentException for an empty or duplicate name
+     */
+    public function addType(int $contextId, string $name, bool $multiple): void
+    {
+        $name = trim($name);
+        if ($name === '') {
+            throw new InvalidArgumentException('A label type name is required.');
+        }
+
+        $this->getTypes($contextId);
+
+        $duplicate = DB::table('group_review_label_types')
+            ->where('context_id', $contextId)
+            ->where('is_active', true)
+            ->whereRaw('LOWER(name) = ?', [mb_strtolower($name)])
+            ->exists();
+        if ($duplicate) {
+            throw new InvalidArgumentException('A label type with that name already exists.');
+        }
+
+        $nextSeq = (int) (DB::table('group_review_label_types')->where('context_id', $contextId)->max('seq') ?? -1) + 1;
+
+        DB::table('group_review_label_types')->insert([
+            'context_id' => $contextId,
+            'type_key' => $this->uniqueTypeKey($contextId, $name),
+            'name' => $name,
+            'multiple' => $multiple,
+            'seq' => $nextSeq,
+            'is_active' => true,
+        ]);
+
+        unset($this->typesCache[$contextId]);
+    }
+
+    /** @throws InvalidArgumentException for an unknown type, an empty name, or a duplicate name */
+    public function renameType(int $contextId, string $typeKey, string $name): void
+    {
+        $name = trim($name);
+        if ($name === '') {
+            throw new InvalidArgumentException('A label type name is required.');
+        }
+
+        $type = DB::table('group_review_label_types')
+            ->where('context_id', $contextId)
+            ->where('type_key', $typeKey)
+            ->where('is_active', true)
+            ->first();
+        if (!$type) {
+            throw new InvalidArgumentException('Unknown label type.');
+        }
+
+        $duplicate = DB::table('group_review_label_types')
+            ->where('context_id', $contextId)
+            ->where('is_active', true)
+            ->where('type_key', '!=', $typeKey)
+            ->whereRaw('LOWER(name) = ?', [mb_strtolower($name)])
+            ->exists();
+        if ($duplicate) {
+            throw new InvalidArgumentException('A label type with that name already exists.');
+        }
+
+        DB::table('group_review_label_types')
+            ->where('context_id', $contextId)
+            ->where('type_key', $typeKey)
+            ->update(['name' => $name]);
+
+        unset($this->typesCache[$contextId]);
+    }
+
+    /** Values already assigned to reviewers stay in the database; the type just stops appearing. @throws InvalidArgumentException for an unknown type */
+    public function removeType(int $contextId, string $typeKey): void
+    {
+        $updated = DB::table('group_review_label_types')
+            ->where('context_id', $contextId)
+            ->where('type_key', $typeKey)
+            ->where('is_active', true)
+            ->update(['is_active' => false]);
+        if (!$updated) {
+            throw new InvalidArgumentException('Unknown label type.');
+        }
+
+        unset($this->typesCache[$contextId]);
+    }
+
+    /** How many reviewers currently hold a value for this label type. */
+    public function reviewerCountForType(int $contextId, string $typeKey): int
+    {
+        return DB::table('group_review_reviewer_labels')
+            ->where('context_id', $contextId)
+            ->where('label_type', $typeKey)
+            ->distinct()
+            ->count('user_id');
+    }
+
+    /** @throws InvalidArgumentException for an unknown type, an empty value, or a duplicate value */
+    public function addValue(int $contextId, string $typeKey, string $label): void
+    {
+        $label = trim($label);
+        if ($label === '') {
+            throw new InvalidArgumentException('A value is required.');
+        }
+
+        $typeExists = DB::table('group_review_label_types')
+            ->where('context_id', $contextId)
+            ->where('type_key', $typeKey)
+            ->where('is_active', true)
+            ->exists();
+        if (!$typeExists) {
+            throw new InvalidArgumentException('Unknown label type.');
+        }
+
+        $duplicate = DB::table('group_review_label_values')
+            ->where('context_id', $contextId)
+            ->where('type_key', $typeKey)
+            ->where('is_active', true)
+            ->whereRaw('LOWER(label) = ?', [mb_strtolower($label)])
+            ->exists();
+        if ($duplicate) {
+            throw new InvalidArgumentException('That value already exists for this label type.');
+        }
+
+        $nextSeq = (int) (DB::table('group_review_label_values')
+            ->where('context_id', $contextId)
+            ->where('type_key', $typeKey)
+            ->max('seq') ?? -1) + 1;
+
+        DB::table('group_review_label_values')->insert([
+            'context_id' => $contextId,
+            'type_key' => $typeKey,
+            'value_key' => $this->uniqueValueKey($contextId, $typeKey, $label),
+            'label' => $label,
+            'seq' => $nextSeq,
+            'is_active' => true,
+        ]);
+
+        unset($this->typesCache[$contextId]);
+    }
+
+    public function renameValue(int $contextId, string $typeKey, string $valueKey, string $label): void
+    {
+        $label = trim($label);
+        if ($label === '') {
+            throw new InvalidArgumentException('A value is required.');
+        }
+
+        $values = fn () => DB::table('group_review_label_values')
+            ->where('context_id', $contextId)
+            ->where('type_key', $typeKey)
+            ->where('is_active', true);
+        if (!$values()->where('value_key', $valueKey)->exists()) {
+            throw new InvalidArgumentException('Unknown label value.');
+        }
+        if ($values()->where('value_key', '!=', $valueKey)->whereRaw('LOWER(label) = ?', [mb_strtolower($label)])->exists()) {
+            throw new InvalidArgumentException('That value already exists for this label type.');
+        }
+
+        $values()->where('value_key', $valueKey)->update(['label' => $label]);
+
+        unset($this->typesCache[$contextId]);
+    }
+
+    /** Reviewers who already hold this value keep it; it just stops appearing. @throws InvalidArgumentException for an unknown value */
+    public function removeValue(int $contextId, string $typeKey, string $valueKey): void
+    {
+        $updated = DB::table('group_review_label_values')
+            ->where('context_id', $contextId)
+            ->where('type_key', $typeKey)
+            ->where('value_key', $valueKey)
+            ->where('is_active', true)
+            ->update(['is_active' => false]);
+        if (!$updated) {
+            throw new InvalidArgumentException('Unknown label value.');
+        }
+
+        unset($this->typesCache[$contextId]);
     }
 
     /** @return array<string, string[]> every type, with validated, de-duplicated values */
-    private function validate(array $values): array
+    private function validate(array $types, array $values): array
     {
-        $unknown = array_diff(array_keys($values), array_keys(self::TYPES));
+        $unknown = array_diff(array_keys($values), array_keys($types));
         if ($unknown) {
             throw new InvalidArgumentException('Unknown label type: ' . implode(', ', $unknown));
         }
 
         $clean = [];
-        foreach (self::TYPES as $type => $definition) {
+        foreach ($types as $type => $definition) {
             $typeValues = $values[$type] ?? [];
             if (!is_array($typeValues)) {
                 throw new InvalidArgumentException("The {$type} values must be a list.");
@@ -228,17 +512,17 @@ class ReviewerLabelService
      * @param array<string, string[]> $old
      * @param array<string, string[]> $new
      */
-    private function summary(array $old, array $new): string
+    private function summary(array $types, array $old, array $new): string
     {
         $sentences = [];
-        foreach (self::TYPES as $type => $definition) {
+        foreach ($types as $type => $definition) {
             $before = $old[$type] ?? [];
             $after = $new[$type] ?? [];
             if ($before === $after) {
                 continue;
             }
-            $label = $this->name($type);
-            $names = fn (array $list): string => implode(', ', array_map(fn ($v) => $this->name($type, $v), $list));
+            $label = $definition['name'];
+            $names = fn (array $list): string => implode(', ', array_map(fn ($v) => $definition['values'][$v] ?? $v, $list));
 
             if ($definition['multiple']) {
                 $added = array_values(array_diff($after, $before));
@@ -261,5 +545,40 @@ class ReviewerLabelService
         }
 
         return implode(' ', $sentences);
+    }
+
+    /** A URL-safe key derived from $text, unique among this journal's type keys (active or removed). */
+    private function uniqueTypeKey(int $contextId, string $text): string
+    {
+        $base = $this->slug($text);
+        $key = $base;
+        $suffix = 2;
+        while (DB::table('group_review_label_types')->where('context_id', $contextId)->where('type_key', $key)->exists()) {
+            $key = $base . '_' . $suffix++;
+        }
+
+        return $key;
+    }
+
+    /** A URL-safe key derived from $text, unique among this type's value keys (active or removed). */
+    private function uniqueValueKey(int $contextId, string $typeKey, string $text): string
+    {
+        $base = $this->slug($text);
+        $key = $base;
+        $suffix = 2;
+        while (DB::table('group_review_label_values')->where('context_id', $contextId)->where('type_key', $typeKey)->where('value_key', $key)->exists()) {
+            $key = $base . '_' . $suffix++;
+        }
+
+        return $key;
+    }
+
+    private function slug(string $text): string
+    {
+        $slug = mb_strtolower(trim($text));
+        $slug = preg_replace('/[^a-z0-9]+/u', '_', $slug);
+        $slug = trim($slug, '_');
+
+        return $slug !== '' ? mb_substr($slug, 0, 60) : 'type';
     }
 }

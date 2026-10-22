@@ -2,11 +2,11 @@
 
 {block name="page"}
 	<h1 class="app__pageHeading">Reviewer Participation Recording</h1>
-	<p class="app__pageDescription"><strong>{$session.submissionTitle|escape}</strong>{if $session.firstAuthor} &middot; {$session.firstAuthor|escape}{/if}</p>
 
 	<div class="grpTool__card">
 		<div class="grpTool__cardHeader">
-			<span>Submission #{$session.submissionId} participation</span>
+			<span>{$session.submissionTitle|escape}</span>
+			{if $session.firstAuthor}<span>{$session.firstAuthor|escape}</span>{/if}
 		</div>
 		<div class="grpTool__cardBody grpTool__confirm">
 			<div class="grpTool__checkIcon">&#10003;</div>

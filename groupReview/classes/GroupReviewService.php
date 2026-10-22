@@ -116,6 +116,24 @@ class GroupReviewService
         return $user && !$user->getDisabled() && $user->hasRole([Role::ROLE_ID_MANAGER], $contextId);
     }
 
+    public function getAssignedUserIds(int $contextId, int $submissionId, string $abbreviation): array
+    {
+        $groupId = $this->getUserGroupIdByAbbreviation($contextId, $abbreviation);
+        if (!$groupId) {
+            return [];
+        }
+
+        return DB::table('stage_assignments as sa')
+            ->join('users as u', 'u.user_id', '=', 'sa.user_id')
+            ->where('sa.submission_id', $submissionId)
+            ->where('sa.user_group_id', $groupId)
+            ->where('u.disabled', 0)
+            ->distinct()
+            ->pluck('sa.user_id')
+            ->map(fn ($id): int => (int) $id)
+            ->all();
+    }
+
     /**
      * Whether the user belongs to the journal's "Journal manager" user
      * group. Managers are unrestricted: no per-submission check needed.
@@ -221,18 +239,14 @@ class GroupReviewService
     }
 
     /**
-     * Close open polls for a submission and, for a replaced or cancelled
-     * review round, remove only participants assigned through the journal's
-     * RGM group. The report retains those participants when the submission is
-     * accepted.
+     * Close open polls for a submission.
      */
     public static function closeActiveForSubmission(
         int $contextId,
         int $submissionId,
-        int $status,
-        bool $removeRgmParticipants = false
+        int $status
     ): void {
-        DB::transaction(function () use ($contextId, $submissionId, $status, $removeRgmParticipants) {
+        DB::transaction(function () use ($contextId, $submissionId, $status) {
             DB::table('group_review_sessions')
                 ->where('context_id', $contextId)
                 ->where('submission_id', $submissionId)
@@ -241,23 +255,6 @@ class GroupReviewService
                     'status' => $status,
                     'updated_at' => gmdate('Y-m-d H:i:s'),
                 ]);
-
-            if (!$removeRgmParticipants) {
-                return;
-            }
-
-            $rgmGroupId = (new self())->getUserGroupIdByAbbreviation(
-                $contextId,
-                self::RGM_ABBREVIATION
-            );
-            if (!$rgmGroupId) {
-                return;
-            }
-
-            DB::table('stage_assignments')
-                ->where('submission_id', $submissionId)
-                ->where('user_group_id', $rgmGroupId)
-                ->delete();
         });
     }
 
@@ -379,10 +376,10 @@ class GroupReviewService
         return $members;
     }
 
-    public function rgmIsEligible(int $contextId, int $userId): bool
+    public function rgmIsEligible(int $contextId, int $userId, string $abbreviation = self::RGM_ABBREVIATION): bool
     {
         $user = Repo::user()->get($userId);
-        $rgmGroupId = $this->getUserGroupIdByAbbreviation($contextId, self::RGM_ABBREVIATION);
+        $rgmGroupId = $this->getUserGroupIdByAbbreviation($contextId, $abbreviation);
         return $user
             && !$user->getDisabled()
             && $rgmGroupId
@@ -390,6 +387,11 @@ class GroupReviewService
                 ->where('user_group_id', $rgmGroupId)
                 ->where('user_id', $userId)
                 ->exists();
+    }
+
+    public function rglIsEligible(int $contextId, int $userId): bool
+    {
+        return $this->rgmIsEligible($contextId, $userId, self::RGL_ABBREVIATION);
     }
 
     public function create(int $contextId, int $leaderUserId, array $data): int

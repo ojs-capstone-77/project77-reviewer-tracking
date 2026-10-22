@@ -62,27 +62,19 @@
 			<div class="grpMon__twoCol">
 				<div>
 					<h3 class="grpMon__subheading">{translate key="plugins.generic.groupReview.monitoring.attendanceCounts"}</h3>
-					{if empty($attendanceCounts)}
-						<p class="grp__muted">{translate key="plugins.generic.groupReview.monitoring.noCounts"}</p>
-					{else}
-						<dl class="grpMon__kv grpMon__kv--counts">
-							{foreach from=$attendanceCounts item=count}
-								<div class="grpMon__kvRow"><dt>{$count.label|escape}</dt><dd>{$count.count|intval}</dd></div>
-							{/foreach}
-						</dl>
-					{/if}
+					<dl class="grpMon__kv grpMon__kv--counts">
+						{foreach from=$attendanceCounts item=count}
+							<div class="grpMon__kvRow"><dt>{$count.label|escape}</dt><dd>{$count.count|intval}</dd></div>
+						{/foreach}
+					</dl>
 				</div>
 				<div>
 					<h3 class="grpMon__subheading">{translate key="plugins.generic.groupReview.monitoring.contributionCounts"}</h3>
-					{if empty($contributionCounts)}
-						<p class="grp__muted">{translate key="plugins.generic.groupReview.monitoring.noCounts"}</p>
-					{else}
-						<dl class="grpMon__kv grpMon__kv--counts">
-							{foreach from=$contributionCounts item=count}
-								<div class="grpMon__kvRow"><dt>{$count.label|escape}</dt><dd>{$count.count|intval}</dd></div>
-							{/foreach}
-						</dl>
-					{/if}
+					<dl class="grpMon__kv grpMon__kv--counts">
+						{foreach from=$contributionCounts item=count}
+							<div class="grpMon__kvRow"><dt>{$count.label|escape}</dt><dd>{$count.count|intval}</dd></div>
+						{/foreach}
+					</dl>
 				</div>
 			</div>
 
@@ -94,7 +86,7 @@
 					{foreach from=$history item=entry}
 						<details class="grpMon__historyRow">
 							<summary class="grpMon__historySummary">
-								<a class="grpMon__historyLink" href="{$entry.submissionUrl|escape}">{translate key="plugins.generic.groupReview.monitoring.history.submission"}{$entry.submissionId|intval} {translate key="plugins.generic.groupReview.monitoring.history.groupReviewLabel"}</a>
+								<a class="grpMon__historyLink" href="{$entry.submissionUrl|escape}">{$entry.submissionTitle|escape}</a>
 								<span class="grpMon__historyRound">{translate key="plugins.generic.groupReview.monitoring.history.round"} {$entry.round|intval}</span>
 								{if $entry.isLeader}
 									<span class="grpMon__pill">{translate key="plugins.generic.groupReview.monitoring.history.groupLeader"}</span>

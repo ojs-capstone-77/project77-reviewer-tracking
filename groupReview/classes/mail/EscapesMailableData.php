@@ -1,5 +1,11 @@
 <?php
 
+/**
+ * @file classes/mail/EscapesMailableData.php
+ *
+ * Escapes template variables before they reach a Mailable's HTML email body.
+ */
+
 namespace APP\plugins\generic\groupReview\classes\mail;
 
 trait EscapesMailableData

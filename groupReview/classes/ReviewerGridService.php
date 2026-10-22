@@ -1,5 +1,12 @@
 <?php
 
+/**
+ * @file classes/ReviewerGridService.php
+ *
+ * Validates the Reviewers grid's filter settings (search, labels, numeric ranges,
+ * visible columns) and applies them to the grid's rows.
+ */
+
 namespace APP\plugins\generic\groupReview\classes;
 
 use Illuminate\Support\Facades\DB;
@@ -21,6 +28,8 @@ class ReviewerGridService
 
     public function settings($request): array
     {
+        $contextId = (int) $request->getContext()->getId();
+        $types = (new ReviewerLabelService())->getTypes($contextId);
         $errors = [];
         $search = $request->getUserVar('search');
         if ($search !== null && (!is_string($search) || mb_strlen($search) > 100)) {
@@ -32,11 +41,11 @@ class ReviewerGridService
         $ranges = $request->getUserVar('ranges') ?? [];
         $columns = $request->getUserVar('columns');
         $selectedLabels = $selectedRanges = [];
-        if (!is_array($labels) || array_diff(array_keys($labels), array_keys(ReviewerLabelService::TYPES))) {
+        if (!is_array($labels) || array_diff(array_keys($labels), array_keys($types))) {
             $errors[] = __('plugins.generic.groupReview.filtering.invalidLabels');
             $labels = [];
         }
-        foreach (ReviewerLabelService::TYPES as $type => $definition) {
+        foreach ($types as $type => $definition) {
             $values = $labels[$type] ?? [];
             if (!is_array($values) || array_filter($values, fn ($value): bool => !is_string($value) || !isset($definition['values'][$value]))) {
                 $errors[] = __('plugins.generic.groupReview.filtering.invalidLabels');
@@ -101,6 +110,7 @@ class ReviewerGridService
             'columns' => array_values(array_intersect(array_keys(self::COLUMNS), $columns)),
             'availableSubmissionId' => $submissionId,
             'errors' => array_values(array_unique($errors)),
+            'labelTypes' => $types,
         ];
     }
 
@@ -132,7 +142,7 @@ class ReviewerGridService
     }
 
     /** Only currently open, unexpired polls in this journal; no year constraint. */
-    public function availableReviewerIds(int $contextId, int $submissionId): array
+    public function availableReviewerIds(int $contextId, ?int $submissionId, ?int $leaderUserId = null): array
     {
         return DB::table('group_review_availability as a')
             ->join('group_review_sessions as s', 's.session_id', '=', 'a.session_id')
@@ -140,7 +150,8 @@ class ReviewerGridService
                 $join->on('m.session_id', '=', 'a.session_id')->on('m.user_id', '=', 'a.user_id');
             })
             ->where('s.context_id', $contextId)
-            ->where('s.submission_id', $submissionId)
+            ->when($submissionId !== null, fn ($query) => $query->where('s.submission_id', $submissionId))
+            ->when($leaderUserId !== null, fn ($query) => $query->where('s.leader_user_id', $leaderUserId))
             ->where('s.status', GroupReviewService::STATUS_OPEN)
             ->where('s.deadline_utc', '>', gmdate('Y-m-d H:i:s'))
             ->distinct()->pluck('a.user_id')->map(fn ($id): int => (int) $id)->all();
@@ -163,7 +174,7 @@ class ReviewerGridService
                     continue;
                 }
                 $held = $labels[$row['userId']][$type] ?? [];
-                $matches = ReviewerLabelService::TYPES[$type]['multiple']
+                $matches = $settings['labelTypes'][$type]['multiple'] ?? false
                     ? !array_diff($values, $held)
                     : (bool) array_intersect($values, $held);
                 if (!$matches) {

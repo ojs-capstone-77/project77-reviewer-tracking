@@ -14,13 +14,13 @@
 			<fieldset class="grp__fieldset">
 				<legend>{translate key="plugins.generic.groupReview.reviewMessages.selected"}</legend>
 				<ul>{foreach from=$bundle.members item=member}{if isset($selectedLookup[$member.user_id])}<li>{$member.name|escape}</li>{/if}{/foreach}</ul>
-				<label class="grp__field"><span>{translate key="emails.body"}</span><textarea name="selectedBody" rows="10" maxlength="100000" required>{$selectedTemplate.body|escape}</textarea></label>
+				<label class="grp__field"><span>{translate key="email.body"}</span><textarea name="selectedBody" rows="10" maxlength="100000" required>{$selectedTemplate.body|escape}</textarea></label>
 			</fieldset>
 
 			<fieldset class="grp__fieldset">
 				<legend>{translate key="plugins.generic.groupReview.reviewMessages.unselected"}</legend>
 				<ul>{foreach from=$bundle.members item=member}{if !isset($selectedLookup[$member.user_id])}<li>{$member.name|escape}</li>{/if}{/foreach}</ul>
-				<label class="grp__field"><span>{translate key="emails.body"}</span><textarea name="unselectedBody" rows="10" maxlength="100000">{$unselectedTemplate.body|escape}</textarea></label>
+				<label class="grp__field"><span>{translate key="email.body"}</span><textarea name="unselectedBody" rows="10" maxlength="100000">{$unselectedTemplate.body|escape}</textarea></label>
 			</fieldset>
 
 			<label class="grp__field"><span>{translate key="plugins.generic.groupReview.meetingUrl"}</span><input type="url" name="meetingUrl" value="{$bundle.poll.meeting_url|escape}" maxlength="2048" placeholder="https://"></label>
