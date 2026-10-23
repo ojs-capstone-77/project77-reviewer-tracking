@@ -20,6 +20,7 @@ use APP\plugins\generic\groupReview\classes\mail\GroupReviewPollThankRgms;
 use APP\plugins\generic\groupReview\classes\notification\Notification as GroupReviewNotification;
 use APP\plugins\generic\groupReview\classes\ParticipationConfiguration;
 use APP\plugins\generic\groupReview\classes\ParticipationService;
+use APP\plugins\generic\groupReview\classes\ReferenceLetterhead;
 use APP\plugins\generic\groupReview\classes\ReviewerGridService;
 use APP\plugins\generic\groupReview\classes\ReviewerLabelService;
 use APP\plugins\generic\groupReview\classes\ReviewerStatsService;
@@ -27,6 +28,7 @@ use APP\plugins\generic\groupReview\classes\security\authorization\EditorRequire
 use APP\plugins\generic\groupReview\classes\security\authorization\InviteeRequiredPolicy;
 use APP\plugins\generic\groupReview\classes\security\authorization\LeaderRequiredPolicy;
 use APP\plugins\generic\groupReview\classes\security\authorization\ParticipationAccessPolicy;
+use APP\plugins\generic\groupReview\classes\security\RequestValidation;
 use APP\plugins\generic\groupReview\GroupReviewPlugin;
 use APP\template\TemplateManager;
 use Carbon\Carbon;
@@ -91,6 +93,12 @@ class GroupReviewHandler extends Handler
 
     public function authorize($request, &$args, $roleAssignments)
     {
+        try {
+            RequestValidation::validate($request);
+        } catch (InvalidArgumentException $error) {
+            $this->service->logAccessDenied('Malformed request: ' . $error->getMessage());
+            return false;
+        }
         $this->addPolicy(new ContextRequiredPolicy($request));
         $this->addPolicy(new UserRequiredPolicy($request));
         $this->addPolicy(new ContextAccessPolicy($request, $roleAssignments));
@@ -584,7 +592,13 @@ class GroupReviewHandler extends Handler
             'letterHtml' => PKPString::stripUnsafeHtml((string) $request->getUserVar('letterContent')),
             'letterhead' => $this->referenceLetterhead($context),
         ]);
-        $dompdf = new \Dompdf\Dompdf(['isRemoteEnabled' => false, 'defaultFont' => 'DejaVu Sans']);
+        $dompdf = new \Dompdf\Dompdf([
+            'isRemoteEnabled' => false,
+            'isPhpEnabled' => false,
+            'isJavascriptEnabled' => false,
+            'chroot' => $this->plugin->getPluginPath() . '/templates',
+            'defaultFont' => 'DejaVu Sans',
+        ]);
         $dompdf->loadHtml($templateMgr->fetch($this->plugin->getTemplateResource('referenceLetterPdf.tpl')));
         $dompdf->setPaper('A4', 'portrait');
         $dompdf->render();
@@ -616,11 +630,15 @@ class GroupReviewHandler extends Handler
     private function referenceLetterhead($context): ?array
     {
         $image = $context->getData('groupReviewLetterhead');
+        if (!empty($image['uploadName']) && !ReferenceLetterhead::validName($image['uploadName'])) {
+            throw new InvalidArgumentException('The stored letterhead filename is invalid.');
+        }
         $path = empty($image['uploadName']) ? null
             : Core::getBaseDir() . '/' . (new PublicFileManager())->getContextFilesPath($context->getId()) . '/' . basename($image['uploadName']);
         if (!$path || !is_readable($path)) {
             return null;
         }
+        ReferenceLetterhead::image($path, mime_content_type($path));
 
         return [
             'src' => 'data:' . mime_content_type($path) . ';base64,' . base64_encode((string) file_get_contents($path)),
@@ -634,10 +652,11 @@ class GroupReviewHandler extends Handler
 
         $tokens = [];
         foreach ($values as $key => $value) {
-            $tokens['{$' . $key . '}'] = $value;
+            $tokens['{$' . $key . '}'] = $key === 'contributionsList' ? $value
+                : htmlspecialchars((string) $value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
         }
 
-        return strtr($template, $tokens);
+        return PKPString::stripUnsafeHtml(strtr($template, $tokens));
     }
 
     private function referenceContributionsList(array $counts, array $labels): string
@@ -1592,8 +1611,8 @@ class GroupReviewHandler extends Handler
         $pollId = (int) $request->getUserVar('pollId');
         $slotId = (int) $request->getUserVar('slotId');
         $selectedUserIds = $this->intArray($request->getUserVar('selectedUserIds'));
-        $meetingUrl = trim((string) $request->getUserVar('meetingUrl'));
-        $notes = trim((string) $request->getUserVar('notes'));
+        $meetingUrl = trim($this->scalarString($request->getUserVar('meetingUrl')));
+        $notes = trim($this->scalarString($request->getUserVar('notes')));
         $mailContent = [
             'selectedBody' => $this->scalarString($request->getUserVar('selectedBody')),
             'unselectedBody' => $this->scalarString($request->getUserVar('unselectedBody')),
@@ -2031,10 +2050,13 @@ class GroupReviewHandler extends Handler
 
     private function intArray($value): array
     {
-        $values = is_array($value) ? $value : ($value === null || $value === '' ? [] : [$value]);
-        $values = array_slice($values, 0, 101);
-        $values = array_filter($values, fn ($item): bool => is_scalar($item));
-        $values = array_values(array_unique(array_filter(array_map('intval', $values), fn (int $id): bool => $id > 0)));
+        $values = $value === null ? [] : $value;
+        if (!is_array($values) || count($values) > 100 || array_filter($values, fn ($item): bool =>
+            (!is_string($item) && !is_int($item))
+                || filter_var($item, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]) === false)) {
+            throw new InvalidArgumentException('Identifiers must be a list of at most 100 positive integers.');
+        }
+        $values = array_values(array_unique(array_map('intval', $values)));
         sort($values);
         return $values;
     }

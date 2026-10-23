@@ -119,6 +119,9 @@ Role for **Review Group Member**
 
 The tooling this repo already has set up.
 
+See the [plugin security review](docs/Security-Review.md) for findings, regression
+commands and precautions before deployment to a shared OJS installation.
+
 ### Editor extensions
 
 | Tool | Purpose | Extension | Relevant files |
